@@ -10,9 +10,9 @@ DROP_POSITION = 1
 X_NUDGE_MM = -77
 Y_NUDGE_MM = 180
 
-# Gripper settings (in 0.1mm units — multiply mm by 10)
+# Gripper settings (in 0.1mm units - multiply mm by 10)
 OPEN_GRIPPER_POS = 860    # 86.0mm (gripper open position before descent)
-PLATE_WIDTH = 780         # 78.0mm (target plate/lid width — tighter than 80 = narrower grip)
+PLATE_WIDTH = 780         # 78.0mm (target plate/lid width - tighter than 80 = narrower grip)
 PLATE_WIDTH_TOL = 20      # 2.0mm tolerance
 GRIP_STRENGTH = 7
 

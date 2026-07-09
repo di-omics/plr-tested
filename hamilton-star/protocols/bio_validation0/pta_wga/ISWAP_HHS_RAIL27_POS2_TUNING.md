@@ -4,7 +4,7 @@ Validated iSWAP plate-transfer offsets between the PTA/WGA work position
 (**rail35 pos0**) and the Hamilton Heater Shaker (**HHS, rail27 pos2**).
 
 Offsets below were confirmed on the live instrument. This is **dry / camera
-choreography only** — move an EMPTY sacrificial plate, destination nest must be
+choreography only** - move an EMPTY sacrificial plate, destination nest must be
 physically empty, keep a hand near the E-stop. Do not change these geometries.
 
 ## Forward move: rail35 pos0 -> rail27 pos2 (work -> HHS)
