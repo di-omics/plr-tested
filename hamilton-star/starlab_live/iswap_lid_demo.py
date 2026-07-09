@@ -31,7 +31,7 @@ async def main():
 
     lid_loc = plate.lid.get_absolute_location()
 
-    # Single source of truth — X, Y, Z computed ONCE
+    # Single source of truth - X, Y, Z computed ONCE
     TARGET_X = lid_loc.x + X_NUDGE_MM
     TARGET_Y = lid_loc.y
     TARGET_Z = lid_loc.z
@@ -46,7 +46,7 @@ async def main():
     print(f"Holding {HOLD_SECONDS}s...\n")
     await asyncio.sleep(HOLD_SECONDS)
 
-    # === DROP using raw iSWAP commands — forced exact X,Y,Z ===
+    # === DROP using raw iSWAP commands - forced exact X,Y,Z ===
     print("Phase 2: drop lid at EXACT same XYZ using raw iSWAP commands")
     # Stay at lift height, lock X and Y to EXACTLY pickup values
     await backend.move_iswap_x(TARGET_X)
