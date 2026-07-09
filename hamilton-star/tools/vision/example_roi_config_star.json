@@ -1,0 +1,54 @@
+{
+  "notes": "Placeholder coordinates only. Calibrate x/y/w/h against a contact sheet or representative latest frame before using these ROIs for analysis.",
+  "rois": [
+    {
+      "name": "rail35_pos0_work_plate",
+      "x": 100,
+      "y": 100,
+      "w": 220,
+      "h": 140
+    },
+    {
+      "name": "rail35_pos1_source_plate",
+      "x": 340,
+      "y": 100,
+      "w": 220,
+      "h": 140
+    },
+    {
+      "name": "rail35_pos2_mag_block",
+      "x": 580,
+      "y": 100,
+      "w": 180,
+      "h": 130
+    },
+    {
+      "name": "rail35_pos3_reservoir",
+      "x": 780,
+      "y": 100,
+      "w": 220,
+      "h": 130
+    },
+    {
+      "name": "rail48_pos0_p10_tips",
+      "x": 100,
+      "y": 280,
+      "w": 180,
+      "h": 150
+    },
+    {
+      "name": "rail48_pos1_p50_tips",
+      "x": 300,
+      "y": 280,
+      "w": 180,
+      "h": 150
+    },
+    {
+      "name": "rail48_pos2_p300_tips",
+      "x": 500,
+      "y": 280,
+      "w": 180,
+      "h": 150
+    }
+  ]
+}

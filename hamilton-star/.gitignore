@@ -1,0 +1,13 @@
+
+# STAR / GoPro computer-vision local artifacts
+vision_snapshots/
+frames/
+clips/
+analysis/
+*.mp4
+*.MP4
+*.lrv
+*.LRV
+*.thm
+*.THM
+first_frame.jpg
