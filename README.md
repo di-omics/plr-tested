@@ -51,6 +51,7 @@ Inheco ODTC:
 | ODTC method XML matches TAS-068.5 Tables 1, 4, 5, 8, asserted against the real PyLabRobot backend | passed, off-instrument |
 | `odtc_offline_checks.py`, 72 checks, on the Pi under PyLabRobot 0.2.1 | passed, off-instrument |
 | Bring-up, block hold to 45.00 C, full cycling profile to 50.00 C, `PlateauTime` = seconds | passed on the instrument |
+| `ampseq-pcr1`: 30 real PCR cycles, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument (98 C denaturation grazes the 99 C ceiling; see odtc README) |
 | A TAS-068.5 program run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | not written, geometry not measured |
 

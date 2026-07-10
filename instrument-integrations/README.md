@@ -31,9 +31,19 @@ as such.
 | Block+lid hold (PreMethod): block driven to 45.00 C and held dead on target | passed on the instrument |
 | Full cycling Method: pre-warm then ExecuteMethod, block to 50.00 C, completes | passed on the instrument |
 | `PlateauTime` is seconds: a 60 s step held ~56-60 s on the block trace | confirmed on the instrument |
+| `ampseq-pcr1`: 30 cycles end to end, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument, with a caveat (see below) |
 | A TAS-068.5 program run at real temperatures (wga, dnaprep, ...) | not yet run |
 | Door open/close/cycle | written, not yet run |
 | STAR iSWAP handoff into the ODTC | not written, geometry not measured |
+
+The `ampseq-pcr1` caveat: the 98 C denaturation sits 1 C under the ODTC's 99 C block
+ceiling, so on the fast ramp-in the block grazed it (peak 99.04 C) and the device logged
+91 "temperature out of specification" warnings across the 30 cycles, roughly three per
+cycle. The method completed and every setpoint was held tightly; these are warnings, not
+faults, and 98-99 C denaturation is biologically fine. Before a real sample run, consider
+dropping the denaturation setpoint to 97 C or softening the overshoot into that step. The
+protocol as written specifies 98 C, so the program keeps 98 C and this stays a documented
+operator choice, not a silent change.
 
 ## The scripts, in the order you run them
 
