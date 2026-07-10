@@ -68,6 +68,7 @@ Sources
 
 import asyncio
 import socket
+import time
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, Optional, Tuple
 
@@ -110,6 +111,15 @@ PRE_METHOD_TIMEOUT_S = 900.0
 # setup() sends Reset and then Initialize. Initialize homes the door mechanism, so
 # this is a mechanical timeout, not a network one.
 SETUP_TIMEOUT_S = 180.0
+
+# The device states that mean "ready for the next command". Matches the backend's own
+# _wait_for_idle. Observed on the instrument: startup -> (reset/init) -> idle.
+READY_STATES = ("idle", "standby")
+
+# After setup(), Initialize keeps the device busy for a moment. A command fired into
+# that window comes back returnCode 4, "Device is busy due to other command execution".
+# So poll GetStatus until it settles. GetStatus is synchronous and safe at any time.
+SETTLE_TIMEOUT_S = 60.0
 
 
 class OdtcError(RuntimeError):
@@ -239,32 +249,74 @@ def _backend_of(obj: Any) -> Any:
     return getattr(obj, "backend", obj)
 
 
+# Marker returned when a command finished but reported a non-fatal warning
+# (SiLA returnCode 12, SuccessWithWarning). The command ran; there is no payload.
+class Code12Warning:
+    def __init__(self, message: str):
+        self.message = message
+
+    def __repr__(self) -> str:
+        return f"Code12Warning({self.message!r})"
+
+
+# "Device is busy due to other command execution" (returnCode 4) is transient: it
+# happens when a command is fired into the tail of a previous one (e.g. Initialize
+# still settling). Observed on the instrument even after GetStatus reports idle. Retry.
+BUSY_RETRIES = 5
+BUSY_RETRY_DELAY_S = 2.0
+
+
+def _is_busy_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return "failed: 4 " in text or "device is busy" in text
+
+
 async def sila_call(obj: Any, command: str,
-                    timeout: float = DEFAULT_SILA_TIMEOUT_S, **kwargs) -> Any:
-    """Send one SiLA command, with a timeout.
+                    timeout: float = DEFAULT_SILA_TIMEOUT_S,
+                    retries: int = BUSY_RETRIES, **kwargs) -> Any:
+    """Send one SiLA command, with a timeout, busy-retry, and warning tolerance.
 
     Accepts either a Thermocycler or an ExperimentalODTCBackend.
 
-    The timeout is the point. PLR's `send_command` awaits a future that is only
-    resolved by an inbound HTTP callback from the device. If the ODTC cannot reach
-    this host, or if `Reset` never registered our event receiver, that future is
-    never resolved and the await hangs for the life of the process.
+    Three things this handles that raw send_command does not, all seen on the
+    instrument:
 
-    Returns whatever PLR returns: a dict for synchronous commands (returnCode 1),
-    an ElementTree Element for asynchronous ones (returnCode 2, answered by a
-    ResponseEvent carrying `responseData`).
+      - Timeout. PLR's send_command awaits a future resolved only by an inbound HTTP
+        callback. If the ODTC cannot reach this host, that await hangs forever.
+      - returnCode 4 (busy). Transient; retried up to `retries` times.
+      - returnCode 12 (SuccessWithWarning). This ODTC has no SD card, so every method
+        completes with warning "NO_SDCARD". The command still ran, so this returns a
+        Code12Warning marker rather than raising. Only method-execution commands emit
+        it, and their callers do not need a payload.
+
+    Returns PLR's value on success: a dict for synchronous commands (returnCode 1) or
+    an ElementTree Element for asynchronous ones (returnCode 3, carried in a
+    ResponseEvent). Returns a Code12Warning when the command finished with a warning.
     """
+    plr = import_plr()
     interface = _backend_of(obj)._sila_interface
-    try:
-        return await asyncio.wait_for(interface.send_command(command, **kwargs),
-                                      timeout=timeout)
-    except asyncio.TimeoutError as exc:
-        raise OdtcError(
-            f"SiLA command {command!r} timed out after {timeout:.0f} s. If the POST "
-            "was accepted, the device took the command but its ResponseEvent never "
-            "came back. Check that the ODTC can reach "
-            f"{interface.client_ip}:{interface.bound_port} over TCP."
-        ) from exc
+    attempt = 0
+    while True:
+        try:
+            return await asyncio.wait_for(interface.send_command(command, **kwargs),
+                                          timeout=timeout)
+        except asyncio.TimeoutError as exc:
+            raise OdtcError(
+                f"SiLA command {command!r} timed out after {timeout:.0f} s. If the POST "
+                "was accepted, the device took the command but its ResponseEvent never "
+                "came back. Check that the ODTC can reach "
+                f"{interface.client_ip}:{interface.bound_port} over TCP."
+            ) from exc
+        except plr.SiLAError as exc:
+            if getattr(exc, "code", None) == 12:
+                return Code12Warning(getattr(exc, "message", "SuccessWithWarning"))
+            raise
+        except RuntimeError as exc:
+            if _is_busy_error(exc) and attempt < retries:
+                attempt += 1
+                await asyncio.sleep(BUSY_RETRY_DELAY_S)
+                continue
+            raise
 
 
 async def setup_odtc(obj: Any, timeout: float = SETUP_TIMEOUT_S) -> None:
@@ -288,6 +340,33 @@ async def setup_odtc(obj: Any, timeout: float = SETUP_TIMEOUT_S) -> None:
             "but its ResponseEvent never came back, which means the ODTC cannot open a "
             "TCP connection to this host. Check the route and any firewall."
         ) from exc
+
+    # Let Initialize settle. Without this, the first real command after setup can race
+    # the tail of Initialize and come back returnCode 4 (busy).
+    await wait_until_idle(obj)
+
+
+async def wait_until_idle(obj: Any, timeout: float = SETTLE_TIMEOUT_S,
+                          poll_interval: float = 1.0) -> str:
+    """Poll GetStatus until the device reports a ready state. Returns that state.
+
+    Raises OdtcError on timeout, and also if the device reports 'error', which no
+    amount of waiting will clear.
+    """
+    deadline = time.monotonic() + timeout
+    last_state = None
+    while time.monotonic() < deadline:
+        _, state = await get_status(obj)
+        last_state = state
+        if state in READY_STATES:
+            return state
+        if state == "error":
+            raise OdtcError("device is in the 'error' state. Clear it before continuing.")
+        await asyncio.sleep(poll_interval)
+    raise OdtcError(
+        f"device did not reach {READY_STATES} within {timeout:.0f} s "
+        f"(last state: {last_state!r})."
+    )
 
 
 async def get_status(obj: Any, timeout: float = DEFAULT_SILA_TIMEOUT_S) -> Tuple[Any, Optional[str]]:
@@ -354,7 +433,7 @@ def make_odtc(ip: str, name: str = "odtc", client_ip: Optional[str] = None):
     `client_ip` overrides the address handed to the device as its event receiver.
     Set it when the host has more than one interface and the automatic choice would
     pick the wrong one. starpi has exactly this problem: wlan0 carries the lab
-    network and eth0 faces the ODTC.
+    network and eth1 (a USB-Ethernet adapter) faces the ODTC.
     """
     plr = import_plr()
     return plr.Thermocycler(
@@ -479,11 +558,67 @@ async def hold_block_and_lid(obj, block_c: float, lid_c: float,
 
     So set both targets and run one pre-method. This reaches into the backend's
     private state, which is the price of not running two pre-methods.
+
+    Tolerates returnCode 12 (SuccessWithWarning). The backend's _run_pre_method calls
+    ExecuteMethod directly, not through sila_call, so the NO_SDCARD warning that this
+    ODTC raises on every method surfaces here as a SiLAError and must be caught, or the
+    hold "fails" in Python after the device has actually reached and held the set point.
     """
+    plr = import_plr()
     backend = _backend_of(obj)
     backend._block_target_temp = block_c
     backend._lid_target_temp = lid_c
-    await asyncio.wait_for(
-        backend._run_pre_method(block_c, lid_c, dynamic_time=dynamic_time),
-        timeout=timeout,
+    try:
+        await asyncio.wait_for(
+            backend._run_pre_method(block_c, lid_c, dynamic_time=dynamic_time),
+            timeout=timeout,
+        )
+    except plr.SiLAError as exc:
+        if getattr(exc, "code", None) != 12:
+            raise
+        # Completed with warning (e.g. NO_SDCARD). The hold is established.
+
+
+async def run_cycling_method(obj, protocol, block_max_volume_ul: float, lid_c: float,
+                             start_block_c: float, method_name: Optional[str] = None,
+                             prewarm: bool = True,
+                             prewarm_timeout: float = PRE_METHOD_TIMEOUT_S,
+                             method_timeout: float = 4 * 60 * 60) -> str:
+    """Run a full profiled Method (a PCR profile), the way this firmware requires it.
+
+    Confirmed on the instrument: ExecuteMethod of a cycling Method is rejected
+    synchronously with returnCode 11, "PreMethod or PostHeating is required", unless a
+    PreMethod has first brought the block to the method's start conditions. This is the
+    same pre-warm-then-run pattern TAS-068.5 describes for the WGA program ("start the
+    program, allow the block to reach 30 C, pause"). PLR's run_protocol() does not do
+    the pre-warm, so it cannot drive this device on its own; this wrapper adds it.
+
+    Steps:
+      1. Upload the method (SetParameters).
+      2. If prewarm, run a PreMethod to (start_block_c, lid_c) to satisfy the firmware.
+      3. ExecuteMethod, tolerating the NO_SDCARD warning (returnCode 12).
+
+    Returns the method name that was run. Blocks until the method completes, because
+    ExecuteMethod's ResponseEvent fires on completion.
+    """
+    plr = import_plr()
+    backend = _backend_of(obj)
+
+    method_xml, method_name = backend._generate_method_xml(
+        protocol, block_max_volume_ul, start_block_c, lid_c, True, method_name=method_name
     )
+    params = ET.Element("ParameterSet")
+    param = ET.SubElement(params, "Parameter", name="MethodsXML")
+    ET.SubElement(param, "String").text = method_xml
+    await sila_call(obj, "SetParameters", paramsXML=ET.tostring(params, encoding="unicode"))
+
+    if prewarm:
+        # Satisfy the firmware's pre-warm requirement and set the lid for the run.
+        await hold_block_and_lid(obj, block_c=start_block_c, lid_c=lid_c,
+                                 dynamic_time=True, timeout=prewarm_timeout)
+
+    result = await sila_call(obj, "ExecuteMethod", methodName=method_name,
+                             timeout=method_timeout)
+    if isinstance(result, Code12Warning):
+        print(f"[ODTC] method finished with warning: {result.message}")
+    return method_name

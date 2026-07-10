@@ -16,18 +16,23 @@ protocols, plus a ladder of scripts from "is it even there" to "run a PCR progra
 
 ## Status
 
-Communication with the ODTC is established. Nothing has heated or moved yet, and no
-thermal value has been confirmed against a run, so the programs stay marked unverified.
+The ODTC is driven end to end through PyLabRobot: connect, heat, hold, and run a full
+cycling profile, all confirmed on the instrument on 2026-07-10. The `PlateauTime`-is-
+seconds assumption is now confirmed, so the TAS-068.5 programs are believed correct,
+but none has been run at its real temperatures and durations yet, so they stay marked
+as such.
 
 | What | Result |
 | --- | --- |
 | Method XML matches TAS-068.5 Tables 1, 4, 5, 8, asserted against the real backend | passed, off-instrument |
 | `odtc_offline_checks.py`, 72 checks, on starpi under PyLabRobot 0.2.1 | passed, off-instrument |
-| Read-only probe: reachable, SiLA 1.2.01 confirmed, `state` is a top-level element | passed on the instrument, 2026-07-10 |
-| PyLabRobot bring-up: Reset, Initialize, `startup` to `idle`, all 8 sensors read back | passed on the instrument, 2026-07-10 |
+| Read-only probe: reachable, SiLA 1.2.01 confirmed, `state` is a top-level element | passed on the instrument |
+| PyLabRobot bring-up: Reset, Initialize, `startup` to `idle`, all 8 sensors read back | passed on the instrument |
+| Block+lid hold (PreMethod): block driven to 45.00 C and held dead on target | passed on the instrument |
+| Full cycling Method: pre-warm then ExecuteMethod, block to 50.00 C, completes | passed on the instrument |
+| `PlateauTime` is seconds: a 60 s step held ~56-60 s on the block trace | confirmed on the instrument |
+| A TAS-068.5 program run at real temperatures (wga, dnaprep, ...) | not yet run |
 | Door open/close/cycle | written, not yet run |
-| Block and lid hold at a set point | written, not yet run |
-| Thermal program (`PlateauTime` unit still unconfirmed) | written, not yet run |
 | STAR iSWAP handoff into the ODTC | not written, geometry not measured |
 
 ## The scripts, in the order you run them
@@ -52,6 +57,31 @@ session and after every PyLabRobot upgrade.
 `01_odtc_probe_raw.py` imports nothing but the standard library, on purpose. It works
 when the venv does not.
 
+## What this firmware requires, learned on the instrument
+
+Three things about this specific ODTC (firmware `ODTC_225_BOOT_001`, SiLA 1.2.01) are
+not in PyLabRobot and would each strand a run. All three are handled in
+`odtc_compat.py`.
+
+1. **A cycling Method will not run without a PreMethod pre-warm first.** `ExecuteMethod`
+   on a full profile is rejected synchronously with returnCode 11, "PreMethod or
+   PostHeating is required", even though the method carries `PostHeating=true`. Running
+   a PreMethod to the profile's start conditions first clears it. This is the same
+   pre-warm-then-run pattern TAS-068.5 spells out for the WGA program ("start the
+   program, allow the block to reach 30 C, pause"). PyLabRobot's `run_protocol()` skips
+   the pre-warm, so it cannot drive this device on its own. `run_cycling_method()` adds
+   it, and `05_odtc_run_protocol.py` uses that.
+
+2. **Every method finishes "with warning" because there is no SD card.** This unit has
+   no SD card in its logging slot, so each method completes with returnCode 12,
+   "SuccessWithWarning ... NO_SDCARD". The method ran fine; the warning is only about
+   on-device trace logging. `sila_call()` treats returnCode 12 as success. Insert an SD
+   card and the warning goes away, but the code does not depend on that.
+
+3. **The device is briefly "busy" right after Initialize.** A command fired into that
+   window returns returnCode 4, "Device is busy due to other command execution", even
+   after `GetStatus` reports idle. `sila_call()` retries on returnCode 4.
+
 ## What is already known, before anything is plugged in
 
 Four things about PyLabRobot's ODTC backend were established off-instrument. Three are
@@ -74,7 +104,8 @@ rather than as a surprise at the bench.
 3. **`run_pcr_profile()` cannot drive this backend.** It calls `wait_for_lid()`, which
    calls `get_lid_target_temperature()` (raises `NotImplementedError`, which is a
    subclass of `RuntimeError` and so gets swallowed) and then `get_lid_status()` (raises
-   the same thing, uncaught). Use `run_protocol()`. PyLabRobot's own ODTC notebook does.
+   the same thing, uncaught). Use `run_cycling_method()`, which is what
+   `05_odtc_run_protocol.py` calls.
 
 4. **`set_block_temperature()` sets the lid to 105 C.** Unless a lid target was already
    stashed on the backend instance, it defaults to 105 C. The ResolveDNA WGA hold wants
@@ -82,20 +113,20 @@ rather than as a surprise at the bench.
    costs twice the wait. `odtc_compat.hold_block_and_lid()` sets both targets and runs
    one pre-method.
 
-## The one thing to verify first
+## PlateauTime is seconds (settled on the instrument)
 
-The backend writes `hold_seconds` straight into the ODTC method XML's `PlateauTime`
-field, and assumes that field is seconds. That assumption is PyLabRobot's. No Inheco
-document has been read to confirm it.
+The backend writes `hold_seconds` straight into the method XML's `PlateauTime` field and
+assumes seconds. That was PyLabRobot's assumption, not Inheco's, and it is the one that
+could silently scale every duration. It is now confirmed. The `timecheck` program is a
+single 50 C step with a 60 s `PlateauTime`:
 
 ```bash
 ./run_on_pi.sh odtc/05_odtc_run_protocol.py --program timecheck --ip $ODTC_IP --confirm i-am-watching
 ```
 
-`timecheck` is one 50 C step that claims to hold for 60 seconds. Time it with a
-stopwatch. If it holds for 60 s, every program in `odtc_protocols.py` is correct. If it
-holds for 1 s or for an hour, they are all wrong by that factor, and a 2.5 hour WGA
-amplification is not the run on which to find that out.
+On the block temperature trace, the 50 C plateau lasted about 56 to 60 seconds, so the
+unit is seconds and every program in `odtc_protocols.py` is scaled correctly. Re-run this
+check after any firmware change before trusting the long holds.
 
 ## Network
 

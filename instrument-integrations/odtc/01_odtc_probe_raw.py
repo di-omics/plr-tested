@@ -29,10 +29,10 @@ Usage
     ODTC_IP=169.254.1.50 python 01_odtc_probe_raw.py
 
 If the ODTC is on a directly attached interface with no DHCP server, give that
-interface an address first. On starpi the ODTC faces eth0:
+interface a link-local address first. On starpi the ODTC hangs off a USB-Ethernet
+adapter that enumerates as eth1 (the onboard eth0 is used for something else):
 
-    sudo ip addr add 169.254.1.1/16 dev eth0
-    sudo ip link set eth0 up
+    sudo ip addr add 169.254.1.1/16 dev eth1
 """
 
 import argparse
@@ -184,7 +184,7 @@ def main():
     if not reachable:
         print(f"FAILED: {error}")
         print("\nNothing is listening. Check, in order:")
-        print("  1. link:   cat /sys/class/net/eth0/carrier   (1 means a cable is live)")
+        print("  1. link:   cat /sys/class/net/eth1/carrier   (1 means a cable is live)")
         print("  2. address: ip -brief addr                   (the interface needs IPv4)")
         print("  3. the ODTC's own configured address, from its front panel or manual")
         return 1

@@ -50,8 +50,8 @@ Inheco ODTC:
 |---|---|
 | ODTC method XML matches TAS-068.5 Tables 1, 4, 5, 8, asserted against the real PyLabRobot backend | passed, off-instrument |
 | `odtc_offline_checks.py`, 72 checks, on the Pi under PyLabRobot 0.2.1 | passed, off-instrument |
-| Read-only probe and PyLabRobot bring-up (Reset, Initialize, sensor read) | passed on the instrument |
-| ODTC door, block hold, thermal program | written, not yet run |
+| Bring-up, block hold to 45.00 C, full cycling profile to 50.00 C, `PlateauTime` = seconds | passed on the instrument |
+| A TAS-068.5 program run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | not written, geometry not measured |
 
 Reagent volumes are sourced from the ResolveDNA Whole Genome Single-Cell Core

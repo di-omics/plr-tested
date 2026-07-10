@@ -12,30 +12,27 @@ BioSkryb TAS-068.5. Nothing thermal is defined in this file.
     timecheck  hardware exercise, one 60 s step        ~1 min
     selftest   hardware exercise, 3 cycles             ~2 min
 
-Run `timecheck` first, on an empty block
-----------------------------------------
-The backend writes `hold_seconds` straight into the ODTC method XML's `PlateauTime`
-field and assumes that field is seconds. No Inheco document has been consulted to
-confirm that. `timecheck` is a single 50 C step that claims to hold for 60 seconds.
-Time it. If it holds for 60 s, the unit is seconds and every program above is correct.
-If it holds for 1 s or an hour, they are all wrong by that factor, and a 2.5 hour WGA
-amplification is not the run you want to discover that on.
+How a program runs on this firmware
+-----------------------------------
+Confirmed on the instrument, this ODTC will not run a cycling Method cold. ExecuteMethod
+of a full profile is rejected with returnCode 11, "PreMethod or PostHeating is required",
+unless a PreMethod has first brought the block to the profile's start conditions. So
+this script does not call PyLabRobot's `run_protocol()` (which skips the pre-warm and
+gets rejected). It calls `odtc_compat.run_cycling_method()`, which pre-warms, then runs,
+then tolerates the NO_SDCARD warning (returnCode 12) this unit raises on every method.
 
-run_protocol() blocks until the program ends
---------------------------------------------
-ExecuteMethod is an asynchronous SiLA command, and its ResponseEvent fires on method
-*completion*, not on method start. So `await odtc.run_protocol(...)` sits there for
-the whole run. `--fire-and-forget` returns as soon as the method is accepted, leaving
-the ODTC running: use it when the STAR needs the Python process back.
+ExecuteMethod's ResponseEvent fires on method *completion*, so the run blocks for the
+whole program, pre-warm included. Long runs go detached on the Pi, per this repo's
+safety rules, so a dropped SSH session cannot take the process down mid-program.
 
-Long runs go detached, per this repo's safety rules. A dropped SSH session must not
-be able to take the process down mid-program.
+`timecheck` settled the `PlateauTime` unit: a 60 s step held the block at temperature
+for about 56 to 60 seconds, so the durations in `odtc_protocols.py` are in seconds and
+scaled correctly. Re-run it after a firmware change before trusting the long holds.
 
 Not run_pcr_profile()
 ---------------------
 `Thermocycler.run_pcr_profile()` is unusable with this backend: it calls
-wait_for_lid(), which calls get_lid_status(), which raises NotImplementedError. PLR's
-own ODTC notebook uses run_protocol(). So does this.
+wait_for_lid(), which calls get_lid_status(), which raises NotImplementedError.
 
 Usage
 -----
@@ -59,6 +56,7 @@ from odtc_compat import (
     make_dry_odtc,
     make_odtc,
     read_sensors,
+    run_cycling_method,
     setup_odtc,
     validate_protocol,
 )
@@ -115,41 +113,31 @@ async def run_live(program, args):
         sensors = await read_sensors(odtc)
         print(f"before: {format_sensors(sensors)}\n")
 
+        # run_cycling_method, not PLR's run_protocol. Confirmed on the instrument: this
+        # firmware rejects ExecuteMethod of a cycling method with returnCode 11 ("PreMethod
+        # or PostHeating is required") unless a PreMethod has first brought the block to
+        # the start conditions. run_cycling_method does that pre-warm, then executes,
+        # tolerating the NO_SDCARD warning this device raises on every method.
+        print(f"pre-warming block to {START_BLOCK_C:.0f} C / lid {program.lid_c:.0f} C, then")
+        print("running the method. ExecuteMethod's ResponseEvent fires on completion, so")
+        print("this blocks for the whole program. Launch detached on the Pi for long runs.")
         started = time.time()
-        coroutine = odtc.run_protocol(
-            protocol=program.protocol,
-            block_max_volume=program.block_max_volume_ul,
-            start_block_temperature=START_BLOCK_C,
-            start_lid_temperature=program.lid_c,
-            post_heating=True,
+        name = await run_cycling_method(
+            odtc,
+            program.protocol,
+            block_max_volume_ul=program.block_max_volume_ul,
+            lid_c=program.lid_c,
+            start_block_c=START_BLOCK_C,
             method_name=args.method_name,
         )
-
-        if args.fire_and_forget:
-            # Do not await completion. The ODTC keeps running the method after this
-            # process exits, and the block holds the final temperature (post_heating).
-            # Nothing will stop it but stop_method() or a power cycle.
-            task = asyncio.create_task(coroutine)
-            await asyncio.sleep(args.accept_timeout)
-            if task.done():
-                task.result()  # surface an early rejection
-                print("method already finished (it was short).")
-            else:
-                print(f"method accepted and running after {args.accept_timeout:.0f} s.")
-                print("leaving it running. The block will hold its final temperature.")
-                print("stop it with: 04_odtc_hold_block.py, or backend.stop_method().")
-                task.cancel()
-            return 0
-
-        print("waiting for the method to complete. ExecuteMethod's ResponseEvent")
-        print("fires on completion, so this await lasts the whole program.")
-        await coroutine
         elapsed = (time.time() - started) / 60.0
-        print(f"\nmethod completed in {elapsed:.1f} min (wall clock, including ramps).")
+        print(f"\nmethod {name!r} completed in {elapsed:.1f} min (wall clock, "
+              "including pre-warm and ramps).")
 
         sensors = await read_sensors(odtc)
         print(f"after: {format_sensors(sensors)}")
         print("\npost_heating is on, so the block is holding the final step temperature.")
+        print("stop it with 04_odtc_hold_block.py deactivate, or backend.stop_method().")
         return 0
     finally:
         await odtc.stop()
@@ -168,10 +156,6 @@ async def main():
                         help="print the exact ODTC method XML that would be uploaded")
     parser.add_argument("--method-name", default=None,
                         help="name of the method on the device. Default: PLR_Protocol_<timestamp>")
-    parser.add_argument("--fire-and-forget", action="store_true",
-                        help="return once the method is accepted, leaving it running")
-    parser.add_argument("--accept-timeout", type=float, default=10.0,
-                        help="with --fire-and-forget, seconds to wait for early rejection")
     parser.add_argument("--confirm", default="")
     args = parser.parse_args()
 
