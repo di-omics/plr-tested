@@ -2,7 +2,7 @@
 #
 # Run a hamilton-star script on the Pi-controlled Hamilton STAR, from this repo.
 #
-# Dev lives here in plr-clarity. This script syncs the hamilton-star/ tree to a
+# Dev lives here in plr-tested. This script syncs the hamilton-star/ tree to a
 # dedicated run directory on the Pi and executes the chosen script in the
 # existing PyLabRobot venv. It never writes to the Pi's own ~/star-lab working
 # directory, so live work there is not clobbered.
@@ -14,14 +14,19 @@
 #   ./run_on_pi.sh starlab_live/test_star_no_autoload.py
 #   ./run_on_pi.sh starlab_live/01_ampseq_pcr1_mastermix_col1.py --mode deck
 #
-# Safety: many scripts move the deck. Confirm the deck and area are clear before
-# running anything that homes, aspirates, or moves plates.
+# Safety: these scripts move real hardware.
+#   - Never run unattended. A person watches the deck, hand near the E-stop.
+#   - Run --mode deck first where available: it assigns the deck, no motion.
+#   - Only one process may drive the STAR at a time. Two clients racing for the
+#     USB interface produce "USBError: [Errno 16] Resource busy".
+#   - For long runs, launch detached on the Pi so that a dropped SSH session
+#     cannot interrupt the arm mid-transfer.
 
 set -euo pipefail
 
 PI="${PI:-starpi}"                 # ssh alias, see ~/.ssh/config
 VENV="${VENV:-\$HOME/star-lab/env}"   # existing PyLabRobot venv on the Pi
-REMOTE="${REMOTE:-plr-clarity-run}"   # dedicated run dir on the Pi (not ~/star-lab)
+REMOTE="${REMOTE:-plr-tested-run}"    # dedicated run dir on the Pi (not ~/star-lab)
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
