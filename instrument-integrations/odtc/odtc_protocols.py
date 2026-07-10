@@ -171,6 +171,14 @@ LIB_AMP = Protocol(stages=[
 #
 # The holds differ between the two PCRs, and both are transcribed as written:
 # PCR1 ends at a 10 C hold, PCR2 at a 4 C hold.
+#
+# On-instrument finding (ampseq-pcr1, 2026-07-10): the run completed all 30 cycles and
+# held every setpoint to a mean 0.27 C, BUT the 98 C denaturation sits only 1 C under the
+# ODTC's 99 C block ceiling, so the block grazed it on the ramp-in (peak 99.04 C) and the
+# device logged 91 "temperature out of specification" warnings, about three per cycle.
+# They are warnings, not faults, and the method finished. The program keeps 98 C because
+# that is the protocol value; an operator worried about the ceiling can pass
+# ampseq_pcr1(...) with a 97 C denaturation via a custom protocol, or soften the overshoot.
 # ===========================================================================
 
 LID_C_AMPSEQ = 105.0        # NOT from the protocol. Standard Q5 PCR lid, see note above.
