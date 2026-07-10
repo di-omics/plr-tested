@@ -57,6 +57,10 @@ Each rung does strictly more than the one above it. Do not skip.
 | `04_odtc_hold_block.py` | block and lid heaters | Will it hold a set point |
 | `05_odtc_run_protocol.py` | block and lid heaters | Will it run a real program |
 
+`odtc/qc/` holds the robustness QC for the targeted PCR PCR1 run: the raw instrument log,
+a self-contained report generated from it (`odtc_qc_report.html`), and the generator that
+turns one into the other. See `odtc/qc/README.md`.
+
 `odtc_offline_checks.py` needs no device and no network. Run it before every live
 session and after every PyLabRobot upgrade.
 
