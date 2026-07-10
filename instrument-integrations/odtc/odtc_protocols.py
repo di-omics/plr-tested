@@ -149,6 +149,81 @@ LIB_AMP = Protocol(stages=[
 ])
 
 
+# ===========================================================================
+# Targeted PCR library prep. A DIFFERENT protocol from the whole-genome sequencing the kit user guide
+# programs above.
+#
+# Source: "Targeted PCR Library Prep" protocol, di-omics internal, updated
+# 2026-05-28. Values are transcribed from the protocol's two PCR cycling tables the
+# same way as everything else here, and only the thermal profile is encoded; primer
+# sequences and reagent volumes live in the liquid-handling protocol, not here.
+# Enzyme is NEBNext Q5U 2X (PCR1) / Q5 2X (PCR2), 25 uL reactions.
+#
+# Three values are NOT pinned down by the protocol and are flagged at each use:
+#   - Lid temperature. The amplicon protocol does not give one. 105 C is the standard
+#     heated-lid temperature for Q5 PCR and matches the kit user guide LIB-AMP program,
+#     which is also a Q5 indexing PCR. It is a default, not a transcription. Tunable.
+#   - PCR1 annealing temperature. The protocol's default is "~67 C" and it explicitly
+#     says to recompute Ta with the NEB Tm calculator (Q5U Hot Start selected) for
+#     your primer set. 67 C is the default; pass anneal_c to override.
+#   - PCR2 cycle count. The protocol gives a RANGE, 8 to 10 cycles, "1-2 more if bands
+#     were faint". Encoded with a conservative default of 8; pass num_cycles to change.
+#
+# The holds differ between the two PCRs, and both are transcribed as written:
+# PCR1 ends at a 10 C hold, PCR2 at a 4 C hold.
+# ===========================================================================
+
+LID_C_AMPSEQ = 105.0        # NOT from the protocol. Standard Q5 PCR lid, see note above.
+AMPSEQ_ANNEAL_C = 67.0      # protocol default "~67 C", primer-dependent (NEB Tm calc).
+VOL_UL_AMPSEQ = 25.0        # PCR1 and PCR2 TOTAL reaction = 25 uL.
+
+
+def ampseq_pcr1(anneal_c: float = AMPSEQ_ANNEAL_C, num_cycles: int = 30) -> "Protocol":
+    """Targeted PCR PCR1 (target amplification).
+
+    Source: Targeted PCR Library Prep, PCR1 cycling table.
+      98 C 30 s            x1
+      98 C 10 s / anneal 15 s / 72 C 15 s   x30
+      72 C 60 s            x1
+      10 C hold            (as written; this protocol holds at 10 C, not 4 C)
+    """
+    return Protocol(stages=[
+        Stage(steps=[Step(temperature=[98.0], hold_seconds=30)], repeats=1),
+        Stage(steps=[
+            Step(temperature=[98.0], hold_seconds=10),
+            Step(temperature=[anneal_c], hold_seconds=15),
+            Step(temperature=[72.0], hold_seconds=15),
+        ], repeats=num_cycles),
+        Stage(steps=[Step(temperature=[72.0], hold_seconds=60)], repeats=1),
+        Stage(steps=[Step(temperature=[10.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+    ])
+
+
+def ampseq_pcr2(anneal_c: float = AMPSEQ_ANNEAL_C, num_cycles: int = 8) -> "Protocol":
+    """Targeted PCR PCR2 (Nextera indexing).
+
+    Source: Targeted PCR Library Prep, PCR2 cycling table.
+      98 C 30 s            x1
+      98 C 10 s / anneal 15 s / 72 C 15 s   x8-10  (default 8, see note)
+      72 C 60 s            x1
+      4 C hold
+    """
+    return Protocol(stages=[
+        Stage(steps=[Step(temperature=[98.0], hold_seconds=30)], repeats=1),
+        Stage(steps=[
+            Step(temperature=[98.0], hold_seconds=10),
+            Step(temperature=[anneal_c], hold_seconds=15),
+            Step(temperature=[72.0], hold_seconds=15),
+        ], repeats=num_cycles),
+        Stage(steps=[Step(temperature=[72.0], hold_seconds=60)], repeats=1),
+        Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+    ])
+
+
+AMPSEQ_PCR1 = ampseq_pcr1()
+AMPSEQ_PCR2 = ampseq_pcr2()
+
+
 # ---------------------------------------------------------------------------
 # Not biology. Hardware exercises.
 #
@@ -199,6 +274,10 @@ PROGRAMS = {
                         "the kit user guide page 16, section IV step 7"),
     "libamp": Program("libamp", LIB_AMP, LID_C_LIBAMP, VOL_UL_LIBAMP,
                       "the kit user guide Table 8, LIB-AMP"),
+    "ampseq-pcr1": Program("ampseq-pcr1", AMPSEQ_PCR1, LID_C_AMPSEQ, VOL_UL_AMPSEQ,
+                           "Amplicon-seq Library Prep (di-omics internal, 2026-05-28), PCR1"),
+    "ampseq-pcr2": Program("ampseq-pcr2", AMPSEQ_PCR2, LID_C_AMPSEQ, VOL_UL_AMPSEQ,
+                           "Amplicon-seq Library Prep (di-omics internal, 2026-05-28), PCR2"),
     "timecheck": Program("timecheck", TIMECHECK, LID_C_HARDWARE_EXERCISE, 20.0,
                          "hardware exercise, not biology", is_biology=False),
     "selftest": Program("selftest", SELFTEST, LID_C_HARDWARE_EXERCISE, 20.0,

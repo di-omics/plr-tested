@@ -179,23 +179,43 @@ on lab-internal addresses. Discover it on the link, as above.
 
 ## Where the thermal values come from
 
-Every temperature, time, and cycle count in `odtc_protocols.py` is transcribed from
-the kit vendor document **the kit user guide, 05/2025**, "whole-genome Single-Cell
-Core Kit, 96 Reactions", and cited on the line where it is used.
+Every temperature, time, and cycle count in `odtc_protocols.py` is transcribed from a
+source protocol and cited on the line where it is used. The whole-genome sequencing programs come
+from the kit vendor document **the kit user guide, 05/2025**, "whole-genome
+Single-Cell Core Kit, 96 Reactions". The targeted PCR PCR programs come from the
+**Targeted PCR Library Prep** protocol (di-omics internal, updated 2026-05-28); only the
+thermal profile is encoded here, not primers or reagent volumes.
 
 | Program | Source | Lid | Reaction volume |
 | --- | --- | --- | --- |
-| `wga` | Table 1, DNA Amplification | 70 C | 12.0 uL |
-| `dnaprep` | Table 4, DNAPREP | 105 C | 6.0 uL |
-| `ferat` | Table 5, FERAT | 105 C | 10.0 uL |
-| `ligation` | page 16, section IV step 7 | 50 C | 20.0 uL |
-| `libamp` | Table 8, LIB-AMP | 105 C | 40.0 uL |
+| `wga` | the kit user guide Table 1, DNA Amplification | 70 C | 12.0 uL |
+| `dnaprep` | the kit user guide Table 4, DNAPREP | 105 C | 6.0 uL |
+| `ferat` | the kit user guide Table 5, FERAT | 105 C | 10.0 uL |
+| `ligation` | the kit user guide page 16, section IV step 7 | 50 C | 20.0 uL |
+| `libamp` | the kit user guide Table 8, LIB-AMP | 105 C | 40.0 uL |
+| `ampseq-pcr1` | Targeted PCR Library Prep, PCR1 | 105 C (*) | 25.0 uL |
+| `ampseq-pcr2` | Targeted PCR Library Prep, PCR2 | 105 C (*) | 25.0 uL |
 | `timecheck` | hardware exercise, not biology | 105 C | - |
 | `selftest` | hardware exercise, not biology | 105 C | - |
 
 `timecheck` and `selftest` are not protocols. Their temperatures have no biological
 meaning. They exist so that the first live run of the instrument is one minute long
 instead of two and a half hours.
+
+Three targeted PCR values are not pinned down by that protocol and are flagged in code:
+
+- (*) **Lid temperature.** The amplicon protocol does not state one. 105 C is the standard
+  heated-lid temperature for Q5 PCR and matches the kit user guide LIB-AMP, which is also a Q5
+  indexing PCR. It is a default, not a transcription.
+- **PCR1 annealing temperature** defaults to 67 C, the protocol's "~67 C". The protocol
+  says to recompute Ta with the NEB Tm calculator (Q5U Hot Start) for your primer set:
+  `ampseq_pcr1(anneal_c=...)`.
+- **PCR2 cycle count** is a range in the protocol, 8 to 10. The default is 8:
+  `ampseq_pcr2(num_cycles=...)`.
+
+`ampseq-pcr1` ends at a 10 C hold and `ampseq-pcr2` at a 4 C hold, both as written.
+`ampseq-pcr1` runs 30 cycles, so at real durations plus ramps it is roughly a 30 to 40
+minute program.
 
 Two translations were needed to get the kit user guide onto this instrument, and both are worth
 knowing:
