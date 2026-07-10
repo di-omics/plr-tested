@@ -248,6 +248,46 @@ def check_method_xml():
           text_of(method, "FluidQuantity") == "1")
     check("libamp: lid 105 C", all(text_of(s, "LidTemp") == "105" for s in steps))
 
+    # ---- Amplicon-seq PCR1: 98/30 x1, (98/10, 67/15, 72/15) x30, 72/60 x1, 10 C hold
+    root, _ = method_xml_for(PROGRAMS["ampseq-pcr1"])
+    method, steps = steps_of(root)
+    check("ampseq-pcr1: 6 steps (1 + 3 + 1 + 1)", len(steps) == 6, f"got {len(steps)}")
+    check("ampseq-pcr1: 98 C 30 s initial denaturation",
+          (text_of(steps[0], "PlateauTemperature"), text_of(steps[0], "PlateauTime")) == ("98", "30"))
+    check("ampseq-pcr1: cycle body is 98/10, 67/15, 72/15 (anneal 67 C default)",
+          [(text_of(s, "PlateauTemperature"), text_of(s, "PlateauTime")) for s in steps[1:4]]
+          == [("98", "10"), ("67", "15"), ("72", "15")])
+    check("ampseq-pcr1: 72 C 60 s final extension",
+          (text_of(steps[4], "PlateauTemperature"), text_of(steps[4], "PlateauTime")) == ("72", "60"))
+    check("ampseq-pcr1: 10 C hold (this protocol holds at 10 C, not 4 C)",
+          (text_of(steps[5], "PlateauTemperature"), text_of(steps[5], "PlateauTime")) == ("10", "0"))
+    check("ampseq-pcr1: step 4 loops back to step 2 (GotoNumber 2)",
+          text_of(steps[3], "GotoNumber") == "2", f"got {text_of(steps[3], 'GotoNumber')}")
+    check("ampseq-pcr1: LoopNumber 29 == 30 cycles - 1",
+          text_of(steps[3], "LoopNumber") == "29", f"got {text_of(steps[3], 'LoopNumber')}")
+    check("ampseq-pcr1: FluidQuantity 0 (25 uL reaction)",
+          text_of(method, "FluidQuantity") == "0")
+    check("ampseq-pcr1: lid 105 C (standard Q5 lid, not from the protocol)",
+          all(text_of(s, "LidTemp") == "105" for s in steps))
+
+    # ---- Amplicon-seq PCR2: same shape, default 8 cycles, 4 C hold
+    root, _ = method_xml_for(PROGRAMS["ampseq-pcr2"])
+    method, steps = steps_of(root)
+    check("ampseq-pcr2: 6 steps", len(steps) == 6, f"got {len(steps)}")
+    check("ampseq-pcr2: LoopNumber 7 == 8 cycles - 1 (default)",
+          text_of(steps[3], "LoopNumber") == "7", f"got {text_of(steps[3], 'LoopNumber')}")
+    check("ampseq-pcr2: 4 C hold",
+          (text_of(steps[5], "PlateauTemperature"), text_of(steps[5], "PlateauTime")) == ("4", "0"))
+
+    # ---- ampseq PCR2 cycle count is settable, and the loop tracks it
+    from odtc_protocols import ampseq_pcr2
+    backend = _plr.ExperimentalODTCBackend(ip="192.0.2.1", client_ip="192.0.2.2")
+    xml10, _ = backend._generate_method_xml(ampseq_pcr2(num_cycles=10), 25.0, 25.0, 105.0, True,
+                                            method_name="OFFLINE_CHECK")
+    steps10 = ET.fromstring(xml10).find("Method").findall("Step")
+    check("ampseq-pcr2(num_cycles=10): LoopNumber 9",
+          text_of(steps10[3], "LoopNumber") == "9", f"got {text_of(steps10[3], 'LoopNumber')}")
+
     # ---- step numbering is 1-based and contiguous across every program
     for name, program in sorted(PROGRAMS.items()):
         root, _ = method_xml_for(program)
