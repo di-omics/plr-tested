@@ -53,7 +53,7 @@ Inheco ODTC:
 | Bring-up, block hold to 45.00 C, full cycling profile to 50.00 C, `PlateauTime` = seconds | passed on the instrument |
 | `ampseq-pcr1`: 30 real PCR cycles, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument (98 C denaturation grazes the 99 C ceiling; see odtc README) |
 | A the kit user guide program run at real temperatures; ODTC door move | written, not yet run |
-| STAR iSWAP handoff into the ODTC | not written, geometry not measured |
+| STAR iSWAP handoff into the ODTC | plate-move legs drafted, geometry not yet tuned on hardware |
 
 Reagent volumes are sourced from the whole-genome Single-Cell Core
 Kit user guide (the kit user guide): Lysis Mix 3.0 uL per reaction, Reaction Mix 6.0 uL

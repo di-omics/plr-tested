@@ -34,7 +34,7 @@ as such.
 | `ampseq-pcr1`: 30 cycles end to end, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument, with a caveat (see below) |
 | A the kit user guide program run at real temperatures (wga, dnaprep, ...) | not yet run |
 | Door open/close/cycle | written, not yet run |
-| STAR iSWAP handoff into the ODTC | not written, geometry not measured |
+| STAR iSWAP handoff into the ODTC | plate-move legs drafted (`hamilton-star/`), geometry not yet tuned |
 
 The `ampseq-pcr1` caveat: the 98 C denaturation sits 1 C under the ODTC's 99 C block
 ceiling, so on the fast ramp-in the block grazed it (peak 99.04 C) and the device logged
@@ -260,8 +260,10 @@ Everything `hamilton-star/README.md` says still applies, plus:
 
 ## Next
 
-The STAR iSWAP handoff into the ODTC is not written, and should not be until the door
-has been cycled and measured. The ODTC's `child_location` is `Coordinate(0, 0, 0)`, a
-placeholder PyLabRobot's own notebook flags as a TODO. It is not a measurement. Deck
-geometry in this repo is tuned by hand against the physical deck, one small step at a
-time, and the ODTC will be no different.
+The STAR iSWAP handoff into the ODTC has draft plate-move legs under
+`hamilton-star/starlab_live/` (`test_iswap_plate_rail35pos0_to_odtc_variable.py` and its
+return), but the geometry is not yet tuned on hardware, and the door has not been cycled
+and measured, so nothing there is validated. The ODTC's `child_location` is
+`Coordinate(0, 0, 0)`, a placeholder PyLabRobot's own notebook flags as a TODO. It is not
+a measurement. Deck geometry in this repo is tuned by hand against the physical deck, one
+small step at a time, and the ODTC will be no different.
