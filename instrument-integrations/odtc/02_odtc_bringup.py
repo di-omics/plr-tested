@@ -30,10 +30,10 @@ Usage
     python 02_odtc_bringup.py --ip 169.254.1.50
     python 02_odtc_bringup.py --ip 169.254.1.50 --client-ip 169.254.1.1
 
---client-ip matters on starpi, which has two interfaces: wlan0 on the lab network and
-eth0 facing the ODTC. PLR picks the source address by asking the kernel for the route
-to the ODTC, which is right as long as the routing table is right. Pass it explicitly
-if you want to be sure.
+--client-ip matters on starpi, which has more than one interface: wlan0 on the lab
+network and eth1 (a USB-Ethernet adapter) facing the ODTC. PLR picks the source address
+by asking the kernel for the route to the ODTC, which is right as long as the routing
+table is right. Pass it explicitly if you want to be sure.
 """
 
 import argparse

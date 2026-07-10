@@ -32,15 +32,14 @@ Two ODTC-specific translations
    program below therefore carries a single lid temperature, which is what the
    source tables specify anyway.
 
-UNVERIFIED, and it matters
---------------------------
-`PlateauTime` is assumed to be in seconds. That assumption is PyLabRobot's, not
-Inheco's: the backend writes `hold_seconds` straight into `PlateauTime`, and the
-PLR notebook comments `hold_seconds=300` as "5 min". No Inheco document has been
-read to confirm the unit. Before trusting any of the long holds below, run
-`05_odtc_run_protocol.py --program timecheck` and time it with a stopwatch. If a
-step that claims 60 s takes 60 s, the unit is seconds and these programs are right.
-If it takes 1 s or 60 min, everything here is wrong by that factor.
+PlateauTime unit: seconds (confirmed on the instrument, 2026-07-10)
+-------------------------------------------------------------------
+`PlateauTime` carries `hold_seconds` directly, and the unit is seconds. This was
+PyLabRobot's assumption, not Inheco's, so it was checked: the `timecheck` program
+(one 50 C step, 60 s) held the block at 50 C for about 56 to 60 seconds on the
+temperature trace. So the durations below are scaled correctly. Re-run
+`05_odtc_run_protocol.py --program timecheck` after any firmware change before
+trusting the long holds.
 """
 
 from odtc_compat import import_plr
