@@ -56,12 +56,13 @@ Inheco ODTC:
 | A TAS-068.5 program run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | plate-move legs drafted, geometry not yet tuned on hardware |
 
-Tecan Infinite 200 PRO (nothing yet on the instrument):
+Tecan Infinite 200 PRO (first contact 2026-07-11, read-only):
 
 | What | Result |
 |---|---|
-| `tecan_offline_checks.py`, 24 checks, backend shape and 96-well geometry, no device | passed off-instrument |
-| USB probe of `0c47:8007`; bring-up (`INIT FORCE`); tray cycle | written, not yet run |
+| `tecan_offline_checks.py`, 24 checks, backend shape and 96-well geometry, no device | passed on the Pi |
+| USB probe of `0c47:8007`: identified as "TECAN AUSTRIA BIO", no kernel driver | passed on the instrument (read-only) |
+| Bring-up (`INIT FORCE`); tray cycle | written, not yet run |
 | Absorbance read of a known plate; `counts_per_mm` confirmed on this unit | written, not yet run |
 | Rhodamine-B fluorescence ladder read | written, not yet run |
 | STAR iSWAP handoff into the reader tray | not started |
