@@ -226,3 +226,8 @@ Run the ladder, bottom rung first, and move each status row as a real run earns 
 iSWAP handoff into the open tray, which is the same unsolved problem as the ODTC handoff:
 the tray's position in deck coordinates has to be measured, not guessed, before the arm is
 allowed to place a plate into it.
+
+[`next-steps.md`](next-steps.md) front-loads the two after bring-up: the strategy for
+reading Rhodamine B on this reader (modes, settings, ladder, tuning order, gotchas) and the
+plan for deck-mounting the reader for the iSWAP handoff (choreography, the drawer-clearance
+unknown that gates it, the geometry to tune, and the scripts to write).
