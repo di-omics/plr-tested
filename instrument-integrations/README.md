@@ -14,6 +14,12 @@ their failure modes are different. They get their own tree.
 of the ResolveDNA Whole Genome Single-Cell Core Kit, expressed as PyLabRobot
 protocols, plus a ladder of scripts from "is it even there" to "run a PCR program".
 
+`tecan-infinite/` - Tecan Infinite plate reader (200 PRO, and the Nano+ sibling), over
+USB. The QC endpoint: it reads a plate, it does not move liquid or heat. A plan and a
+script ladder from a read-only USB probe to an absorbance read and the Rhodamine-B
+fluorescence ladder. Not yet run on a reader. Unlike the ODTC this instrument is on a
+cable, not the network, so its section leans on USB and libusb rather than SiLA and IP.
+
 ## Status
 
 The ODTC is driven end to end through PyLabRobot: connect, heat, hold, and run a full
@@ -44,6 +50,10 @@ faults, and 98-99 C denaturation is biologically fine. Before a real sample run,
 dropping the denaturation setpoint to 97 C or softening the overshoot into that step. The
 protocol as written specifies 98 C, so the program keeps 98 C and this stays a documented
 operator choice, not a silent change.
+
+The Tecan reader is a plan, not a validated integration: nothing in `tecan-infinite/` has
+touched an instrument. Its status table, its USB link, and its script ladder live in
+`tecan-infinite/README.md`. The sections below are the ODTC's.
 
 ## The scripts, in the order you run them
 
