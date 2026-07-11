@@ -43,6 +43,9 @@ stage has run.
 The read-only first-contact evidence is captured in
 [`connection_verified.html`](connection_verified.html): the raw `lsusb` and probe output,
 the device identity, and the honest note that no motion has happened.
+[`tecan-bench-app.html`](tecan-bench-app.html) is the operator page: the one-time Pi
+setup and the whole ladder as copy-to-Pi commands, in the house style, alongside the read
+settings and these same status rows.
 
 ## The physical link is USB, not the network
 
