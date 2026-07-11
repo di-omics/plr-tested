@@ -18,10 +18,11 @@ says otherwise.
   whole-genome sequencing and targeted PCR liquid handling, iSWAP plate moves, and
   heater-shaker handoffs.
 - [`instrument-integrations/`](instrument-integrations) - the instruments the
-  STAR hands plates to, driven from the same Pi. Currently the Inheco ODTC
-  (On Deck Thermal Cycler) over SiLA/SOAP: the whole-genome sequencing thermal programs as
-  PyLabRobot protocols, and a ladder of scripts from reachability to a PCR run.
-  Not yet run on the instrument.
+  STAR hands plates to, driven from the same Pi. The Inheco ODTC (On Deck Thermal
+  Cycler) over SiLA/SOAP: the whole-genome sequencing thermal programs as PyLabRobot protocols,
+  and a ladder of scripts from reachability to a PCR run, run on the instrument.
+  And the Tecan Infinite plate reader over USB: the library-QC endpoint, a plan and
+  a script ladder from a USB probe to a Rhodamine-B fluorescence read, not yet run.
 
 ## What "tested" means here
 
@@ -54,6 +55,16 @@ Inheco ODTC:
 | `ampseq-pcr1`: 30 real PCR cycles, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument (98 C denaturation grazes the 99 C ceiling; see odtc README) |
 | A the kit user guide program run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | plate-move legs drafted, geometry not yet tuned on hardware |
+
+Tecan Infinite 200 PRO (nothing yet on the instrument):
+
+| What | Result |
+|---|---|
+| `tecan_offline_checks.py`, 24 checks, backend shape and 96-well geometry, no device | passed off-instrument |
+| USB probe of `0c47:8007`; bring-up (`INIT FORCE`); tray cycle | written, not yet run |
+| Absorbance read of a known plate; `counts_per_mm` confirmed on this unit | written, not yet run |
+| Rhodamine-B fluorescence ladder read | written, not yet run |
+| STAR iSWAP handoff into the reader tray | not started |
 
 Reagent volumes are sourced from the whole-genome Single-Cell Core
 Kit user guide (the kit user guide): Lysis Mix 3.0 uL per reaction, Reaction Mix 6.0 uL
