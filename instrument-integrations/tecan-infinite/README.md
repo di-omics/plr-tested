@@ -16,26 +16,33 @@ Two instruments are in scope, both in the Infinite 200 family:
 PyLabRobot ships a backend for the 200 PRO: `pylabrobot.tecan.infinite.TecanInfinite200Pro`.
 That backend is the starting point for both readers. Everything below is derived either
 from that backend's source, which is checkable off-instrument and is marked as such, or
-from what still has to be settled at the bench, which is marked as not-yet-run. Nothing
-here has been run on a reader.
+from what still has to be settled at the bench, which is marked as not-yet-run. As of
+2026-07-11 the reader is identified over USB and the backend loads on the Pi; nothing has
+been moved or read yet.
 
 ## Status
 
-Nothing in this tree has touched an instrument. This is a plan and a script ladder, in the
-same shape the ODTC work took before its first live session, kept honest by the same rule:
-a row stays marked written-or-planned until a run on the reader moves it.
+First contact on 2026-07-11: the reader was plugged into the Pi, identified over USB
+read-only, and the backend brought up in an isolated venv. Everything below the USB probe
+is still a plan and a script ladder, in the same shape the ODTC work took before its first
+live session, kept honest by the same rule: a row stays marked written-or-planned until a
+run on the reader moves it. The read-only rungs earned their rows; nothing that moves the
+stage has run.
 
 | What | Result |
 | --- | --- |
-| Backend import and API shape asserted off-instrument (`tecan_offline_checks.py`) | planned |
-| Well-to-stage geometry math checked against a known 96-well plate, no device | planned |
-| USB probe: `0c47:8007` present on the Pi's bus, kernel driver detachable | not yet run |
+| `tecan_offline_checks.py`, 24 checks (backend shape + 96-well geometry), no device | passed on the Pi, 2026-07-11 |
+| USB probe: `0c47:8007` on the Pi's bus, identified, kernel driver state | passed on the instrument (read-only): "TECAN AUSTRIA BIO", bus 3 / addr 3, no kernel driver, endpoints 0x81 / 0x02 |
 | Bring-up: `setup()`, `INIT FORCE`, capability queries return | written, not yet run |
 | Tray open / close, drawer cycle timed | written, not yet run |
 | Absorbance read of a known plate at a fixed wavelength | written, not yet run |
 | Rhodamine-B fluorescence ladder read | written, not yet run |
 | `counts_per_mm` confirmed against this unit's plate map | not started |
 | STAR iSWAP handoff into the open tray | not started |
+
+The read-only first-contact evidence is captured in
+[`connection_verified.html`](connection_verified.html): the raw `lsusb` and probe output,
+the device identity, and the honest note that no motion has happened.
 
 ## The physical link is USB, not the network
 
@@ -44,7 +51,19 @@ network with its own state machine; the reader is on the end of a USB cable, lik
 
 The backend opens the reader as a USB device, vendor `0x0C47` (Tecan), product `0x8007`,
 through pyusb / libusb. The Pi needs the USB extra (`pip install pylabrobot[usb]`, which
-pulls `pyusb` and `libusb-package`) in the same venv the STAR uses.
+pulls `pyusb` and `libusb-package`).
+
+On the Pi this lives in its **own** venv, `~/tecan-lab/env`, not the STAR's `star-lab/env`.
+Two reasons, both learned on 2026-07-11: the Tecan backend only exists on the fork branch
+that carries `pylabrobot/tecan/` (the fork's `main` does not have it, so a plain
+`git clone` of the fork misses the module - check out that branch), and installing the
+fork into the STAR's venv would swap PyLabRobot under the validated STAR and ODTC
+workflows. An isolated venv keeps them untouched. Run the ladder against it with the
+`run_on_pi.sh` `VENV` override:
+
+```bash
+VENV=/home/lab/tecan-lab/env ./run_on_pi.sh tecan-infinite/tecan_offline_checks.py
+```
 
 Two USB facts decide whether the first `setup()` even reaches the firmware, and both are
 Linux-host, not PyLabRobot:

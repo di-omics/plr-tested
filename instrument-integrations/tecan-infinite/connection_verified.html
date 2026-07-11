@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tecan Infinite - USB connection verified</title>
+<style>
+  :root {
+    --bg: #ffffff; --ink: #16181d; --muted: #6b7280; --faint: #8a94a0;
+    --sage: #4e9d5e; --sage-ink: #2f7d43; --chip-bg: #eaf6ee; --chip-br: #bfe3ca;
+    --card: #f6f8f7; --card-br: #e4e9e6; --rule: #ececec;
+    --term-bg: #0e1a14; --term-ink: #b9c6bd; --term-key: #eaf3ec; --term-cmd: #6fe6a0; --term-dim: #7c8c81;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0f0d; --ink: #eef2ef; --muted: #9aa4a0; --faint: #7f8a86;
+      --sage: #6fce80; --sage-ink: #9fe6ac; --chip-bg: #16281c; --chip-br: #2c4a35;
+      --card: #141b17; --card-br: #26332b; --rule: #232a26;
+      --term-bg: #0a120d; --term-ink: #aebbb2; --term-key: #eaf3ec; --term-cmd: #6fe6a0; --term-dim: #6f7d74;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+    padding: 48px 20px 64px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .accent { height: 8px; background: var(--sage); border-radius: 4px; margin-bottom: 40px; }
+  .eyebrow {
+    font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--sage); font-weight: 700; margin-bottom: 18px;
+  }
+  h1 { font-size: clamp(40px, 8vw, 64px); line-height: 1.03; letter-spacing: -0.02em; font-weight: 800; margin-bottom: 16px; }
+  .sub { font-size: clamp(17px, 3.4vw, 22px); color: var(--muted); font-weight: 500; max-width: 640px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 26px;
+    background: var(--chip-bg); color: var(--sage-ink); border: 1.5px solid var(--chip-br);
+    padding: 11px 20px; border-radius: 999px; font-size: 15px; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--sage); }
+  .term {
+    margin-top: 34px; background: var(--term-bg); border-radius: 14px; padding: 24px 26px;
+    font-family: "SF Mono", "Menlo", "Consolas", monospace; font-size: clamp(12px, 2.6vw, 15px);
+    line-height: 1.65; color: var(--term-ink); overflow-x: auto; white-space: pre;
+  }
+  .term .cmd { color: var(--term-cmd); }
+  .term .key { color: var(--term-key); font-weight: 600; }
+  .term .dim { color: var(--term-dim); }
+  .grid { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px 40px; }
+  .cell .label { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); font-weight: 700; margin-bottom: 5px; }
+  .cell .val { font-size: 18px; font-weight: 600; }
+  .cell .val.mono { font-family: "SF Mono","Menlo",monospace; font-size: 16px; }
+  .checks { margin-top: 36px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .check { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-br); border-radius: 10px; padding: 12px 18px; font-size: 15px; font-weight: 600; }
+  .tick { color: var(--sage); font-weight: 800; }
+  .footer { margin-top: 44px; border-top: 1.5px solid var(--rule); padding-top: 22px; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .foot-note { font-size: 14px; color: var(--faint); max-width: 620px; }
+  .foot-note b { color: var(--muted); }
+  .mark { display: flex; align-items: center; gap: 11px; }
+  .mark .name { font-size: 14px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="accent"></div>
+    <div class="eyebrow">di-omics &middot; autonomous lab automation</div>
+    <h1>Plate reader connected.</h1>
+    <p class="sub">Tecan Infinite (200&nbsp;PRO / Nano+) linked to a Raspberry&nbsp;Pi over USB and identified through PyLabRobot. The instrument answers.</p>
+    <div class="chip"><span class="dot"></span> USB LINK VERIFIED &middot; DEVICE IDENTIFIED</div>
+
+    <div class="term"><span class="dim">lab@starpi:~$</span> <span class="cmd">lsusb | grep -i 0c47</span>
+Bus 003 Device 003: ID <span class="key">0c47:8007 TECAN AUSTRIA BIO</span>
+<span class="dim">lab@starpi:~$</span> <span class="cmd">python 01_tecan_probe_usb.py</span>
+pyusb: found <span class="key">0c47:8007</span>
+  bus 3  address 3
+  manufacturer: <span class="key">TECAN AUSTRIA</span>
+  product:      <span class="key">BIO</span>
+  interface 0: kernel driver active = <span class="key">False</span>
+    endpoint 0x81 IN  &middot;  endpoint 0x02 OUT</div>
+
+    <div class="grid">
+      <div class="cell"><div class="label">Device</div><div class="val">Tecan Austria &ldquo;BIO&rdquo;</div></div>
+      <div class="cell"><div class="label">USB identity</div><div class="val mono">0c47:8007</div></div>
+      <div class="cell"><div class="label">Bus / Address</div><div class="val mono">003 / 003</div></div>
+      <div class="cell"><div class="label">Bulk endpoints</div><div class="val mono">0x81 IN &middot; 0x02 OUT</div></div>
+      <div class="cell"><div class="label">Host</div><div class="val">starpi &middot; Raspberry Pi</div></div>
+      <div class="cell"><div class="label">Stack</div><div class="val">PyLabRobot 0.2.1 &middot; pyusb / libusb</div></div>
+    </div>
+
+    <div class="checks">
+      <div class="check"><span class="tick">&#10003;</span> USB enumerated &amp; identified</div>
+      <div class="check"><span class="tick">&#10003;</span> Backend offline gate 24 / 24</div>
+      <div class="check"><span class="tick">&#10003;</span> TecanInfinite200Pro loaded</div>
+    </div>
+
+    <div class="footer">
+      <div class="foot-note">
+        <b>2026-07-11</b> &middot; Read-only verification: the USB link and device identity are confirmed on the Pi and the PyLabRobot backend loads. No instrument motion performed yet &mdash; bring-up (<b>INIT&nbsp;FORCE</b>) is the next step.
+      </div>
+      <div class="mark">
+        <svg width="40" height="40" viewBox="0 0 46 46" fill="none" aria-hidden="true">
+          <circle cx="18" cy="23" r="13" stroke="var(--sage)" stroke-width="2.4"/>
+          <circle cx="28" cy="23" r="13" stroke="var(--sage)" stroke-width="2.4"/>
+        </svg>
+        <span class="name">di-omics</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

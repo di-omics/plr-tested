@@ -51,9 +51,10 @@ dropping the denaturation setpoint to 97 C or softening the overshoot into that 
 protocol as written specifies 98 C, so the program keeps 98 C and this stays a documented
 operator choice, not a silent change.
 
-The Tecan reader is a plan, not a validated integration: nothing in `tecan-infinite/` has
-touched an instrument. Its status table, its USB link, and its script ladder live in
-`tecan-infinite/README.md`. The sections below are the ODTC's.
+The Tecan reader had its first contact on 2026-07-11: plugged into the Pi, identified over
+USB read-only, backend brought up in an isolated venv (`connection_verified.html` captures
+it). Nothing that moves the stage has run. Its status table, its USB link, and its script
+ladder live in `tecan-infinite/README.md`. The sections below are the ODTC's.
 
 ## The scripts, in the order you run them
 
