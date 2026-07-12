@@ -1,4 +1,4 @@
-# edit-confirmation-package
+# gene-edit
 
 Confirm a gene edit from a single cell or embryo, the same way in any lab.
 
@@ -47,7 +47,7 @@ script.
 ## Quickstart
 
 ```bash
-# from packages/edit-confirmation-package/
+# from packages/gene-edit/
 pip install -e .            # core is stdlib-only; add .[yaml] for YAML manifests, .[test] for pytest
 
 edit-confirm doctor                          # can this lab run it, and what is missing

@@ -19,7 +19,7 @@ The simulation and all the QC math are standard-library Python. Nothing to insta
 
 ```bash
 git clone https://github.com/di-omics/plr-tested
-cd plr-tested/packages/edit-confirmation-package
+cd plr-tested/packages/gene-edit
 python3 -m edit_confirmation demo
 ```
 

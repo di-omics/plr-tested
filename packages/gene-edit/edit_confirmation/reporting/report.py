@@ -235,5 +235,5 @@ def render_dossier(outcome: RunOutcome) -> str:
   <div class="chips">{guard_chips}</div>
   {blocking}
   <div class="flow">{''.join(flow)}</div>
-  <div class="foot">di-omics &#183; plr-tested &#183; edit-confirmation-package</div>
+  <div class="foot">di-omics &#183; plr-tested &#183; gene-edit</div>
 </div></body></html>"""
