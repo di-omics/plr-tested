@@ -17,9 +17,19 @@ PATCH LOG
               (slot-in-carrier frame, base z ~86). Reusing the forward drop offsets
               here therefore landed 3.03 mm low (exactly the plate anchor). Fix:
               shift the ODTC SLOT here too, so the pickup offsets mean the same as
-              the forward drop offsets. Defaults now mirror the forward drop
-              (x12 / y54.5 / z17) = pick up from where the plate was dropped.
-              return-drop onto rail35 pos0 keeps the proven 8.5.
+              the forward drop offsets.
+  2026-07-12  Re-based on the now hardware-confirmed forward drop (x2 / y36.5 / z12
+              at rail20 pos1). The offset catalog over the proven HHS and mag
+              round trips found the return rule: the pickup grips the SAME x/y as
+              the drop, and BELOW it in z (HHS grips ~11 mm below its z17 drop; the
+              mag rack ~1 mm below). x/y here are set to mirror the confirmed drop
+              (x2 / y36.5). z is dropped to 9.0 as a STARTING estimate below the
+              z12 drop; the ODTC nest is shallow (the drop z was lowered to 12 so
+              the plate stops flying in), so the grip-below-drop is expected small.
+              THE RETURN Z IS NOT YET HARDWARE-CONFIRMED: bracket ~8-11 in 1-2 mm
+              steps with a sacrificial plate. Do NOT grip at drop height (z12/z17);
+              that sits above the plate rim and trips NoElementError('Plate not
+              found'). return-drop onto rail35 pos0 keeps the proven 8.5.
 
 SAFETY
   - --mode deck assigns the deck and prints coordinates only. No movement.
@@ -62,16 +72,16 @@ async def main():
         help="Carrier position 0..4 for the ODTC nest.",
     )
     parser.add_argument(
-        "--odtc-pickup-x-offset-mm", type=float, default=12.0,
-        help="Slot-frame offset; mirror of the forward drop (pick up where you dropped). Tune in small steps.",
+        "--odtc-pickup-x-offset-mm", type=float, default=2.0,
+        help="Slot-frame; mirrors the confirmed forward drop x (proven rule: pick up at the drop x/y).",
     )
     parser.add_argument(
-        "--odtc-pickup-y-offset-mm", type=float, default=54.5,
-        help="Slot-frame offset; mirror of the forward drop (pick up where you dropped). Tune in small steps.",
+        "--odtc-pickup-y-offset-mm", type=float, default=36.5,
+        help="Slot-frame; mirrors the confirmed forward drop y (proven rule: pick up at the drop x/y).",
     )
     parser.add_argument(
-        "--odtc-pickup-z-offset-mm", type=float, default=17.0,
-        help="Slot-frame offset; mirror of the forward drop (pick up where you dropped). Tune in small steps.",
+        "--odtc-pickup-z-offset-mm", type=float, default=9.0,
+        help="Slot-frame; below the z12 drop to grip under the rim. NOT yet hardware-confirmed; bracket 8-11.",
     )
     parser.add_argument(
         "--return-drop-z-offset-mm", type=float, default=8.5,

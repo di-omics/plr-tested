@@ -21,6 +21,16 @@ PATCH LOG
                   than a raw 0.0 carrier coordinate) and get fine-tuned in small
                   steps for the ODTC with a sacrificial plate and eyes on the deck.
                 - added park_iswap() before stop, matching the proven movers.
+  2026-07-12  HARDWARE-CONFIRMED forward drop for the rail20 pos1 ODTC nest.
+              Tuned live on the instrument with a sacrificial plate, operator watching:
+              from the HHS-derived start (x12/y54.5/z17) the drop was walked
+                - 10 mm left  (x 12.0 -> 2.0)
+                - 18 mm down  (y 54.5 -> 36.5)
+                -  5 mm lower (z 17.0 -> 12.0, it was releasing from the air)
+              landing the plate cleanly seated in the nest at carrier (6, 141, 98.15).
+              These are now the defaults. pickup-z stays 5.0. Confirmed with
+              --odtc-rail 20 --odtc-position 1; three clean forward reps.
+              (Return leg is not yet hardware-confirmed; see the return script.)
 
 SAFETY
   - --mode deck assigns the deck and prints coordinates only. No movement.
@@ -71,16 +81,16 @@ async def main():
         help="Grip height offset at rail35 pos0. Validated value is 5.0 (pickupZ5 mover).",
     )
     parser.add_argument(
-        "--drop-x-offset-mm", type=float, default=12.0,
-        help="HHS-proven nest offset (rail27). Starting point for the ODTC nest; tune in small steps.",
+        "--drop-x-offset-mm", type=float, default=2.0,
+        help="Hardware-confirmed for the rail20 pos1 ODTC nest (2026-07-12).",
     )
     parser.add_argument(
-        "--drop-y-offset-mm", type=float, default=54.5,
-        help="HHS-proven nest offset (rail27). Starting point for the ODTC nest; tune in small steps.",
+        "--drop-y-offset-mm", type=float, default=36.5,
+        help="Hardware-confirmed for the rail20 pos1 ODTC nest (2026-07-12).",
     )
     parser.add_argument(
-        "--drop-z-offset-mm", type=float, default=17.0,
-        help="HHS-proven nest offset (rail27). Starting point for the ODTC nest; tune in small steps.",
+        "--drop-z-offset-mm", type=float, default=12.0,
+        help="Hardware-confirmed for the rail20 pos1 ODTC nest (2026-07-12).",
     )
     parser.add_argument("--confirm", default="")
     args = parser.parse_args()
@@ -124,9 +134,9 @@ async def main():
         print(f"  pickup plate: rail{PICKUP_RAIL} pos{PICKUP_POSITION}")
         print(f"  ODTC nest:    rail{args.odtc_rail} pos{args.odtc_position}")
         print(f"  pickup Z offset: +{args.pickup_z_offset_mm} mm")
-        print(f"  drop X offset:   +{args.drop_x_offset_mm} mm  (HHS-derived start)")
-        print(f"  drop Y offset:   +{args.drop_y_offset_mm} mm  (HHS-derived start)")
-        print(f"  drop Z offset:   +{args.drop_z_offset_mm} mm  (HHS-derived start)")
+        print(f"  drop X offset:   +{args.drop_x_offset_mm} mm  (confirmed rail20 pos1)")
+        print(f"  drop Y offset:   +{args.drop_y_offset_mm} mm  (confirmed rail20 pos1)")
+        print(f"  drop Z offset:   +{args.drop_z_offset_mm} mm  (confirmed rail20 pos1)")
         print("")
         print(f"  pickup base location:    {pickup_base}")
         print(f"  pickup shifted location: {pickup_plate.location}")
