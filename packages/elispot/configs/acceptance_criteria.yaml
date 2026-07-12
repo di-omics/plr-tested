@@ -1,0 +1,46 @@
+# acceptance_criteria.yaml - the QC rubric, in one auditable place.
+#
+# These are the cutoffs every gate turns on. The defaults ARE the standard; a run that
+# changes one is making a visible, recorded choice (the dossier shows the value in force).
+# A partner site should run the defaults until it has a measured reason to change one.
+#
+# To override per run, put an `acceptance:` block in the run manifest with any of these keys.
+# The package's built-in defaults (elispot/config.py AcceptanceCriteria) match this file.
+
+# --- Gate 0: washer / liquid-handler qualification (Rhodamine B) --------------
+# Dispense CV must be under this at every qualified volume, or the instrument is not allowed
+# to touch the plate. This is the "calibrate the machine first" rule.
+lh_cv_max_percent: 5.0
+# The volumes qualified span the ELISpot range: the 15 uL ethanol pre-wet at the low end,
+# reagent adds at 50 to 150 uL, the 200 uL wash at the top.
+lh_qualified_volumes_ul: [15.0, 50.0, 100.0, 150.0, 200.0]
+# Aspiration completeness: the washer must draw a well down to near-dry. A well left wet
+# carries reagent into the next step and prints as background. This is the biggest
+# controllable source of ELISpot noise.
+residual_volume_max_ul: 10.0
+
+# --- Gate 1: plate preparation -----------------------------------------------
+# The membrane must wet out evenly under the ethanol pre-wet, or it coats and develops
+# unevenly and no downstream QC recovers from it.
+prewet_cv_max_percent: 8.0
+
+# --- Gate 2: readout validity and response calling ---------------------------
+# TUNABLE. Plate-validity bounds: the mitogen positive control must fire above the floor
+# (a control that does not fire means dead cells or a broken detection chain -> the whole
+# plate is void), and the medium-only background must sit under the ceiling (global high
+# background voids the plate). Set both from your own assay and verify.
+neg_ctrl_background_max_sfu: 25.0
+pos_ctrl_min_sfu: 100.0
+# Replicate scatter above this makes a group's mean untrustworthy; the group is dropped.
+replicate_cv_max_percent: 30.0
+# At/above this a well is too-numerous-to-count: a qualitative positive, not a quantitative one.
+saturation_sfu: 600.0
+# The response call (the "is this real" rule): a TEST antigen is positive if its mean net
+# spots clear BOTH a floor and a fold-over-background. Conservative empirical rule; the
+# distribution-free resampling method (Moodie 2010) is the gold-standard upgrade.
+response_min_net_sfu: 10.0
+response_min_stimulation_index: 2.0
+
+# --- Reporting ---------------------------------------------------------------
+# Spot counts are normalized to this many input cells for cross-well / cross-site comparison.
+report_per_cells: 1000000
