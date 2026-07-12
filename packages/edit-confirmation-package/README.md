@@ -50,10 +50,15 @@ script.
 # from packages/edit-confirmation-package/
 pip install -e .            # core is stdlib-only; add .[yaml] for YAML manifests, .[test] for pytest
 
+edit-confirm doctor                          # can this lab run it, and what is missing
 edit-confirm demo                            # run the bundled example in simulation
 edit-confirm plan  configs/example_run.yaml  # validate a manifest, print the resolved plan + rubric
 edit-confirm run   configs/example_run.yaml  # run it, write the dossier
 ```
+
+Porting to a new lab: `edit-confirm doctor` (compute tier, zero setup) and
+`edit-confirm doctor --hardware` check every requirement and print the exact fix for each
+gap. [SETUP.md](SETUP.md) is the from-clone-to-running checklist behind those checks.
 
 `run` writes a run folder: `dossier.html` (the audit artifact), `outcome.json` (machine
 readable), and `samplesheet.csv` (sequencing). Also runnable as
