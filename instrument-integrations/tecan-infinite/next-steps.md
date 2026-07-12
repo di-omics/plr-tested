@@ -245,3 +245,38 @@ Handoff risk, and why transfer-first is right:
   reader is rigidly fixtured (bolt / dowel) so the taught position does not drift.
 
 Sources: Tecan IFU 30125943; PyLabRobot STAR resource definitions; Hamilton iSWAP manual.
+
+---
+
+## Upstream contribution: fix PyLabRobot issue #1093 (2026-07-12)
+
+PyLabRobot upstream already ships a Tecan Infinite backend at
+`pylabrobot/plate_reading/tecan/infinite_backend.py` -> `ExperimentalTecanInfinite200ProBackend`,
+in the classic `PlateReaderBackend` style (setup / stop / open / close / read_absorbance /
+read_fluorescence / read_luminescence). The di-omics fork is a REFACTOR of that same 1344-line
+file, split into `tecan/infinite/{driver,absorbance_backend,fluorescence_backend,
+luminescence_backend,protocol}.py` under the fork's capabilities/device architecture. Same USB
+protocol, same SCANX scan flow, same timeouts (packet_read_timeout=3, read_timeout=30, 512-byte
+chunks). So the fork does not already carry a fix - it is the same read logic, reorganized.
+
+Open upstream issue #1093, "Tecan Infinite M200 Pro plate reader don't fully work"
+(reporter isaacguerreir; maintainer rickwierenga engaged): on an M200 Pro, `setup()` and
+`close()` work, but `read_absorbance()` times out around the first `ABSOLUTE MTP,...` /
+`SCANX ...` step (the plate-move / scan). That is the exact read path this integration exercises,
+and it is unsolved. This is the contribution.
+
+Our hardware validation IS step one of the fix:
+
+- Tomorrow, bring up the reader and run `read_absorbance` on the Infinite 200 PRO / Nano+. If it
+  reads, we have a working reference and can help diagnose why the M200 differs; if it times out
+  the same way, we debug the scan-response flow on real hardware, and that fix is what #1093 needs.
+- Likely fault location: `_await_measurements` reads 512-byte chunks waiting for the binary
+  measurement frames after `SCANX` (which is sent with `read_response=False`); if the reader does
+  not stream frames as expected, that loop hits the timeout. Instrument this first.
+- Path: comment on #1093 with our setup (Raspberry Pi / Linux, no kernel-driver detach needed,
+  the read result) and PR the fix into upstream's CLASSIC
+  `plate_reading/tecan/infinite_backend.py` - not the fork's capabilities refactor, which is a
+  separate, larger conversation given upstream's own in-progress "v1" Device/Driver/Backend
+  migration (PRs #982, #984; #1124 merged).
+- Etiquette: PLR merges most PRs within a day; engage on the issue/forum first, then follow
+  CONTRIBUTING (ruff pre-commit, tests in `infinite_backend_tests.py`, a CHANGELOG entry).
