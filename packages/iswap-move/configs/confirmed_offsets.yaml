@@ -1,0 +1,31 @@
+# confirmed_offsets.yaml - the iSWAP lid-move geometry, as walked in on the instrument.
+#
+# CONFIRMED on the instrument, 2026-07-12 (hamilton-star/starlab_live/test_iswap_lid_variable.py,
+# multiple clean successes, both directions). The offsets are slot- and lid-specific, NOT
+# global defaults. Encoded here so the package and an auditor read the same numbers.
+
+carrier: PLT_CAR_L5AC_A00      # five plate positions, 0..4
+
+lid_on:                         # move a lid FROM the park slot ONTO the work plate
+  src: { rail: 35, pos: 4, role: lid park }
+  dst: { rail: 35, pos: 0, role: work plate }
+
+de_lid:                         # move the lid OFF the work plate BACK to the park slot
+  src: { rail: 35, pos: 0, role: work plate }
+  dst: { rail: 35, pos: 4, role: lid park }
+
+offsets_mm:
+  pickup_z: 9.0                 # confirmed. move_lid computed grip + 9 mm
+  drop_z: 18.0                  # confirmed. move_lid computed placement + 18 mm
+  x: 0.0                        # move_lid computes x/y; left at 0
+  y: 0.0
+
+# Lesson, encoded as validation in core.py: a lid pickup driven too LOW crashes the
+# Z drive into the plate; too HIGH cleanly misses. Prefer a hair high. A pickup-z offset
+# below 0 is refused unless explicitly overridden while a person watches.
+
+still_to_teach:
+  odtc_internal: >
+    lidding/de-lidding a plate seated INSIDE the ODTC is a different geometry and is not
+    taught. Deck-to-deck lid moves (rail35 pos4 <-> pos0) are confirmed; the ODTC-internal
+    move is TODO.
