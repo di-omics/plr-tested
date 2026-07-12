@@ -32,6 +32,13 @@ PATCH LOG
               pickup is a 'Plate not found' on an empty slot). Offsets left at 0
               default; pass the confirmed values above (they are lid- and
               slot-specific, not a global default).
+  2026-07-12  DE-LID confirmed too. The reverse move rail35 pos0 -> pos4 lands
+              clean at the SAME offsets (pickup +9 / drop +18), first try. The
+              z-geometry is position-independent (same carrier and labware, only Y
+              changes and the script computes that), so lid-on (pos4 -> pos0) and
+              de-lid (pos0 -> pos4) are one recipe. Because each move's dest is the
+              other's source, the two chain into a hands-free lid <-> de-lid cycle
+              with no re-seating between reps.
 
 SAFETY
   - --mode deck assigns the deck and prints coordinates only. No movement.
