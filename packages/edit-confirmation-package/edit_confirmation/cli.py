@@ -23,6 +23,7 @@ import sys
 from typing import Optional
 
 from .config import RunMode
+from .doctor import Status, format_report, run_doctor
 from .manifest import ManifestError, load_run
 from .orchestrator import RunOutcome, RunStatus, run
 from .reporting.report import render_dossier
@@ -119,6 +120,15 @@ def cmd_plan(args) -> int:
     return 0
 
 
+def cmd_doctor(args) -> int:
+    checks = run_doctor(hardware=args.hardware)
+    if args.json:
+        print(json.dumps([c.to_dict() for c in checks], indent=2))
+    else:
+        print(format_report(checks, hardware=args.hardware))
+    return 0 if all(c.status is not Status.MISSING for c in checks) else 4
+
+
 def cmd_demo(args) -> int:
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     manifest = os.path.join(here, "configs", "example_run.yaml")
@@ -152,6 +162,12 @@ def build_parser() -> argparse.ArgumentParser:
     d = sub.add_parser("demo", help="run the bundled example in simulation")
     d.add_argument("--out", default="runs", help="output directory (default: runs)")
     d.set_defaults(func=cmd_demo)
+
+    doc = sub.add_parser("doctor", help="check whether this lab can run it, and what is missing")
+    doc.add_argument("--hardware", action="store_true",
+                     help="also check the hardware tier (PyLabRobot fork, instrument addresses, calibration)")
+    doc.add_argument("--json", action="store_true", help="machine-readable output")
+    doc.set_defaults(func=cmd_doctor)
     return p
 
 
