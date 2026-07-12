@@ -150,3 +150,39 @@ those numbers exist yet; they are bench measurements.
 1. `02_tecan_bringup.py --confirm i-am-watching` (INIT FORCE homes the stage), then `03` tray, then `04` absorbance on a known plate to judge `counts_per_mm`.
 2. Once `counts_per_mm` is trusted, `05` on the Rhodamine ladder: blank, gain sweep, focal sweep, read, check.
 3. Only after the reader reads correctly by hand: measure the drawer clearance, then start the iSWAP handoff geometry.
+
+---
+
+## Update 2026-07-12: the reader is too tall, so prove the transfer first
+
+Fit reality: a full-size Infinite does not drop onto the STAR deck. The specific clash is
+height (Z) - the drawer's plate-nest sits above the iSWAP's maximum lift, so the arm cannot
+reach up to it. The fix is a **drop / recess mount**: lower the reader below the deck plane
+until the drawer nest falls into the iSWAP's Z window. Size it as
+
+    drop = (drawer-nest height above the deck) - (iSWAP max lift height) + gripper clearance
+
+so the nest lands in the middle of the window, not at its ceiling. Two builds: recess the
+reader into a bench cutout, or hang it on a rigid lower shelf off the STAR frame. Rigid and
+kinematically located either way (locating pins / hard stops), so the tuned coordinate is
+repeatable. If the drop comes out impractically deep, fall back to a plate-transfer shuttle
+(arm places on a landing nest at reachable Z, a lift raises it into the drawer).
+
+The good tip that unblocks all of this: **you do not need the reader, or its fitting, on the
+deck to prove the plate move.** Decouple the transfer and test it standalone first, against a
+stand-in landing nest at the target coordinate. The reader inherits that coordinate later,
+once the recess sets the drawer's reachable X/Y/Z.
+
+The transfer-first test:
+
+- Dry plate move, no read: iSWAP picks a plate from a source deck position, places it on a
+  stand-in landing nest at the target, picks it back, returns. No reader, no optics.
+- What it proves: edge-grip on the plate, XY to target, pickup +Z clearance, drop Z onto the
+  nest, and repeatability (run it 3x, like the HHS stress test - that is what earns trust).
+- Low risk: it is a variant of the already-validated legs (rail35 pos0 to HHS with +5.0 mm
+  pickup; the drafted ODTC legs), so it is mostly geometry tuning. `--mode deck` first.
+- Target: either a stand-in nest at the future reader-drawer coordinate (so the transfer you
+  tune becomes the real handoff), or an existing deck nest just to rehearse the motion.
+- Script to write, in `hamilton-star/`: `test_iswap_plate_deck_to_landing_variable.py` plus
+  its return twin, with target rail / x / y / z / pickup-Z as CLI args (same pattern as the
+  existing `..._variable.py` legs), so the geometry is tuned live at the bench, not hardcoded.
