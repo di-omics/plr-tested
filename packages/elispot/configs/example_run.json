@@ -1,0 +1,32 @@
+{
+  "run_id": "ELI-2026-07-12-demo",
+  "operator": "di",
+  "mode": "simulation",
+  "cytokine": "IFN-gamma",
+  "precoated_plate": false,
+  "site": {
+    "name": "boston_bench",
+    "cells_per_well": 250000,
+    "wash_cycles": 5,
+    "wash_volume_ul": 200.0
+  },
+  "wells": [
+    { "well": "A1", "role": "neg_ctrl", "antigen": "medium" },
+    { "well": "B1", "role": "neg_ctrl", "antigen": "medium" },
+    { "well": "C1", "role": "neg_ctrl", "antigen": "medium" },
+    { "well": "D1", "role": "pos_ctrl", "antigen": "PHA" },
+    { "well": "E1", "role": "pos_ctrl", "antigen": "PHA" },
+    { "well": "F1", "role": "pos_ctrl", "antigen": "PHA" },
+    { "well": "G1", "role": "blank" },
+    { "well": "H1", "role": "blank" },
+    { "well": "A2", "role": "test", "antigen": "CEF" },
+    { "well": "B2", "role": "test", "antigen": "CEF" },
+    { "well": "C2", "role": "test", "antigen": "CEF" },
+    { "well": "D2", "role": "test", "antigen": "Gag_pool" },
+    { "well": "E2", "role": "test", "antigen": "Gag_pool" },
+    { "well": "F2", "role": "test", "antigen": "Gag_pool" },
+    { "well": "A3", "role": "test", "antigen": "CMV_pp65" },
+    { "well": "B3", "role": "test", "antigen": "CMV_pp65" },
+    { "well": "C3", "role": "test", "antigen": "CMV_pp65" }
+  ]
+}

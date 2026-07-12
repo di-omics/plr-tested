@@ -1,0 +1,52 @@
+# example_run.yaml - the sparse input a lab writes. Everything else is supplied by the
+# package's pinned defaults (reagent chain, QC cutoffs, site profile).
+#
+# Run it:   elispot run configs/example_run.yaml
+# or:       python -m elispot run configs/example_run.yaml
+
+run_id: ELI-2026-07-12-demo
+operator: di
+mode: simulation            # 'simulation' runs the whole flow with synthetic reads;
+                            # 'hardware' drives the washer/liquid handler/imager and refuses
+                            # to start until the membrane clearance and kit values are pinned.
+
+cytokine: IFN-gamma         # sets the capture / detection antibody pair
+precoated_plate: false      # true skips the on-deck coat step (kit ships a coated plate)
+
+# site: everything specific to the local washer, imager, and cell prep. Two labs running this
+# manifest differ here and nowhere else. aspiration_height_mm is left out on purpose: it must
+# be taught on the physical plate lot, and a hardware run stays blocked until it is.
+site:
+  name: boston_bench
+  cells_per_well: 250000
+  wash_cycles: 5
+  wash_volume_ul: 200.0
+  # aspiration_height_mm: 1.2     # teach this on your plate lot, then pin it here
+
+# The plate. Roles: test | pos_ctrl | neg_ctrl | blank. A scorable plate needs at least one
+# neg_ctrl (medium-only background), one pos_ctrl (mitogen), and one test well.
+wells:
+  # negative control (medium only) - the background everything is read against
+  - { well: A1, role: neg_ctrl, antigen: medium }
+  - { well: B1, role: neg_ctrl, antigen: medium }
+  - { well: C1, role: neg_ctrl, antigen: medium }
+  # positive control (mitogen) - assay validity
+  - { well: D1, role: pos_ctrl, antigen: PHA }
+  - { well: E1, role: pos_ctrl, antigen: PHA }
+  - { well: F1, role: pos_ctrl, antigen: PHA }
+  # no-cell blanks - watch for non-specific development
+  - { well: G1, role: blank }
+  - { well: H1, role: blank }
+  # test antigens, in triplicate
+  - { well: A2, role: test, antigen: CEF }
+  - { well: B2, role: test, antigen: CEF }
+  - { well: C2, role: test, antigen: CEF }
+  - { well: D2, role: test, antigen: Gag_pool }
+  - { well: E2, role: test, antigen: Gag_pool }
+  - { well: F2, role: test, antigen: Gag_pool }
+  - { well: A3, role: test, antigen: CMV_pp65 }
+  - { well: B3, role: test, antigen: CMV_pp65 }
+  - { well: C3, role: test, antigen: CMV_pp65 }
+
+# acceptance:                 # optional overrides; omit to use the shipped standard
+#   neg_ctrl_background_max_sfu: 20

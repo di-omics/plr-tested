@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ELISpot automation - a quick take</title>
+<style>
+  :root{
+    --paper:#ffffff; --wash:#f4f8f4; --line:#e6ede7; --line2:#d7e3d9;
+    --sage:#4e9d5e; --sage-deep:#3c8446; --ink:#1c2620; --muted:#5f7561;
+    --amber:#b5811f; --amber-wash:#fbf3df;
+    --sans:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#0f1511; --wash:#151d17; --line:#233026; --line2:#2c3b2f;
+      --sage:#6fc06d; --sage-deep:#8bd189; --ink:#e7f0e8; --muted:#9db3a1;
+      --amber:#e0ad55; --amber-wash:#2a2113;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62;
+    letter-spacing:.005em;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:56px clamp(20px,5vw,52px) 80px}
+  .eyebrow{text-transform:uppercase;font-weight:700;font-size:11px;letter-spacing:.32em;color:var(--sage);margin:0}
+  .hero{display:flex;align-items:flex-start;gap:22px;justify-content:space-between;flex-wrap:wrap}
+  h1{font-size:clamp(28px,5.2vw,44px);line-height:1.08;letter-spacing:-0.01em;margin:12px 0 8px;font-weight:800}
+  h1 .thin{color:var(--muted);font-weight:600}
+  .lede{font-size:clamp(15px,2.1vw,18px);color:var(--ink);max-width:60ch;margin:6px 0 0}
+  .vesica{flex:0 0 auto;margin-top:6px}
+  h2{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:var(--sage-deep);
+    margin:40px 0 14px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  p{margin:0 0 14px}
+  .sub{color:var(--muted)}
+  .rule{height:1px;background:var(--line);border:0;margin:26px 0}
+  .line{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:6px 0 4px}
+  .node{flex:1 1 150px;min-width:140px;border:1px solid var(--line2);border-radius:14px;background:var(--wash);
+    padding:14px 16px}
+  .node .k{text-transform:uppercase;font-size:10px;letter-spacing:.16em;color:var(--sage);font-weight:700}
+  .node .v{font-weight:700;margin-top:3px;font-size:15px}
+  .node .d{color:var(--muted);font-size:12.5px;margin-top:4px}
+  .arrow{align-self:center;color:var(--sage);font-weight:800;font-size:18px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 6px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--sage);font-weight:800}
+  td.cost{font-family:var(--mono);white-space:nowrap;color:var(--ink);font-variant-numeric:tabular-nums}
+  .tablewrap{overflow-x:auto}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:6px}
+  .card{border:1px solid var(--line);border-radius:16px;padding:18px 20px;background:var(--paper)}
+  .card.accent{border-left:4px solid var(--sage)}
+  .card h3{margin:0 0 6px;font-size:15px;font-weight:800;letter-spacing:-0.01em}
+  .card p{font-size:13.5px;color:var(--muted);margin:0}
+  .pill{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:700;font-size:14px;
+    color:#fff;background:var(--sage-deep);padding:11px 22px;border-radius:999px;letter-spacing:.01em}
+  .pill.ghost{color:var(--sage-deep);background:transparent;border:1px solid var(--line2)}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .note{border:1px solid var(--line2);background:var(--wash);border-radius:12px;padding:14px 17px;font-size:13.5px;
+    color:var(--muted);margin:14px 0}
+  .note b{color:var(--ink)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;padding:6px 13px;
+    border-radius:999px;border:1px solid var(--line2);color:var(--sage-deep);background:var(--wash)}
+  .mono{font-family:var(--mono);font-size:12.5px}
+  .foot{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;
+    flex-wrap:wrap;gap:8px;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.22em;color:var(--sage);opacity:.85}
+  ul.tight{margin:6px 0 0;padding-left:18px}
+  ul.tight li{margin:5px 0;font-size:13.5px;color:var(--muted)}
+  ul.tight li b{color:var(--ink);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <p class="eyebrow">ELISpot Automation &#183; Quick Take</p>
+      <h1>Make ELISpot consistent,<br><span class="thin">walkaway, and reproducible.</span></h1>
+      <p class="lede">The tedious, variability-prone steps of an ELISpot &#8212; many precise washes on a
+      delicate membrane, timed reagent adds, a development step stopped by eye &#8212; are exactly what
+      automation is good at. Automate them and the assay runs the same way whether it is on a bench in
+      Boston or a liquid handler at a partner site.</p>
+    </div>
+    <svg class="vesica" width="86" height="86" viewBox="0 0 86 86" aria-hidden="true">
+      <circle cx="34" cy="43" r="26" fill="none" stroke="var(--sage)" stroke-width="2"/>
+      <circle cx="52" cy="43" r="26" fill="none" stroke="var(--sage-deep)" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <div class="chips">
+    <span class="chip">Low standup cost</span>
+    <span class="chip">No vendor lock-in</span>
+    <span class="chip">Scriptable &amp; benchmarkable</span>
+    <span class="chip">Closed-loop</span>
+  </div>
+
+  <h2>The line</h2>
+  <p class="sub">Two ways in &#8212; a plate washer or a liquid handler, either works. The spot-counting
+  imager is the readout. Standup cost is low; the cost is the instrument.</p>
+  <div class="line">
+    <div class="node"><div class="k">Fluidics &#183; pick one</div><div class="v">Plate washer</div>
+      <div class="d">BioTek 405 TS or similar &#8212; the wash is the dominant source of ELISpot variability</div></div>
+    <div class="arrow">&#8212;</div>
+    <div class="node"><div class="k">or</div><div class="v">Liquid handler</div>
+      <div class="d">Opentrons OT-2 / Flex, or a Hamilton STAR &#8212; wash + every reagent add</div></div>
+    <div class="arrow">&#8594;</div>
+    <div class="node"><div class="k">Readout</div><div class="v">Spot imager</div>
+      <div class="d">Cytation / CTL ImmunoSpot / Mabtech IRIS &#8212; counts spot-forming units</div></div>
+  </div>
+
+  <h2>Equipment &amp; standup cost</h2>
+  <div class="tablewrap">
+  <table>
+    <tr><th>Role</th><th>Instrument</th><th>Indicative cost</th></tr>
+    <tr><td>Plate washer</td><td>Agilent BioTek 405 TS or similar</td><td class="cost">~$6k used &#8212; ~$25k new</td></tr>
+    <tr><td>Liquid handler</td><td>Opentrons OT-2</td><td class="cost">~$9k</td></tr>
+    <tr><td>Liquid handler</td><td>Opentrons Flex</td><td class="cost">from ~$26k</td></tr>
+    <tr><td>Readout</td><td>Spot imager (Cytation / CTL / Mabtech IRIS)</td><td class="cost">the instrument is the cost</td></tr>
+    <tr><td>Control</td><td>Raspberry Pi + PyLabRobot + agent harness</td><td class="cost">negligible</td></tr>
+  </table>
+  </div>
+  <p class="sub">To automate you need a washer <b>or</b> a liquid handler &#8212; not both. The imager is
+  the readout you already need. Everything else is a Pi.</p>
+
+  <h2>Why drive it from a Pi through an agent harness</h2>
+  <p>Every instrument here is PyLabRobot-compatible &#8212; open source. So instead of stitching together
+  siloed vendor software, the whole line runs from a Raspberry Pi through one agent harness. That buys
+  four things vendor UIs do not:</p>
+  <div class="cols">
+    <div class="card accent"><h3>Scriptable</h3><p>The protocol is code. It reads like code, diffs like
+      code, and an SME can write and change it &#8212; no macro recorder, no per-vendor scripting dialect.</p></div>
+    <div class="card accent"><h3>Closed-loop</h3><p>Returning data feeds the next run. Background,
+      saturation, and replicate scatter become concrete parameter deltas for the next plate, automatically.</p></div>
+    <div class="card accent"><h3>Benchmarkable</h3><p>The control software is small enough for a scientist
+      to read, test, and benchmark &#8212; the same code qualifies the instrument that runs the assay.</p></div>
+    <div class="card accent"><h3>No lock-in</h3><p>One harness spans washer, liquid handler, and imager.
+      Swap an instrument and the plan is unchanged; the site profile absorbs the difference.</p></div>
+  </div>
+
+  <h2>What "automated" actually buys: gated, never-invented, transferable</h2>
+  <p>Consistency is not just running the same steps &#8212; it is refusing to trust a run that should not
+  be trusted. This is built as a QC-gated pipeline, not a macro:</p>
+  <ul class="tight">
+    <li><b>Gate 0 &#8212; instrument readiness.</b> Before a well is coated, the washer's dispense CV and
+      aspiration residual are measured (a Rhodamine ladder). Not tight enough &#8212; the run stops before
+      a sample is spent. The wash is the single biggest controllable source of ELISpot noise.</li>
+    <li><b>Gate 2 &#8212; plate validity, then response calls.</b> The mitogen positive control must fire
+      and the background must be low, or the plate is void. Only then is each antigen scored against
+      background, with replicate-CV trust and a saturation flag.</li>
+    <li><b>Never invent.</b> Every reagent value carries its origin. The kit's antibody concentrations
+      and the substrate development endpoint are marked unresolved and a real run is <i>blocked</i> until
+      they are transcribed from the kit and set on the first plate.</li>
+    <li><b>Transferable &amp; remote.</b> The core is standard-library Python &#8212; a partner site runs a
+      full simulation and reads a dossier before an instrument is unboxed. A plate that develops overnight
+      resumes asynchronously once the imager has counted it.</li>
+  </ul>
+
+  <h2>Where the scientific judgment lives: the membrane</h2>
+  <p>Most of ELISpot automates cleanly. The catch is the PVDF membrane the assay is read off. An engineer
+  reading the protocol like code should stop at three steps and ask "does this survive a robot":</p>
+  <div class="note">
+    <b>1. Probe clearance</b> &#8212; a wash probe that rides too low scratches the membrane and prints a
+    line of false spots; the safe height is taught per plate lot, not guessed. &nbsp;<b>2. No jet</b> &#8212;
+    a center-jet dispense lifts the capture-antibody layer; reagents go down the side wall at capped flow.
+    &nbsp;<b>3. Wet-out discipline</b> &#8212; the membrane stays wet from coat to develop, and the wash
+    cannot be run harder "to be safe." These are guarded values in the code, not comments.
+  </div>
+
+  <h2>Status: honest about maturity</h2>
+  <p class="sub">This is a working, simulation-first package &#8212; 39 offline tests, the full flow runs
+  end to end and the gates demonstrably stop a bad run. No ELISpot instrument has been driven from it yet:
+  the washer and imager integrations are the next build, and each hardware command is recorded as a plan,
+  never as a claim that an instrument was driven. That distinction is the point.</p>
+
+  <div class="cta">
+    <a class="pill" href="../README.md">Read the package</a>
+    <a class="pill ghost" href="../configs/example_run.yaml">See a manifest</a>
+    <span class="mono sub">elispot demo &#183; elispot run --poor-washer</span>
+  </div>
+
+  <div class="foot">
+    <span>di-omics &#183; plr-tested &#183; elispot</span>
+    <span>PyLabRobot &#183; Raspberry Pi &#183; agent harness</span>
+  </div>
+
+</div>
+</body>
+</html>
