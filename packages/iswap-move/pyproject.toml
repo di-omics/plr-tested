@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iswap-move"
+version = "0.1.0"
+description = "iSWAP plate and lid moves for the Hamilton STAR, with the deck geometry confirmed on hardware"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "di-omics" }]
+license = { text = "MIT" }
+# Core is standard-library only. Driving the STAR needs the PyLabRobot fork on the Pi,
+# not here; this package plans and points at the validated script.
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+iswap-move = "iswap_move.cli:main"
+
+[tool.setuptools]
+packages = ["iswap_move"]
