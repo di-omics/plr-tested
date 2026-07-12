@@ -1,0 +1,15 @@
+{
+  "run_id": "EC-2026-07-11-embryo01",
+  "operator": "di",
+  "mode": "simulation",
+  "edit": { "type": "crispr_indel" },
+  "locus": { "name": "EMX1_site1", "amplicon_bp": 250, "edit_position_bp": 125 },
+  "samples": [
+    { "id": "embryo_01", "well": "A1" },
+    { "id": "embryo_02", "well": "B1" },
+    { "id": "embryo_03", "well": "C1" },
+    { "id": "pos_ctrl",  "well": "F1", "type": "pos_ctrl" },
+    { "id": "neg_ctrl",  "well": "G1", "type": "neg_ctrl" },
+    { "id": "ntc",       "well": "H1", "type": "ntc" }
+  ]
+}
