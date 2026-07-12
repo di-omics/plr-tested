@@ -186,3 +186,62 @@ The transfer-first test:
 - Script to write, in `hamilton-star/`: `test_iswap_plate_deck_to_landing_variable.py` plus
   its return twin, with target rail / x / y / z / pickup-Z as CLI args (same pattern as the
   existing `..._variable.py` legs), so the geometry is tuned live at the bench, not hardcoded.
+
+---
+
+## Verified specs and constraints (2026-07-12 research)
+
+From the official Tecan IFU (No. 30125943) and the PyLabRobot / Hamilton STAR resource
+definitions, adversarially verified. The two numbers that matter most are not published and
+must be measured on the instrument; they are called out.
+
+Reader (Infinite 200 PRO):
+
+- Footprint 425 W x 457 D x 253 H mm; 14.0 kg (F) / 15.8 kg (M). The injector/pump module is a
+  separate box (+250 x 156 x 155 mm, 3.4 kg) that sits beside the reader, off the handoff path.
+- The plate loads on an OPEN, flat, motorized plate carrier with a centering clamp, not an
+  enclosed drawer. Tecan states the reader "is robotic compatible"; the ejected carrier is the
+  designed automation handoff surface, and Tecan's own S-LAB Pro / RoMa / RGA arms load it the
+  same way an iSWAP would. External-gripper loading is a supported, proven pattern - good news.
+- Hard limits: max load on the carrier is 100 g, so the arm must fully release and be
+  support-free before it retracts (it cannot press down on the carrier); max plate height 23 mm
+  incl. lid; 10 cm rear ventilation clearance (do not box the back in against the STAR).
+
+iSWAP envelope:
+
+- Safe traverse height 145 mm above the deck (~245 mm above origin); absolute finger ceiling
+  ~173 mm above deck. So the carrier nest has to sit at or below ~145 mm above the deck to be
+  placed into cleanly.
+- The iSWAP reaches only ~90 mm off the chassis to the left (~20 mm right). That small off-deck
+  reach is exactly how Hamilton does "off-deck integration of third-party devices": the reader
+  body sits off-deck and only the ejected carrier reaches into that ~90 mm zone.
+- Deck rail model: rails at 22.5 mm pitch, x = 100 + (rail - 1) x 22.5 mm.
+
+What this changes about the plan:
+
+- It is not "on the deck". It is OFF-deck, at the deck EDGE, with the reader oriented so its
+  ejected carrier presents into the iSWAP's ~90 mm reach zone at <= 145 mm height. Best-practice
+  precedent agrees: readers with an "extended nest" (the Infinite is called out by name) are
+  placed off-deck with the arm accessing the plate at the edge. The recess / drop mount lowers
+  the reader so the carrier nest lands inside that box.
+- Recess sizing, now with the real ceiling:
+  `drop = (measured nest height above deck) - ~145 mm + gripper clearance`, aiming the nest
+  comfortably below 145 mm, not at the ceiling.
+- The two numbers to MEASURE (not published anywhere): the carrier extension distance out the
+  front, and the nest height above the benchtop. Measure them with the carrier out, or request a
+  Tecan mechanical / integration drawing from the Tecan knowledge portal (IFU 30125943).
+
+Handoff risk, and why transfer-first is right:
+
+- The closest STAR precedent (a VSpin centrifuge at the deck edge) shows the iSWAP CAN reach in
+  and place a plate directly, but practitioners flag direct-into-device placement as "more
+  dangerous" (hard to teach, poor visibility) and often use a dedicated landing station instead.
+  That is exactly why we prove the transfer to a stand-in landing nest first; a permanent landing
+  station between the arm and the carrier is the fallback if direct placement is twitchy.
+- The iSWAP has no collision awareness and can pick a joint configuration that crashes into
+  adjacent labware (tip carriers), so define keep-out zones and verify the path by hand.
+- Resolve plate orientation (portrait vs landscape, A1 corner) to match the carrier. The
+  carrier's chamfered edges self-center within the ~1.2 mm placement tolerance, but only if the
+  reader is rigidly fixtured (bolt / dowel) so the taught position does not drift.
+
+Sources: Tecan IFU 30125943; PyLabRobot STAR resource definitions; Hamilton iSWAP manual.
