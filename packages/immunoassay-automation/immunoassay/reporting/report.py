@@ -132,11 +132,17 @@ def _response_chip(r: dict) -> str:
 
 
 def _response_table(responses: list) -> str:
+    # Show the permutation p-value column only when a DFR method produced one.
+    show_p = any(r.get("p_value") is not None for r in responses)
     rows = []
     for r in responses:
         cls = "" if r.get("replicate_cv_ok", True) else "drop"
         cv = r.get("replicate_cv_percent")
         cv_txt = "n/a" if cv is None else f"{cv}%"
+        p_cell = ""
+        if show_p:
+            p = r.get("p_value")
+            p_cell = f"<td class='num'>{_esc('n/a' if p is None else p)}</td>"
         rows.append(
             f"<tr class='{cls}'><td>{_esc(r['antigen'])}</td>"
             f"<td class='num'>{_esc(r['test_mean_sfu'])}</td>"
@@ -145,11 +151,13 @@ def _response_table(responses: list) -> str:
             f"<td class='num'>{_esc(r['stimulation_index'])}</td>"
             f"<td class='num'>{_esc(r['net_per_million'])}</td>"
             f"<td class='num'>{_esc(cv_txt)}</td>"
+            f"{p_cell}"
             f"<td>{_response_chip(r)}</td></tr>"
         )
+    p_header = "<th>Perm p</th>" if show_p else ""
     return (
         "<div class='tablewrap'><table><tr><th>Antigen</th><th>Mean SFU</th><th>Bkg SFU</th>"
-        "<th>Net SFU</th><th>SI</th><th>Net/1e6</th><th>Rep CV</th><th>Call</th></tr>"
+        f"<th>Net SFU</th><th>SI</th><th>Net/1e6</th><th>Rep CV</th>{p_header}<th>Call</th></tr>"
         + "".join(rows) + "</table></div>"
     )
 

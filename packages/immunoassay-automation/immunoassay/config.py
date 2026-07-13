@@ -187,6 +187,12 @@ class AcceptanceCriteria:
     # gold-standard alternative and needs well-level replicate counts, noted in qc_math.
     response_min_net_sfu: float = 10.0
     response_min_stimulation_index: float = 2.0
+    # How the "is this real" call is made: "empirical" (net + fold, no dependency) or the
+    # distribution-free resampling methods "dfr2x" (permutation significance + the 2x fold,
+    # the Moodie 2010 recommended default) or "dfr" (significance alone). dfr_alpha is the
+    # permutation-test significance cutoff.
+    response_method: str = "empirical"
+    dfr_alpha: float = 0.05
 
     # Reporting normalization.
     report_per_cells: int = 1_000_000             # SFU normalized to this many input cells

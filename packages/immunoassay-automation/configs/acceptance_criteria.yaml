@@ -35,9 +35,17 @@ pos_ctrl_min_sfu: 100.0
 replicate_cv_max_percent: 30.0
 # At/above this a well is too-numerous-to-count: a qualitative positive, not a quantitative one.
 saturation_sfu: 600.0
-# The response call (the "is this real" rule): a TEST antigen is positive if its mean net
-# spots clear BOTH a floor and a fold-over-background. Conservative empirical rule; the
-# distribution-free resampling method (Moodie 2010) is the gold-standard upgrade.
+# The response call (the "is this real" rule). Two methods ship:
+#   empirical (default) - a TEST antigen is positive if its mean net spots clear BOTH a floor
+#                         (response_min_net_sfu) and a fold-over-background (the 2x rule). No
+#                         dependency, conservative, easy to audit.
+#   dfr2x / dfr         - distribution-free resampling (Moodie et al. 2010), the field's
+#                         gold standard: a one-sided permutation test that the antigen wells
+#                         are significantly greater than the negative-control wells at
+#                         dfr_alpha, plus the 2x fold for dfr2x (significance alone for dfr).
+#                         Uses the replicate well counts, not just their means.
+response_method: empirical            # empirical | dfr2x | dfr
+dfr_alpha: 0.05                        # permutation-test significance cutoff (dfr2x / dfr)
 response_min_net_sfu: 10.0
 response_min_stimulation_index: 2.0
 

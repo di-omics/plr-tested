@@ -53,6 +53,27 @@ def test_full_run_completes_and_calls_responses():
     assert resp["CMV_pp65"]["positive"] is False
 
 
+def test_dfr2x_method_runs_and_reports_p_values():
+    m = _manifest()
+    m["acceptance"] = {"response_method": "dfr2x"}
+    out = run(build_run(m), timestamp="test")
+    assert out.status is RunStatus.COMPLETED
+    resp = _responses(out)
+    # same calls as the empirical demo, now via the permutation test
+    assert resp["CEF"]["positive"] is True
+    assert resp["CMV_pp65"]["positive"] is False
+    # DFR carries a permutation p-value and names the method
+    assert resp["CEF"]["method"] == "dfr2x"
+    assert resp["CEF"]["p_value"] is not None
+
+
+def test_bad_response_method_is_rejected():
+    m = _manifest()
+    m["acceptance"] = {"response_method": "t_test"}
+    with pytest.raises(ManifestError):
+        build_run(m)
+
+
 def test_run_is_deterministic():
     a = _responses(_run())
     b = _responses(_run())

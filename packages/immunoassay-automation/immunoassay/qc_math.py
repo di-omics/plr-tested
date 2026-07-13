@@ -15,6 +15,7 @@ Two halves:
 
 from __future__ import annotations
 
+import itertools
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
@@ -167,6 +168,8 @@ class ResponseCall:
     positive: bool
     saturated: bool
     reason: str
+    method: str = "empirical"          # "empirical" | "dfr2x" | "dfr"
+    p_value: Optional[float] = None    # permutation p (DFR methods only)
 
     def to_dict(self) -> dict:
         si = self.stimulation_index
@@ -179,6 +182,8 @@ class ResponseCall:
             "positive": self.positive,
             "saturated": self.saturated,
             "reason": self.reason,
+            "method": self.method,
+            "p_value": (None if self.p_value is None else round(self.p_value, 4)),
         }
 
 
@@ -224,6 +229,90 @@ def call_response(antigen: str, test_counts: Sequence[float], background_counts:
     return ResponseCall(
         antigen=antigen, test_mean=tmean, background_mean=bmean, net=net,
         stimulation_index=si, positive=positive, saturated=saturated, reason=reason,
+    )
+
+
+def permutation_greater_p(test_counts: Sequence[float],
+                          background_counts: Sequence[float]) -> float:
+    """One-sided distribution-free (permutation) p-value that test > background.
+
+    The statistic is the difference in group means. The pooled well counts are re-split
+    every possible way into a test-sized group and a background-sized group; the p-value is
+    the fraction of those splits whose mean-difference is at least the observed one. This is
+    an exact permutation test (no random sampling): with the small replicate counts an
+    ELISpot actually has - triplicate is typical - the number of splits is tiny and can be
+    enumerated in full, which also makes the result deterministic.
+
+    A consequence worth stating plainly: with m test and n background wells the smallest
+    p-value reachable is 1 / C(m+n, m). Triplicate against triplicate floors at 1/20 = 0.05,
+    so a strong responder lands exactly at 0.05 and a marginal one cannot clear a stricter
+    alpha - which is a real property of the design, not of this code, and the reason more
+    replicate wells buy statistical power. Returns 1.0 if either group is empty.
+    """
+    test = list(test_counts)
+    bg = list(background_counts)
+    m, n = len(test), len(bg)
+    if m == 0 or n == 0:
+        return 1.0
+    pooled = test + bg
+    observed = mean(test) - mean(bg)
+
+    total = 0
+    at_least = 0
+    for combo in itertools.combinations(range(m + n), m):
+        chosen = [pooled[i] for i in combo]
+        rest = [pooled[i] for i in range(m + n) if i not in set(combo)]
+        stat = mean(chosen) - mean(rest)
+        total += 1
+        if stat >= observed - 1e-9:   # tolerance so the observed split counts itself
+            at_least += 1
+    return at_least / total
+
+
+def call_response_dfr(antigen: str, test_counts: Sequence[float],
+                      background_counts: Sequence[float], alpha: float,
+                      saturation_sfu: float, require_fold_2x: bool = True,
+                      min_stimulation_index: float = 2.0) -> ResponseCall:
+    """Distribution-free resampling response call, in the spirit of Moodie et al. 2010.
+
+    An antigen is positive if a one-sided permutation test shows its wells are significantly
+    greater than the negative-control wells (p <= alpha) AND, for the DFR(2x) variant, its
+    stimulation index is at least the fold cutoff. DFR(2x) - significance plus a two-fold
+    floor - is the method's recommended default; passing require_fold_2x=False gives the
+    plain DFR variant (significance alone). A group at or above saturation is flagged TNTC.
+
+    This is a faithful distribution-free permutation test with the 2x rule layered on, which
+    is the shape of the published method; the exact alpha and any multiplicity adjustment
+    for the number of antigens on the plate are the operator's to confirm against the
+    reference for their replicate design (see permutation_greater_p on the triplicate floor).
+    It is deliberately not claimed to be bit-identical to the paper's implementation.
+    """
+    tmean = mean(test_counts) if test_counts else 0.0
+    bmean = mean(background_counts) if background_counts else 0.0
+    net = net_spots(tmean, bmean)
+    si = stimulation_index(tmean, bmean)
+    saturated = tmean >= saturation_sfu
+    p = permutation_greater_p(test_counts, background_counts)
+
+    significant = p <= alpha
+    meets_fold = (si >= min_stimulation_index) if require_fold_2x else True
+    positive = significant and meets_fold and not saturated
+    method = "dfr2x" if require_fold_2x else "dfr"
+
+    if saturated:
+        reason = f"mean {tmean:.0f} SFU at/above saturation {saturation_sfu:.0f}; TNTC, not quantitative"
+    elif positive:
+        reason = f"permutation p {p:.3f} <= {alpha:.3f}" + (
+            f" and SI {si:.2f} >= {min_stimulation_index:.1f}" if require_fold_2x else "")
+    elif not significant:
+        reason = f"permutation p {p:.3f} > {alpha:.3f} (not distinguishable from background)"
+    else:
+        reason = f"significant (p {p:.3f}) but SI {si:.2f} below {min_stimulation_index:.1f}"
+
+    return ResponseCall(
+        antigen=antigen, test_mean=tmean, background_mean=bmean, net=net,
+        stimulation_index=si, positive=positive, saturated=saturated, reason=reason,
+        method=method, p_value=p,
     )
 
 

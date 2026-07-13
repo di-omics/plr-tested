@@ -10,6 +10,9 @@
     "wash_cycles": 5,
     "wash_volume_ul": 200.0
   },
+  "acceptance": {
+    "response_method": "dfr2x"
+  },
   "wells": [
     { "well": "A1", "role": "neg_ctrl", "antigen": "medium" },
     { "well": "B1", "role": "neg_ctrl", "antigen": "medium" },
