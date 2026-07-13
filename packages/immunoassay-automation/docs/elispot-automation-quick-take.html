@@ -148,7 +148,9 @@
       a sample is spent. The wash is the single biggest controllable source of ELISpot noise.</li>
     <li><b>Gate 2 &#8212; plate validity, then response calls.</b> The mitogen positive control must fire
       and the background must be low, or the plate is void. Only then is each antigen scored against
-      background, with replicate-CV trust and a saturation flag.</li>
+      background &#8212; by the conservative net-plus-fold rule, or the field's distribution-free
+      resampling test (a permutation test on the replicate wells, Moodie 2010) &#8212; with replicate-CV
+      trust and a saturation flag.</li>
     <li><b>Never invent.</b> Every reagent value carries its origin. The kit's antibody concentrations
       and the substrate development endpoint are marked unresolved and a real run is <i>blocked</i> until
       they are transcribed from the kit and set on the first plate.</li>

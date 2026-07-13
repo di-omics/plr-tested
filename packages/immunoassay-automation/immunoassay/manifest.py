@@ -195,6 +195,11 @@ def build_run(data: Dict[str, Any], output_dir: str = "runs") -> RunConfig:
 
     antigens = _derive_antigens(wells, _parse_declared_antigens(data.get("antigens")))
     acceptance = _parse_acceptance(data.get("acceptance"))
+    if acceptance.response_method not in ("empirical", "dfr2x", "dfr"):
+        raise ManifestError(
+            f"response_method {acceptance.response_method!r} is not one of: "
+            "empirical, dfr2x, dfr"
+        )
     site = _parse_site(data.get("site"))
 
     return RunConfig(

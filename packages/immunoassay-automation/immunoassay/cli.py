@@ -123,8 +123,13 @@ def cmd_plan(args) -> int:
     print(f"  Gate 2 positive control   >= {ac.pos_ctrl_min_sfu} SFU")
     print(f"  Gate 2 background         <= {ac.neg_ctrl_background_max_sfu} SFU")
     print(f"  Gate 2 replicate CV       <= {ac.replicate_cv_max_percent} %")
-    print(f"  response call             net >= {ac.response_min_net_sfu} SFU and "
-          f"SI >= {ac.response_min_stimulation_index}")
+    if ac.response_method in ("dfr2x", "dfr"):
+        fold = " and SI >= 2" if ac.response_method == "dfr2x" else ""
+        print(f"  response call             {ac.response_method}: permutation p <= "
+              f"{ac.dfr_alpha}{fold}")
+    else:
+        print(f"  response call             empirical: net >= {ac.response_min_net_sfu} SFU and "
+              f"SI >= {ac.response_min_stimulation_index}")
     return 0
 
 

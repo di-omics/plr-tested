@@ -180,8 +180,13 @@ Honesty about maturity is part of the point.
   TODO / CALIBRATE and block a hardware run until transcribed from the kit and set on the first
   plate. That is the never-invent rule, mechanical.
 - **Plate-validity and response-call cutoffs are TUNABLE defaults.** Set them from your own
-  assay; the empirical response rule ships as the conservative default, with the
-  distribution-free resampling method (Moodie 2010) as the intended upgrade.
+  assay. Two response-call methods ship and are selected by `response_method`: the empirical
+  net-plus-fold rule (the conservative default), and a distribution-free resampling test in
+  the spirit of Moodie et al. 2010 (`dfr2x` / `dfr`) - a one-sided permutation test on the
+  replicate well counts, plus the 2x fold. Both are standard-library and tested; the exact
+  alpha and any multiplicity adjustment for the number of antigens are the operator's to
+  confirm against the reference for their replicate design (see `permutation_greater_p` on the
+  triplicate p-value floor).
 
 ## Layout
 

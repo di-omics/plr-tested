@@ -48,5 +48,8 @@ wells:
   - { well: B3, role: test, antigen: CMV_pp65 }
   - { well: C3, role: test, antigen: CMV_pp65 }
 
-# acceptance:                 # optional overrides; omit to use the shipped standard
-#   neg_ctrl_background_max_sfu: 20
+acceptance:
+  response_method: dfr2x      # distribution-free resampling (Moodie 2010): a permutation test
+                              # plus the 2x fold. Omit to use the shipped default ("empirical",
+                              # net + fold). "dfr" is significance alone.
+  # neg_ctrl_background_max_sfu: 20

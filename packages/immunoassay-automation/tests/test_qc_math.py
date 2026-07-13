@@ -6,12 +6,14 @@ import pytest
 
 from immunoassay.qc_math import (
     call_response,
+    call_response_dfr,
     cv_percent,
     cv_percent_or_none,
     linear_fit,
     mean,
     net_spots,
     normalize_per_cells,
+    permutation_greater_p,
     stdev_sample,
     stimulation_index,
 )
@@ -92,6 +94,52 @@ def test_response_saturated_is_flagged_not_quantitative():
     assert call.saturated is True
     assert call.positive is False   # a saturated group is not a trustworthy quantitative positive
     assert "TNTC" in call.reason
+
+
+def test_permutation_p_triplicate_floor_is_one_in_twenty():
+    # A strong responder: the observed split is the single most extreme of C(6,3)=20.
+    p = permutation_greater_p([148, 155, 165], [11, 3, 9])
+    assert p == pytest.approx(1 / 20)
+
+
+def test_permutation_p_no_separation_is_large():
+    p = permutation_greater_p([9, 8, 10], [8, 7, 9])
+    assert p > 0.1
+
+
+def test_permutation_p_empty_group_is_one():
+    assert permutation_greater_p([], [1, 2, 3]) == 1.0
+
+
+def test_dfr2x_positive_for_strong_responder():
+    call = call_response_dfr("CEF", [148, 155, 165], [11, 3, 9],
+                             alpha=0.05, saturation_sfu=600)
+    assert call.positive is True
+    assert call.method == "dfr2x"
+    assert call.p_value == pytest.approx(1 / 20)
+
+
+def test_dfr2x_negative_when_fold_below_two_even_if_significant():
+    # Significant separation (p <= alpha) but SI < 2: DFR(2x) still says no.
+    call = call_response_dfr("marginal", [14, 15, 12], [8, 7, 9],
+                             alpha=0.05, saturation_sfu=600)
+    assert call.p_value <= 0.05
+    assert call.stimulation_index < 2
+    assert call.positive is False
+
+
+def test_plain_dfr_drops_the_fold_requirement():
+    call = call_response_dfr("marginal", [14, 15, 12], [8, 7, 9],
+                             alpha=0.05, saturation_sfu=600, require_fold_2x=False)
+    assert call.method == "dfr"
+    assert call.positive is True   # significance alone is enough for plain DFR
+
+
+def test_dfr_flags_saturation():
+    call = call_response_dfr("PHA", [650, 660, 640], [8, 7, 9],
+                             alpha=0.05, saturation_sfu=600)
+    assert call.saturated is True
+    assert call.positive is False
 
 
 def test_normalize_per_cells():

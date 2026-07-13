@@ -13,9 +13,10 @@ logic:
      there is nothing worth reporting off an invalid plate.
 
   2. Response calling (per antigen, PROCEED_SUBSET on failure). For a valid plate, each test
-     antigen group is scored against the negative-control background with the empirical rule
-     (net spots over a floor AND stimulation index over a fold), and its replicate CV decides
-     whether the mean is trustworthy. A group whose replicates scatter past the CV cutoff is
+     antigen group is scored against the negative-control background by the configured method
+     (acceptance.response_method): the empirical net-plus-fold rule, or the distribution-free
+     resampling permutation test (dfr2x / dfr). Its replicate CV decides whether the mean is
+     trustworthy. A group whose replicates scatter past the CV cutoff is
      dropped from the summary (its mean cannot be relied on); a group at or above saturation is
      kept but flagged TNTC, a qualitative positive that is not quantitative.
 
@@ -29,7 +30,13 @@ from typing import Dict, List
 
 from ..config import WellRole
 from ..gates import SampleVerdict, check, evaluate_per_sample
-from ..qc_math import call_response, cv_percent_or_none, mean, normalize_per_cells
+from ..qc_math import (
+    call_response,
+    call_response_dfr,
+    cv_percent_or_none,
+    mean,
+    normalize_per_cells,
+)
 from ..simulation import GOOD_PLATE, PlateBiology, simulate_well_sfu
 from .base import Stage, StageContext, StageResult, StageStatus
 
@@ -79,12 +86,21 @@ class Readout(Stage):
         for antigen, wells in groups.items():
             gcounts = [counts[w.address] for w in wells]
             cells = cfg.cells_for(wells[0])
-            call = call_response(
-                antigen, gcounts, neg_counts,
-                min_net_sfu=acc.response_min_net_sfu,
-                min_stimulation_index=acc.response_min_stimulation_index,
-                saturation_sfu=acc.saturation_sfu,
-            )
+            if acc.response_method in ("dfr2x", "dfr"):
+                call = call_response_dfr(
+                    antigen, gcounts, neg_counts,
+                    alpha=acc.dfr_alpha,
+                    saturation_sfu=acc.saturation_sfu,
+                    require_fold_2x=(acc.response_method == "dfr2x"),
+                    min_stimulation_index=acc.response_min_stimulation_index,
+                )
+            else:
+                call = call_response(
+                    antigen, gcounts, neg_counts,
+                    min_net_sfu=acc.response_min_net_sfu,
+                    min_stimulation_index=acc.response_min_stimulation_index,
+                    saturation_sfu=acc.saturation_sfu,
+                )
             rep_cv = cv_percent_or_none(gcounts)
             cv_crit = acc.replicate_cv_criterion(antigen)
             cv_ok = rep_cv is None or cv_crit.check(rep_cv)

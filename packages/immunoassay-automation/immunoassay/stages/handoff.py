@@ -77,13 +77,15 @@ def _results_csv(responses: List[dict]) -> str:
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["antigen", "n_wells", "wells", "mean_sfu", "background_sfu", "net_sfu",
-                "stimulation_index", "net_per_million", "positive", "saturated",
-                "replicate_cv_percent", "replicate_cv_ok"])
+                "stimulation_index", "net_per_million", "method", "p_value", "positive",
+                "saturated", "replicate_cv_percent", "replicate_cv_ok"])
     for r in responses:
         w.writerow([
             r["antigen"], r["n_wells"], " ".join(r["wells"]),
             r["test_mean_sfu"], r["background_mean_sfu"], r["net_sfu"],
             r["stimulation_index"], r["net_per_million"],
+            r.get("method", "empirical"),
+            ("" if r.get("p_value") is None else r["p_value"]),
             "yes" if r["positive"] else "no",
             "yes" if r["saturated"] else "no",
             ("" if r["replicate_cv_percent"] is None else r["replicate_cv_percent"]),
