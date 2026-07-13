@@ -80,8 +80,8 @@ async def main():
         help="Slot-frame; mirrors the confirmed forward drop y (proven rule: pick up at the drop x/y).",
     )
     parser.add_argument(
-        "--odtc-pickup-z-offset-mm", type=float, default=9.0,
-        help="Slot-frame; below the z12 drop to grip under the rim. NOT yet hardware-confirmed; bracket 8-11.",
+        "--odtc-pickup-z-offset-mm", type=float, default=0.0,
+        help="Slot-frame. HARDWARE-CONFIRMED 2026-07-12: z0 grips. The plate settles ~9 mm deep in the ODTC nest (z11 and z9 whiffed high, clean no-dive), so grab low at z0. Operator later asked for z1.5; NOT yet grip-tested.",
     )
     parser.add_argument(
         "--return-drop-z-offset-mm", type=float, default=8.5,
