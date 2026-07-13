@@ -1,8 +1,8 @@
 # example_run.yaml - the sparse input a lab writes. Everything else is supplied by the
 # package's pinned defaults (reagent chain, QC cutoffs, site profile).
 #
-# Run it:   elispot run configs/example_run.yaml
-# or:       python -m elispot run configs/example_run.yaml
+# Run it:   immunoassay run configs/example_run.yaml
+# or:       python -m immunoassay run configs/example_run.yaml
 
 run_id: ELI-2026-07-12-demo
 operator: di
