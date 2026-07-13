@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "elispot"
+name = "immunoassay"
 version = "0.1.0"
 description = "QC-gated ELISpot automation across a plate washer, liquid handler, and spot imager, standardized from sparse input and portable across labs"
 readme = "README.md"
@@ -20,13 +20,13 @@ yaml = ["pyyaml>=5.4"]
 test = ["pytest>=7"]
 
 [project.scripts]
-elispot = "elispot.cli:main"
+immunoassay = "immunoassay.cli:main"
 
 [tool.setuptools]
 packages = [
-    "elispot",
-    "elispot.reagents",
-    "elispot.instruments",
-    "elispot.stages",
-    "elispot.reporting",
+    "immunoassay",
+    "immunoassay.reagents",
+    "immunoassay.instruments",
+    "immunoassay.stages",
+    "immunoassay.reporting",
 ]

@@ -1,12 +1,12 @@
 """
-elispot - a QC-gated ELISpot automation package.
+immunoassay - a QC-gated ELISpot automation package.
 
 Sparse input (which cytokine, which wells hold which antigen, simulation or hardware) in; a
 qualified, gated, auditable run out, driven across a plate washer, a liquid handler, and a
 spot imager from a Raspberry Pi through an agent harness. The public surface is small on
 purpose:
 
-    from elispot import load_run, run
+    from immunoassay import load_run, run
     outcome = run(load_run("configs/example_run.yaml"))
 
 See README.md for the flow and the gates.

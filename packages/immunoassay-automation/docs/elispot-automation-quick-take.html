@@ -96,14 +96,15 @@
   </div>
 
   <h2>The line</h2>
-  <p class="sub">Two ways in &#8212; a plate washer or a liquid handler, either works. The spot-counting
-  imager is the readout. Standup cost is low; the cost is the instrument.</p>
+  <p class="sub">The reference line: a BioTek EL406 owns the fluidics, an Opentrons Flex owns the precise
+  adds, and the spot imager is the readout. Standup cost is low; the cost is the instrument.</p>
   <div class="line">
-    <div class="node"><div class="k">Fluidics &#183; pick one</div><div class="v">Plate washer</div>
-      <div class="d">BioTek 405 TS or similar &#8212; the wash is the dominant source of ELISpot variability</div></div>
-    <div class="arrow">&#8212;</div>
-    <div class="node"><div class="k">or</div><div class="v">Liquid handler</div>
-      <div class="d">Opentrons OT-2 / Flex, or a Hamilton STAR &#8212; wash + every reagent add</div></div>
+    <div class="node"><div class="k">Fluidics</div><div class="v">BioTek EL406</div>
+      <div class="d">Washer + bulk dispenser &#8212; runs the washes (the dominant source of ELISpot
+      variability) and the qualification / bulk dispenses</div></div>
+    <div class="arrow">+</div>
+    <div class="node"><div class="k">Precise adds</div><div class="v">Opentrons Flex</div>
+      <div class="d">Cells + antibodies + conjugate + substrate, gentle low-flow down the side wall</div></div>
     <div class="arrow">&#8594;</div>
     <div class="node"><div class="k">Readout</div><div class="v">Spot imager</div>
       <div class="d">Cytation / CTL ImmunoSpot / Mabtech IRIS &#8212; counts spot-forming units</div></div>
@@ -113,15 +114,15 @@
   <div class="tablewrap">
   <table>
     <tr><th>Role</th><th>Instrument</th><th>Indicative cost</th></tr>
-    <tr><td>Plate washer</td><td>Agilent BioTek 405 TS or similar</td><td class="cost">~$6k used &#8212; ~$25k new</td></tr>
-    <tr><td>Liquid handler</td><td>Opentrons OT-2</td><td class="cost">~$9k</td></tr>
+    <tr><td>Washer / dispenser</td><td>Agilent BioTek EL406</td><td class="cost">~$10k used &#8212; ~$35k new (config-dependent)</td></tr>
     <tr><td>Liquid handler</td><td>Opentrons Flex</td><td class="cost">from ~$26k</td></tr>
+    <tr><td>Liquid handler (cheaper alt)</td><td>Opentrons OT-2</td><td class="cost">~$9k</td></tr>
     <tr><td>Readout</td><td>Spot imager (Cytation / CTL / Mabtech IRIS)</td><td class="cost">the instrument is the cost</td></tr>
     <tr><td>Control</td><td>Raspberry Pi + PyLabRobot + agent harness</td><td class="cost">negligible</td></tr>
   </table>
   </div>
-  <p class="sub">To automate you need a washer <b>or</b> a liquid handler &#8212; not both. The imager is
-  the readout you already need. Everything else is a Pi.</p>
+  <p class="sub">The EL406 and the Flex split the work; a minimal line can collapse to a single
+  fluidics instrument. The imager is the readout you already need. Everything else is a Pi.</p>
 
   <h2>Why drive it from a Pi through an agent harness</h2>
   <p>Every instrument here is PyLabRobot-compatible &#8212; open source. So instead of stitching together
@@ -176,11 +177,11 @@
   <div class="cta">
     <a class="pill" href="../README.md">Read the package</a>
     <a class="pill ghost" href="../configs/example_run.yaml">See a manifest</a>
-    <span class="mono sub">elispot demo &#183; elispot run --poor-washer</span>
+    <span class="mono sub">immunoassay demo &#183; immunoassay run --poor-washer</span>
   </div>
 
   <div class="foot">
-    <span>di-omics &#183; plr-tested &#183; elispot</span>
+    <span>di-omics &#183; plr-tested &#183; immunoassay</span>
     <span>PyLabRobot &#183; Raspberry Pi &#183; agent harness</span>
   </div>
 

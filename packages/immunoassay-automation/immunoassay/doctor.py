@@ -6,7 +6,7 @@ tells them exactly how far along they are: it checks each requirement and prints
 MISSING with the one line that fixes a MISSING. Two tiers, because the package has two:
 
   compute tier   the simulation and all the QC math. Needs nothing but Python. If this is
-                 green, the site can run `elispot demo` right now and read a dossier before an
+                 green, the site can run `immunoassay demo` right now and read a dossier before an
                  instrument is even unboxed.
   hardware tier  driving the washer, the liquid handler, and the imager. Needs PyLabRobot, the
                  not-yet-built washer/imager integrations, the taught membrane clearance, the
@@ -63,7 +63,7 @@ def _compute_checks() -> List[Check]:
         fix="install Python 3.9 or newer",
     ))
 
-    core_err = _try_import("elispot.orchestrator")
+    core_err = _try_import("immunoassay.orchestrator")
     checks.append(Check(
         "package core importable",
         Status.OK if core_err is None else Status.MISSING,
@@ -128,7 +128,7 @@ def _hardware_checks() -> List[Check]:
     checks.append(Check(
         "washer / imager integrations", Status.WARN,
         detail="not built in this repo yet (sim-first package)",
-        fix="build instrument-integrations/biotek-405ts and instrument-integrations/imager, "
+        fix="build instrument-integrations/biotek-el406 and instrument-integrations/imager, "
             "validate on the Pi, then point the adapters at them; see the README status",
     ))
 
@@ -176,7 +176,7 @@ _GLYPH = {Status.OK: "OK  ", Status.WARN: "WARN", Status.MISSING: "MISS"}
 def format_report(checks: List[Check], hardware: bool) -> str:
     lines = []
     tier = "compute + hardware" if hardware else "compute"
-    lines.append(f"elispot doctor  ({tier} tier)")
+    lines.append(f"immunoassay doctor  ({tier} tier)")
     lines.append("")
     for c in checks:
         lines.append(f"  [{_GLYPH[c.status]}] {c.name}")
@@ -189,8 +189,8 @@ def format_report(checks: List[Check], hardware: bool) -> str:
     if not hardware:
         compute_ok = all(c.status is not Status.MISSING for c in checks)
         if compute_ok:
-            lines.append("compute tier ready: run `elispot demo`.")
-            lines.append("For a real run, check the hardware tier: `elispot doctor --hardware`.")
+            lines.append("compute tier ready: run `immunoassay demo`.")
+            lines.append("For a real run, check the hardware tier: `immunoassay doctor --hardware`.")
         else:
             lines.append("compute tier NOT ready; fix the MISS items above.")
     else:
@@ -198,5 +198,5 @@ def format_report(checks: List[Check], hardware: bool) -> str:
             lines.append("hardware tier ready. Qualify the instrument (Gate 0) before the first plate.")
         else:
             lines.append(f"{n_missing} item(s) to resolve before a hardware run. "
-                         "Simulation works regardless: `elispot demo`.")
+                         "Simulation works regardless: `immunoassay demo`.")
     return "\n".join(lines)

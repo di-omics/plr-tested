@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from elispot.qc_math import (
+from immunoassay.qc_math import (
     call_response,
     cv_percent,
     cv_percent_or_none,

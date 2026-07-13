@@ -2,7 +2,7 @@
 
 import pytest
 
-from elispot.gates import (
+from immunoassay.gates import (
     Comparison,
     Criterion,
     Decision,
@@ -11,8 +11,8 @@ from elispot.gates import (
     evaluate_per_sample,
     evaluate_run_level,
 )
-from elispot.membrane import default_constraints
-from elispot.provenance import (
+from immunoassay.membrane import default_constraints
+from immunoassay.provenance import (
     Origin,
     ProvenanceError,
     RunGuard,
@@ -21,7 +21,7 @@ from elispot.provenance import (
     transcribed,
     tunable,
 )
-from elispot.reagents.elispot_kit import for_cytokine
+from immunoassay.reagents.elispot_kit import for_cytokine
 
 
 def _cv_crit(bound=5.0):

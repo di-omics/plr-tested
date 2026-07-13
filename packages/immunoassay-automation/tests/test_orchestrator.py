@@ -2,12 +2,12 @@
 
 import pytest
 
-from elispot.config import RunMode
-from elispot.instruments.base import AwaitingData
-from elispot.instruments.imager import ImagerAdapter
-from elispot.manifest import ManifestError, build_run
-from elispot.orchestrator import RunStatus, run
-from elispot.simulation import (
+from immunoassay.config import RunMode
+from immunoassay.instruments.base import AwaitingData
+from immunoassay.instruments.imager import ImagerAdapter
+from immunoassay.manifest import ManifestError, build_run
+from immunoassay.orchestrator import RunStatus, run
+from immunoassay.simulation import (
     DEAD_CELLS_PLATE,
     HIGH_BACKGROUND_PLATE,
     POOR_WASHER,
