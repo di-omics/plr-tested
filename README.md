@@ -23,6 +23,16 @@ says otherwise.
   and a ladder of scripts from reachability to a PCR run, run on the instrument.
   And the Tecan Infinite plate reader over USB: the library-QC endpoint, a plan and
   a script ladder from a USB probe to a Rhodamine-B fluorescence read, not yet run.
+- [`packages/`](packages) - self-contained, QC-gated assay products built on the
+  validated hardware work above. Each takes a sparse manifest to a gated, auditable
+  dossier, is standard-library at the core so it runs at a partner site, and is
+  simulation-first so the whole flow runs before an instrument is touched.
+  - [`immunoassay-automation/`](packages/immunoassay-automation) - ELISpot and plate-
+    immunoassay automation across a BioTek EL406 washer, an Opentrons Flex, and a spot
+    imager. See its [WALKTHROUGH.md](packages/immunoassay-automation/WALKTHROUGH.md).
+  - [`gene-edit/`](packages/gene-edit) - QC-gated whole-genome amplification + targeted PCR for confirming
+    gene edits.
+  - [`iswap-move/`](packages/iswap-move) - STAR iSWAP plate-lid moves.
 
 ## What "tested" means here
 

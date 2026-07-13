@@ -21,6 +21,10 @@ The core is standard-library Python, so it runs on a bare interpreter at a partn
 instruments are all PyLabRobot-drivable from a Pi, so the whole line is one scriptable,
 closed-loop system with no vendor lock-in - which is the point of doing it this way.
 
+> **Reading this for the first time?** [WALKTHROUGH.md](WALKTHROUGH.md) is a guided tour that
+> follows the ELISpot protocol from an empty plate to called responses, pointing at the file
+> that implements each step and the check that guards it.
+
 ## The flow
 
 ```
