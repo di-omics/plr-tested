@@ -93,7 +93,7 @@ def build_stages(biology: PlateBiology) -> List[Stage]:
 def run(config: RunConfig, timestamp: str = "",
         washer_quality: WasherQuality = WELL_TUNED_WASHER,
         biology: PlateBiology = GOOD_PLATE,
-        lh_backend: Backend = Backend.OT2) -> RunOutcome:
+        lh_backend: Backend = Backend.FLEX) -> RunOutcome:
     """Execute the run and return its outcome.
 
     washer_quality and biology are simulation knobs only (pass POOR_WASHER to see Gate 0

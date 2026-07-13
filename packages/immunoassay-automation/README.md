@@ -1,7 +1,12 @@
-# elispot
+# immunoassay-automation
 
-Run an ELISpot the same way in any lab: qualified, gated, and walkaway, across a plate
-washer, a liquid handler, and a spot imager, driven from a Raspberry Pi.
+Run a plate immunoassay the same way in any lab: qualified, gated, and walkaway, across a
+plate washer, a liquid handler, and a spot imager, driven from a Raspberry Pi.
+
+The implemented assay is ELISpot (IFN-gamma and other single-analyte formats); the harness
+around it - the gates, the provenance guard, the site profiles, the instrument adapters -
+generalizes to other plate immunoassays. The reference line is an Agilent BioTek EL406
+washer/dispenser and an Opentrons Flex, with a spot imager for the readout.
 
 ELISpot is tedious and variability-prone in exactly the places automation is good at: many
 precise washes on a delicate membrane, timed reagent additions, and a development step that
@@ -50,22 +55,22 @@ runs). That is what makes this a controlled pipeline and not a script.
 ## Quickstart
 
 ```bash
-# from packages/elispot/
+# from packages/immunoassay/
 pip install -e .            # core is stdlib-only; add .[yaml] for YAML manifests, .[test] for pytest
 
-elispot doctor                          # can this lab run it, and what is missing
-elispot demo                            # run the bundled example in simulation
-elispot plan  configs/example_run.yaml  # validate a manifest, print the resolved plan + rubric
-elispot run   configs/example_run.yaml  # run it, write the dossier
+immunoassay doctor                          # can this lab run it, and what is missing
+immunoassay demo                            # run the bundled example in simulation
+immunoassay plan  configs/example_run.yaml  # validate a manifest, print the resolved plan + rubric
+immunoassay run   configs/example_run.yaml  # run it, write the dossier
 
 # see the gates do their job (simulation only):
-elispot run configs/example_run.json --poor-washer      # Gate 0 stops the run
-elispot run configs/example_run.json --high-background   # Gate 2 voids the plate
-elispot run configs/example_run.json --dead-cells        # positive control fails -> plate void
+immunoassay run configs/example_run.json --poor-washer      # Gate 0 stops the run
+immunoassay run configs/example_run.json --high-background   # Gate 2 voids the plate
+immunoassay run configs/example_run.json --dead-cells        # positive control fails -> plate void
 ```
 
 `run` writes a run folder: `dossier.html` (the audit artifact), `outcome.json` (machine
-readable), and `results.csv` (per-antigen calls). Also runnable as `python -m elispot ...`
+readable), and `results.csv` (per-antigen calls). Also runnable as `python -m immunoassay ...`
 with no install.
 
 ## The manifest is the only thing a lab writes
@@ -144,20 +149,20 @@ not a comment.
    with its run card; the operator counts the plate on the Pi and re-runs with the captured
    counts file, so a plate that develops at a partner site resumes asynchronously.
 
-## How it maps to a founding Scientific Automation Lead mandate
+## What it does
 
-| Role requirement | Where it is in this package |
+| Task | Where it is in this package |
 | --- | --- |
-| Reduce an assay to a qualified, controlled, transferable implementation | The whole package: sparse manifest to gated dossier, defaults as the standard |
+| Reduce an assay to a qualified, controlled, transferable run | The whole package: sparse manifest to gated dossier, defaults as the standard |
 | Define acceptance criteria, controls, and failure modes | `configs/acceptance_criteria.yaml`; controls are well roles (pos/neg/blank); STOP / PROCEED_SUBSET are the failure modes |
-| Read a protocol like code: "that step won't survive automation" | `membrane.py` - the PVDF clearance / no-jet / wet-out constraints as guarded values |
-| Prove it runs reproducibly outside the lab that invented it | Stdlib core, deterministic simulation, one-file dossier, run cards for the Pi |
-| Engineer distributed automation: scheduling, error handling, site calibration | `orchestrator.py` sequences and enforces gates; Gate 0 is site calibration; `SiteProfile` is site-specific state |
-| Deploy experiments remotely; control for site-specific drift | Hardware run cards + `AwaitingData` resume; Gate 0 controls the two biggest drift sources, the dispense and the wash |
-| Orchestrate agentic pipelines legible to automation and audit | Every stage returns structured data; `outcome.json` is the machine record, `dossier.html` the human one |
-| Close the loop: returning data feeds the next design | The readout's background / saturation / replicate numbers become concrete next-run parameter deltas in the handoff |
-| Guard the claims; nothing ships you would not defend in diligence | Provenance guard + an explicit "not yet run on hardware" status below |
-| Build the validation backbone: checklists, rubrics, ground-truth | The acceptance rubric, the gate outcomes, and the CV / response-call math are that backbone |
+| Catch the step that will not survive automation | `membrane.py` - the PVDF clearance / no-jet / wet-out constraints as guarded values |
+| Run reproducibly outside the lab that wrote it | Stdlib core, deterministic simulation, one-file dossier, run cards for the Pi |
+| Sequence the line, handle errors, calibrate per site | `orchestrator.py` sequences and enforces gates; Gate 0 is site calibration; `SiteProfile` is site-specific state |
+| Deploy remotely and control for site drift | Hardware run cards + `AwaitingData` resume; Gate 0 controls the two biggest drift sources, the dispense and the wash |
+| Keep the run legible to automation and audit | Every stage returns structured data; `outcome.json` is the machine record, `dossier.html` the human one |
+| Close the loop: returning data shapes the next run | The readout's background / saturation / replicate numbers become concrete next-run parameter deltas in the handoff |
+| Guard the claims | Provenance guard + an explicit "not yet run on hardware" status below |
+| Provide the validation backbone | The acceptance rubric, the gate outcomes, and the CV / response-call math |
 
 ## Status: what is real, what is simulated
 
@@ -181,7 +186,7 @@ Honesty about maturity is part of the point.
 ## Layout
 
 ```
-elispot/
+immunoassay/
   provenance.py     never-invent: Sourced values + the hardware guard
   membrane.py       the PVDF constraints that decide whether ELISpot survives a robot
   qc_math.py        CV, linear fit, net spots, stimulation index, response call (stdlib, tested)
@@ -193,7 +198,7 @@ elispot/
   stages/           readiness, plate_prep, stimulation, develop, readout, handoff
   orchestrator.py   run the stages, enforce the gates, assemble the dossier
   reporting/        the house-style HTML dossier
-  cli.py            elispot run | plan | demo | doctor
+  cli.py            immunoassay run | plan | demo | doctor
 configs/            acceptance_criteria.yaml, example manifests (YAML + JSON)
 tests/              39 offline tests; run `pytest`
 ```

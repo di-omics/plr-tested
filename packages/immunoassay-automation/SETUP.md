@@ -7,8 +7,8 @@ the setup. There are two tiers. The first needs nothing. The second is the setup
 Run the doctor at any point to see where you are:
 
 ```bash
-elispot doctor              # compute tier
-elispot doctor --hardware   # compute + hardware tier, with the exact fix per gap
+immunoassay doctor              # compute tier
+immunoassay doctor --hardware   # compute + hardware tier, with the exact fix per gap
 ```
 
 ---
@@ -19,8 +19,8 @@ The simulation and all the QC math are standard-library Python. Nothing to insta
 
 ```bash
 git clone https://github.com/di-omics/plr-tested
-cd plr-tested/packages/elispot
-python3 -m elispot demo
+cd plr-tested/packages/immunoassay
+python3 -m immunoassay demo
 ```
 
 That runs the whole flow (Gate 0 -> plate prep -> stimulate -> develop -> Gate 2 -> handoff)
@@ -31,7 +31,7 @@ the rubric, train an operator, and see the gates stop a bad run (`--poor-washer`
 Optional niceties:
 
 ```bash
-pip install -e .            # gives you the `elispot` command and YAML manifests
+pip install -e .            # gives you the `immunoassay` command and YAML manifests
 pip install -e '.[test]'    # to run `pytest`
 ```
 
@@ -46,7 +46,7 @@ Everything a real run needs, in the order `doctor --hardware` checks it.
 ### 1. PyLabRobot on the Pi
 
 The line is driven from a Raspberry Pi through PyLabRobot. Install it on the Pi, then connect
-the washer, the liquid handler (OT-2 / Flex, or a Hamilton STAR), and the imager.
+the washer, the liquid handler (Opentrons Flex, or OT-2 / Hamilton STAR), and the imager.
 
 ### 2. Build the washer and imager integrations
 
@@ -54,11 +54,11 @@ These are not in this repo yet. Following the pattern of the repo's existing
 `instrument-integrations/` (a `run_on_pi.sh` per instrument tree, geometry tuned by hand and
 recorded in a dated header), build:
 
-- `instrument-integrations/biotek-405ts/` - the wash programs, the dispense ladder, and the
+- `instrument-integrations/biotek-el406/` - the wash programs, the dispense ladder, and the
   aspiration-residual check the Gate 0 and develop stages call.
 - `instrument-integrations/imager/` - the spot-count read the Gate 2 stage calls.
 
-The adapters (`elispot/instruments/washer.py`, `imager.py`) already name the commands they
+The adapters (`immunoassay/instruments/washer.py`, `imager.py`) already name the commands they
 expect; point them at the real scripts once validated. A STAR-based ELISpot can reuse the
 validated liquid handling in `hamilton-star/` today.
 
@@ -102,8 +102,8 @@ cutoff, the saturation ceiling, and the response-call thresholds are TUNABLE def
 ## Then run it
 
 ```bash
-elispot doctor --hardware        # expect all OK
-elispot run my_run.yaml --hardware
+immunoassay doctor --hardware        # expect all OK
+immunoassay run my_run.yaml --hardware
 ```
 
 In hardware mode each step resolves to the Pi command that runs it; the imager count pauses

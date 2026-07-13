@@ -1,11 +1,13 @@
 """
-instruments/liquid_handler.py - the reagent and cell adds (Opentrons OT-2 / Flex, or a STAR).
+instruments/liquid_handler.py - the reagent and cell adds (Opentrons Flex by default).
 
 The washer owns the wash; the liquid handler owns everything that goes IN: the coating
 antibody, the block, the cells-plus-stimulus, the detection antibody, the conjugate, and the
-substrate. On a small ELISpot line one Opentrons OT-2 or Flex does all of it; a lab that
-already runs a Hamilton STAR (as this repo does) can use that instead. The adapter is
-deliberately backend-named so the resolved command records which one a site is on, but the
+substrate. The default is an Opentrons Flex - it has the deck, the pipetting range, and the
+gentle low-flow control an ELISpot's small precise adds want, and it pairs cleanly with the
+EL406 doing the fluidics. The cheaper OT-2 is a drop-in for a lower-throughput line, and a
+lab that already runs a Hamilton STAR (as this repo does) can use that instead. The adapter
+is deliberately backend-named so the resolved command records which one a site is on, but the
 plan - what goes where, in what volume, down the side wall at capped flow - is identical.
 
 The membrane rule from membrane.py rides on every add: reagents go down the side wall at a
@@ -42,7 +44,7 @@ _DIRS = {
 class LiquidHandlerAdapter(Adapter):
     instrument = "liquid handler"
 
-    def __init__(self, mode: RunMode, backend: Backend = Backend.OT2, sink=None):
+    def __init__(self, mode: RunMode, backend: Backend = Backend.FLEX, sink=None):
         super().__init__(mode, sink=sink)
         self.backend = backend
         self.instrument = f"liquid handler ({backend.value})"

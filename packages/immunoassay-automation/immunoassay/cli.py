@@ -1,11 +1,11 @@
 """
 cli.py - the operator entrypoint.
 
-    elispot run    <manifest> [--out DIR] [--hardware]
+    immunoassay run    <manifest> [--out DIR] [--hardware]
                               [--poor-washer] [--high-background] [--dead-cells]
-    elispot plan   <manifest>
-    elispot demo   [--out DIR]
-    elispot doctor [--hardware] [--json]
+    immunoassay plan   <manifest>
+    immunoassay demo   [--out DIR]
+    immunoassay doctor [--hardware] [--json]
 
 `run` executes the flow and writes a run folder: the dossier (HTML), the machine outcome
 (JSON), and the results sheet (CSV). `plan` validates a manifest and prints the resolved plate
@@ -14,7 +14,7 @@ simulation, the fastest way to see the whole thing work. The three simulation fl
 failure scenario so you can watch a gate do its job: a poorly qualified washer stops Gate 0,
 high background or dead cells void the plate at Gate 2.
 
-Also runnable as `python -m elispot ...`.
+Also runnable as `python -m immunoassay ...`.
 """
 
 from __future__ import annotations
@@ -150,10 +150,10 @@ def cmd_demo(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="elispot",
+    p = argparse.ArgumentParser(prog="immunoassay",
                                 description="QC-gated ELISpot automation across a washer, "
                                             "liquid handler, and spot imager")
-    p.add_argument("--version", action="version", version=f"elispot {__version__}")
+    p.add_argument("--version", action="version", version=f"immunoassay {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="run a manifest and write the dossier")

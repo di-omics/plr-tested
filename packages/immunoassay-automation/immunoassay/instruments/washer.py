@@ -1,16 +1,19 @@
 """
-instruments/washer.py - the plate washer (Agilent BioTek 405 TS or equivalent).
+instruments/washer.py - the plate washer/dispenser (Agilent BioTek EL406 or equivalent).
 
 The washer is the instrument that makes ELISpot reproducible. The assay's dominant variance
 is the wash: too gentle and cells and debris stay behind and print as background, too harsh
 and the wash lifts the capture-antibody layer off the membrane. A programmed washer runs the
 same cycles, the same volume, and the same probe height every time, which is exactly the
-site-to-site drift a manual wash cannot control.
+site-to-site drift a manual wash cannot control. The EL406 is a good fit because it is a
+combined washer and bulk dispenser: it can both run the washes and dispense the qualification
+ladder and bulk buffers, so one instrument owns the fluidics the wash depends on.
 
 This adapter does three things:
   - qualify_dispense / qualify_residual: the Gate 0 reads. Dispense precision (via the
-    Rhodamine ladder) and aspiration completeness (residual volume left in a well) are what
-    "the washer is fit to run this plate" means, measured, not assumed.
+    Rhodamine ladder, dispensed by the EL406's own manifold) and aspiration completeness
+    (residual volume left in a well) are what "the washer is fit to run this plate" means,
+    measured, not assumed.
   - wash: a programmed wash step (cycles, volume, soak, and - the ELISpot-critical part -
     the aspiration probe height above the membrane). The height is a membrane-safety value
     carried from the SiteProfile / membrane.py, not a default the washer picks.
@@ -35,11 +38,11 @@ from .base import Adapter
 
 # Where the resolved commands would run. This integration does not exist in the repo yet;
 # the path is the intended home, consistent with the repo's instrument-integrations/ layout.
-_WASHER_DIR = "instrument-integrations/biotek-405ts"
+_WASHER_DIR = "instrument-integrations/biotek-el406"
 
 
 class WasherAdapter(Adapter):
-    instrument = "BioTek 405 TS washer"
+    instrument = "BioTek EL406 washer/dispenser"
 
     def __init__(self, mode: RunMode, quality: WasherQuality = WELL_TUNED_WASHER,
                  sink=None):

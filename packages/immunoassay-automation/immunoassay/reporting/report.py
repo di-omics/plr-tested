@@ -270,5 +270,5 @@ def render_dossier(outcome: RunOutcome) -> str:
   <div class="chips">{guard_chips}</div>
   {blocking}
   <div class="flow">{''.join(flow)}</div>
-  <div class="foot">di-omics &#183; plr-tested &#183; elispot</div>
+  <div class="foot">di-omics &#183; plr-tested &#183; immunoassay</div>
 </div></body></html>"""

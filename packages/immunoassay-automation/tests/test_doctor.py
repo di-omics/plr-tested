@@ -1,6 +1,6 @@
 """Tests for the doctor: the compute tier is green with nothing installed."""
 
-from elispot.doctor import Status, run_doctor
+from immunoassay.doctor import Status, run_doctor
 
 
 def test_compute_tier_has_no_missing():

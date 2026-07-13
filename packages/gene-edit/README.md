@@ -121,9 +121,9 @@ second lab, or a robot, running it:
 
 ## What it does
 
-| JD requirement | Where it is in this package |
+| Task | Where it is in this package |
 | --- | --- |
-| Reduce an assay to a qualified, controlled, transferable implementation | The whole package: sparse manifest to gated dossier, defaults as the standard |
+| Reduce an assay to a qualified, controlled, transferable run | The whole package: sparse manifest to gated dossier, defaults as the standard |
 | Define acceptance criteria, controls, and failure modes | `configs/acceptance_criteria.yaml`; controls (pos/neg/NTC) are sample types; STOP/SUBSET are the failure modes |
 | Prove it runs reproducibly outside the lab that invented it | Stdlib core, deterministic simulation, one-file dossier, run cards for the Pi |
 | Engineer distributed automation: scheduling, error handling, site calibration | `orchestrator.py` sequences and enforces gates; Gate 0 is site calibration; `tip_column` is site-specific consumable state |
