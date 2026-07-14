@@ -53,8 +53,9 @@ import pylabrobot.resources as plr_resources
 #   1. diluent : 100 uL diluent into cols 2-12, rows A-C.
 #   2. dye     : 200 uL Rhodamine 1x into col 1, rows A-C.
 #   3. serial  : for src in 1..10, transfer 100 uL src -> src+1 (rows A-C),
-#                mix the destination, fresh tips each step. After col 10 -> 11,
-#                discard 100 uL from col 11 to waste so col 11 ends at 100 uL.
+#                mix the destination 5x (--mix-cycles), fresh tips each step.
+#                After col 10 -> 11, discard 100 uL from col 11 to waste so
+#                col 11 ends at 100 uL.
 #   Result: col 1 = 1x, halving each column to col 11 = 1/1024, col 12 = blank.
 #
 # Why the transient 200 uL is safe:
@@ -109,7 +110,7 @@ DYE_COL1_VOL = 200.0         # neat dye into col 1 (seeds the chain)
 TRANSFER_VOL = 100.0         # 2-fold: transfer half the working volume
 FINAL_DISCARD_VOL = 100.0    # col 11 -> waste, leaves col 11 at 100 uL
 MIX_VOL = 80.0               # in-place mix at the destination
-MIX_CYCLES = 3
+MIX_CYCLES = 5               # in-place mix cycles per destination (override with --mix-cycles)
 
 # --- Geometry: STARTING ESTIMATES, tune dry first ---------------------------
 # Reservoir aspirate, seeded from the validated cleanup trough geometry
@@ -277,9 +278,9 @@ async def fill_dye(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool, 
     print("SUCCESS: dye fill complete.")
 
 
-async def mix_column(lh: LiquidHandler, plate, col: int):
+async def mix_column(lh: LiquidHandler, plate, col: int, mix_cycles: int):
     vols = [MIX_VOL] * N_CH
-    for i in range(MIX_CYCLES):
+    for i in range(mix_cycles):
         await lh.aspirate(
             plate_col(plate, col),
             vols=vols,
@@ -296,10 +297,10 @@ async def mix_column(lh: LiquidHandler, plate, col: int):
         )
 
 
-async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool, first_rack_col: int):
+async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool, first_rack_col: int, mix_cycles: int):
     plate = r["work_plate"]
     xfer = [TRANSFER_VOL] * N_CH
-    print(f"\n=== SERIAL: 10 x {TRANSFER_VOL} uL, col 1 -> 2 -> ... -> 11, mix each destination ===")
+    print(f"\n=== SERIAL: 10 x {TRANSFER_VOL} uL, col 1 -> 2 -> ... -> 11, mix each destination {mix_cycles}x ===")
     rack_col = first_rack_col
     for src in DILUTION_COLS[:-1]:   # 1..10
         dst = src + 1
@@ -320,8 +321,8 @@ async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool
                 offsets=[P300_PLATE_XY] * N_CH,
                 blow_out_air_volume=[DSP_BLOWOUT_AIR_VOLUME] * N_CH,
             )
-            print(f"    mixing col {dst} ({MIX_CYCLES} x {MIX_VOL} uL)")
-            await mix_column(lh, plate, dst)
+            print(f"    mixing col {dst} ({mix_cycles} x {MIX_VOL} uL)")
+            await mix_column(lh, plate, dst, mix_cycles)
 
             if dst == DILUTION_COLS[-1]:   # col 11: discard the extra 100 uL to waste
                 print(f"    discard {FINAL_DISCARD_VOL} uL col {dst} -> waste {WASTE_WELL} (same tips)")
@@ -346,11 +347,11 @@ async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool
     print("\nSUCCESS: serial dilution complete. Every well A-C, cols 1-12 holds 100 uL.")
 
 
-async def run_all(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool):
+async def run_all(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool, mix_cycles: int):
     print("\n=== ALL: diluent -> dye -> serial ===")
     await fill_diluent(lh, r, discard_tips, rack_col=1)
     await fill_dye(lh, r, discard_tips, rack_col=2)
-    await run_serial(lh, r, discard_tips, first_rack_col=3)
+    await run_serial(lh, r, discard_tips, first_rack_col=3, mix_cycles=mix_cycles)
     print("\nSUCCESS: QC plate built. Hand to the Tecan reader go/no-go.")
     print("  07_tecan_raw_absorbance.py --preloaded --wavelength 554 --wells A1,A12")
 
@@ -378,7 +379,16 @@ async def main():
         action="store_true",
         help="Use the STAR chatterbox backend (no hardware). Reservoir aspirate trips the chatterbox geometry check; that is expected.",
     )
+    parser.add_argument(
+        "--mix-cycles",
+        type=int,
+        default=MIX_CYCLES,
+        help=f"In-place mix cycles at each serial destination. Default {MIX_CYCLES}.",
+    )
     args = parser.parse_args()
+
+    if args.mix_cycles < 0:
+        raise ValueError("--mix-cycles must be >= 0")
 
     discard_tips = not args.return_tips
 
@@ -399,9 +409,9 @@ async def main():
         elif args.mode == "dye":
             await fill_dye(lh, r, discard_tips, rack_col=2)
         elif args.mode == "serial":
-            await run_serial(lh, r, discard_tips, first_rack_col=3)
+            await run_serial(lh, r, discard_tips, first_rack_col=3, mix_cycles=args.mix_cycles)
         elif args.mode == "all":
-            await run_all(lh, r, discard_tips)
+            await run_all(lh, r, discard_tips, args.mix_cycles)
         else:
             raise RuntimeError(f"Unhandled mode: {args.mode}")
 
