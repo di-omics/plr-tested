@@ -57,6 +57,17 @@ rail35 pos3 = trough/reservoir
   - Validated first dry p50-low cleanup motion.
   - Intended next work: mock-liquid bead clean validation.
 
+## EM-seq entrypoint (UltraShear + EM-seq v2)
+
+- `starlab_live/emseq/` - end-to-end NEBNext Enzymatic Methyl-seq v2 with UltraShear
+  fragmentation, single column, on the 35/48 deck. Reagent adds, ODTC thermal handoffs,
+  and three SPRI cleanups. See `starlab_live/emseq/README.md`.
+  - `run_emseq_odtc_1col_full_dry.py --print` shows the full 36-leg plan.
+  - `run_emseq_odtc_1col_full_dry.py --sim-lh` runs the liquid-handling legs on the
+    chatterbox (no hardware).
+  - ODTC programs (`emseq-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
+  - Status: written, simulation-first, not yet run on the instrument.
+
 ## Current priorities
 
 1. Hamilton bead clean for targeted PCR.
