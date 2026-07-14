@@ -1,0 +1,339 @@
+<title>rhodamine // dilution (sim)</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#fbfbf9; --panel:#ffffff; --panel-2:#fdfdfb;
+    --ink:#232320; --gray:#66655f; --faint:#9d9c95; --line:#e9e8e2;
+    --matcha:#98c73c; --matcha-deep:#5f8f1e; --matcha-text:#497015; --matcha-tint:#eff7da; --matcha-wash:#f5fbe9;
+    --iris:#b6a4e6;
+    --rho:203,33,110;          /* rhodamine b, deep magenta-pink */
+    --dil:127,179,220;         /* diluent, faint cool tint */
+    --sans:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    --r:15px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;
+      background:
+        radial-gradient(115% 70% at 12% -4%, #f1ecfb 0%, transparent 52%),
+        radial-gradient(110% 65% at 90% 2%, #fdedf3 0%, transparent 48%),
+        radial-gradient(120% 80% at 50% 108%, #e8f0fa 0%, transparent 58%),
+        var(--bg);
+      background-attachment:fixed}
+  .wrap{position:relative;max-width:560px;margin:0 auto;
+      padding:22px max(18px,env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+  .wrap>*:not(.sparkles):not(.mdecor){position:relative;z-index:1}
+
+  /* matcha whisk + bowl watermarks */
+  .mdecor{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .mdecor svg{position:absolute}
+  .mdecor .ln{fill:none;stroke:var(--matcha-deep);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+  /* star sparkles */
+  .sparkles{position:absolute;inset:0;pointer-events:none;z-index:0}
+  .spk{position:absolute}
+  .spk svg{display:block;filter:drop-shadow(0 0 3px rgba(182,164,230,.55));animation:tw 4.8s ease-in-out infinite}
+  @keyframes tw{0%,100%{opacity:.18;transform:scale(.8)}50%{opacity:.9;transform:scale(1.06)}}
+
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px 12px;flex-wrap:wrap}
+  .kick{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
+  h1{font-size:clamp(34px,10.5vw,52px);font-weight:700;letter-spacing:-.03em;margin:5px 0 0;line-height:.95}
+  h1 span{background:linear-gradient(120deg,#cb216e,#efa8c6,#b6a4e6,#98c73c);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sim{flex:none;margin-top:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+      color:#fff;background:var(--ink);border-radius:99px;padding:6px 11px;white-space:nowrap}
+  .sub{color:var(--gray);font-size:14.5px;margin:10px 0 0}
+  .sub b{color:var(--matcha-text);font-weight:600}
+  .sub code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--matcha-wash);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+
+  .orn{display:block;width:min(230px,66%);height:20px;margin:16px auto 4px;opacity:.75}
+  .orn path{fill:none;stroke:url(#og);stroke-width:1.3;stroke-linecap:round}
+  .orn circle{fill:var(--iris)}
+
+  /* mix selector */
+  .pick{margin:16px 0 6px}
+  .plabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+  .plabel .l{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .plabel .r{font-family:var(--mono);font-size:12px;color:var(--matcha-text)}
+  .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .chip{font-family:var(--sans);font-weight:600;font-size:17px;color:var(--gray);background:var(--panel);border:1.5px solid var(--line);
+      border-radius:12px;padding:14px 4px 9px;cursor:pointer;text-align:center;transition:.15s;line-height:1;min-height:54px;-webkit-tap-highlight-color:transparent}
+  .chip small{display:block;font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.08em;color:var(--faint);margin-top:6px}
+  .chip:hover{border-color:var(--matcha)}
+  .chip.on{border-color:var(--matcha);background:var(--matcha-wash);color:var(--matcha-text);box-shadow:0 0 0 3px var(--matcha-tint)}
+  .chip.on small{color:var(--matcha-text)}
+  .chip:focus-visible,.run:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* plate */
+  .board{position:relative;margin:20px 0 6px;border:1px solid var(--line);border-radius:var(--r);padding:16px 14px 13px;
+      background:
+        radial-gradient(90% 70% at 50% 0%, rgba(182,164,230,.10), transparent 70%),
+        linear-gradient(160deg,#fdfcff, #fbfbfd 60%, #fdf7fb);
+      box-shadow:0 22px 60px -34px rgba(150,140,200,.55), inset 0 0 0 1px rgba(255,255,255,.5)}
+  .bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+  .bhead .bt{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .bhead .bs{font-family:var(--mono);font-size:10px;color:var(--matcha-text)}
+  .plate96{display:grid;grid-template-columns:14px repeat(12,1fr);gap:3px;align-items:center}
+  .cn{font-family:var(--mono);font-size:8px;color:var(--faint);text-align:center;line-height:1}
+  .rn{font-family:var(--mono);font-size:8px;color:var(--faint);text-align:right;padding-right:2px;line-height:1}
+  .corner{}
+  .well{aspect-ratio:1;border-radius:4px;border:1px solid var(--line);background:#fff;position:relative;
+      box-shadow:inset 0 1px 2px rgba(30,20,40,.05);
+      transition:background-color .5s ease, box-shadow .3s ease}
+  .well.idle{background:#fcfcfa;opacity:.5}          /* rows D-H, unused */
+  .well.src{box-shadow:inset 0 1px 2px rgba(30,20,40,.05), 0 0 0 2px var(--iris);z-index:2}
+  .well.dst{box-shadow:inset 0 1px 2px rgba(30,20,40,.05), 0 0 0 2px var(--matcha);z-index:2}
+  .well.mix{animation:mixp .42s ease-in-out}
+  @keyframes mixp{0%,100%{box-shadow:inset 0 1px 2px rgba(30,20,40,.05), 0 0 0 0 var(--matcha-tint)}
+      50%{box-shadow:inset 0 1px 2px rgba(30,20,40,.05), 0 0 0 4px var(--matcha-tint)}}
+  .blab{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:11px;flex-wrap:wrap}
+  .scale{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+  .bar{width:78px;height:9px;border-radius:99px;border:1px solid var(--line);
+      background:linear-gradient(90deg, rgba(203,33,110,1), rgba(203,33,110,.09))}
+  .dot{width:9px;height:9px;border-radius:3px;border:1px solid var(--line);flex:none}
+  .dot.blank{background:rgba(127,179,220,.16)}
+
+  /* run + progress */
+  .run{width:100%;font-family:var(--sans);font-size:18px;font-weight:700;letter-spacing:.02em;color:#20300f;background:var(--matcha);
+      border:none;border-radius:99px;padding:16px;margin-top:18px;cursor:pointer;transition:.16s;box-shadow:0 8px 20px -8px rgba(152,199,60,.9);-webkit-tap-highlight-color:transparent}
+  .run:active:not(:disabled){transform:translateY(1px)}
+  .run:hover:not(:disabled){background:#a8d84c}
+  .run:disabled{opacity:.6;cursor:default}
+  .run.done{background:transparent;color:var(--matcha-text);border:1.5px solid var(--matcha)}
+  .prow{display:flex;align-items:center;gap:12px;margin-top:14px}
+  .track{flex:1;height:8px;border-radius:99px;background:var(--matcha-tint);overflow:hidden;border:1px solid var(--line)}
+  .track>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--matcha),#cb216e);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+  .pcount{font-family:var(--mono);font-size:12px;color:var(--faint);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .now{font-family:var(--mono);font-size:12.5px;color:var(--matcha-text);border-left:2px solid var(--matcha);padding:6px 0 6px 12px;margin:14px 0 18px;min-height:20px}
+  .now .st{display:inline-block;font-weight:700;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#fff;background:var(--matcha-deep);border-radius:5px;padding:1px 6px;margin-right:7px;vertical-align:1px}
+
+  /* legs */
+  .legs{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel)}
+  .leg{display:flex;gap:12px;align-items:center;padding:12px 15px;border-top:1px solid var(--line)}
+  .leg:first-child{border-top:0}
+  .leg .box{flex:none;width:22px;height:22px;border-radius:6px;border:1.6px solid var(--faint);display:grid;place-items:center;font-family:var(--mono);transition:.2s}
+  .leg .n{font-family:var(--mono);font-size:11px;color:var(--faint);width:13px;flex:none}
+  .leg .lt{font-size:14.5px;color:var(--ink)}
+  .leg .ld{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto;white-space:nowrap}
+  .leg.active{background:var(--matcha-wash)}
+  .leg.active .box{border-color:var(--matcha);background:var(--matcha);animation:spin 1s linear infinite}
+  .leg.active .box::after{content:'';width:8px;height:8px;border:2px solid #fff;border-top-color:transparent;border-radius:50%}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .leg.done .box{border-color:var(--matcha-deep);background:var(--matcha-deep)}
+  .leg.done .box::after{content:'\2713';color:#fff;font-size:13px}
+  .leg.done .lt{color:var(--gray)}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  .foot{margin-top:22px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint);text-align:center;line-height:1.7}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <linearGradient id="og" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cb216e"/><stop offset=".5" stop-color="#b6a4e6"/><stop offset="1" stop-color="#98c73c"/></linearGradient>
+  </defs></svg>
+
+  <div class="sparkles" aria-hidden="true">
+    <span class="spk" style="top:2%;left:64%"><svg width="13" height="13" viewBox="0 0 24 24"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" fill="#b6a4e6"/></svg></span>
+    <span class="spk" style="top:7%;left:91%"><svg width="9" height="9" viewBox="0 0 24 24"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" fill="#efa8c6"/></svg></span>
+    <span class="spk" style="top:29%;left:4%"><svg width="11" height="11" viewBox="0 0 24 24"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" fill="#98c73c"/></svg></span>
+    <span class="spk" style="top:34%;left:94%"><svg width="10" height="10" viewBox="0 0 24 24"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" fill="#cb216e"/></svg></span>
+    <span class="spk" style="top:14%;left:43%"><svg width="8" height="8" viewBox="0 0 24 24"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" fill="#7fb3dc"/></svg></span>
+  </div>
+
+  <div class="mdecor" aria-hidden="true">
+    <svg viewBox="0 0 80 122" width="52" style="top:1.5%;left:1%;opacity:.09;transform:rotate(-7deg)"><g class="ln"><rect x="29" y="8" width="22" height="26" rx="7"/><rect x="27" y="38" width="26" height="9" rx="3"/><path d="M32.0 48 Q7.0 78.0 13.0 106.0 Q13.0 112.0 18.0 112.0"/><path d="M34.3 48 Q16.4 78.0 20.7 106.0 Q20.7 112.0 24.3 112.0"/><path d="M36.6 48 Q25.9 78.0 28.4 106.0 Q28.4 112.0 30.6 112.0"/><path d="M38.9 48 Q35.3 78.0 36.1 106.0 Q36.1 112.0 36.9 112.0"/><path d="M40.0 48 Q40.0 78.0 40.0 106.0 Q40.0 112.0 40.0 112.0"/><path d="M41.1 48 Q44.7 78.0 43.9 106.0 Q43.9 112.0 43.1 112.0"/><path d="M43.4 48 Q54.1 78.0 51.6 106.0 Q51.6 112.0 49.4 112.0"/><path d="M45.7 48 Q63.6 78.0 59.3 106.0 Q59.3 112.0 55.7 112.0"/><path d="M48.0 48 Q73.0 78.0 67.0 106.0 Q67.0 112.0 62.0 112.0"/></g></svg>
+    <svg viewBox="0 0 120 100" width="76" style="top:2.5%;right:1.5%;opacity:.09"><g class="ln"><path d="M16 34 C16 68,36 82,60 82 C84 82,104 68,104 34"/><ellipse cx="60" cy="34" rx="44" ry="10"/><path d="M23 37 C42 45,78 45,97 37"/><path d="M49 80 L51 89 C56 92,64 92,69 89 L71 80"/></g></svg>
+    <svg viewBox="0 0 120 100" width="66" style="top:70%;left:-3%;opacity:.055"><g class="ln"><path d="M16 34 C16 68,36 82,60 82 C84 82,104 68,104 34"/><ellipse cx="60" cy="34" rx="44" ry="10"/><path d="M23 37 C42 45,78 45,97 37"/><path d="M49 80 L51 89 C56 92,64 92,69 89 L71 80"/></g></svg>
+  </div>
+
+  <div class="top">
+    <div>
+      <div class="kick">// tecan qc &middot; rhodamine b &middot; hamilton star</div>
+      <h1>rhodamine<span>.</span></h1>
+    </div>
+    <span class="sim">simulation &middot; preview</span>
+  </div>
+  <p class="sub">watch the star build the QC gradient &mdash; a 2-fold serial dilution across the plate, the same one <code>01_rhodamine_serial_dilution_qc.py</code> runs on the deck. pick the mix and hit run.</p>
+
+  <svg class="orn" viewBox="0 0 240 24" aria-hidden="true">
+    <path d="M120 12 C96 3 78 21 40 12 C60 12 66 8 88 12"/>
+    <path d="M120 12 C144 3 162 21 200 12 C180 12 174 8 152 12"/>
+    <circle cx="120" cy="12" r="2.4"/>
+  </svg>
+
+  <div class="pick">
+    <div class="plabel"><span class="l">mix cycles</span><span class="r" id="pmeta">5 mixes each &middot; 33 wells &middot; 100 uL</span></div>
+    <div class="chips" id="chips" role="group" aria-label="mix cycles at each serial destination"></div>
+  </div>
+
+  <div class="board">
+    <div class="bhead">
+      <span class="bt">rail35 pos0 &middot; clear flat-bottom 96wp</span>
+      <span class="bs" id="bstate">staged &middot; empty</span>
+    </div>
+    <div class="plate96" id="plate96" role="img" aria-label="96-well plate, rows A to C used, 2-fold dilution across columns 1 to 11, column 12 blank"></div>
+    <div class="blab">
+      <div class="scale"><span>1x</span><span class="bar"></span><span>1/1024</span></div>
+      <div class="scale"><span class="dot blank"></span><span>col 12 blank</span></div>
+    </div>
+  </div>
+
+  <button class="run" id="run">run</button>
+  <div class="prow">
+    <div class="track" id="track" role="progressbar" aria-label="dilution build progress" aria-valuemin="0" aria-valuemax="23" aria-valuenow="0"><span id="fill"></span></div>
+    <div class="pcount" id="pcount" aria-hidden="true">0 / 23</div>
+  </div>
+  <div class="now" id="now" role="status" aria-live="polite"><span class="st">sim</span>staged. reservoir loaded, tips at rail48 pos2, plate empty. ready when you are. <span aria-hidden="true">&#x1F375;</span></div>
+
+  <div class="legs" id="legs" role="list"></div>
+
+  <div class="foot">eleven points &middot; triplicate &middot; 100 uL each<br>visual simulation only &middot; does not drive the instrument</div>
+</div>
+
+<script>
+  var ROWS = ['A','B','C','D','E','F','G','H'];
+  var USED = 3;                 // rows A-C are the triplicate
+  var COLS = 12;
+  var MIXOPTS = [3,5,8,10];
+  var mix = 5;
+  var REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // rhodamine shade for a 1-based dilution column (1..11): 2-fold, alpha eased so
+  // the gradient reads across all 11 points like the DoE plate map.
+  function shade(col){ var a = Math.pow(Math.pow(0.5, col-1), 0.34); return 'rgba(var(--rho),'+a.toFixed(3)+')'; }
+  var DILUENT = 'rgba(var(--dil),0.16)';
+
+  // total operations for the progress bar: 11 diluent columns + 1 dye + 10 serial + 1 discard
+  var TOTAL = 23;
+
+  var chipsEl=document.getElementById('chips'), pmeta=document.getElementById('pmeta');
+  var plateEl=document.getElementById('plate96'), bstate=document.getElementById('bstate');
+  var legsEl=document.getElementById('legs');
+  var fill=document.getElementById('fill'), pcount=document.getElementById('pcount'), track=document.getElementById('track');
+  var now=document.getElementById('now'), runBtn=document.getElementById('run');
+  var running=false, opDone=0;
+
+  // --- build the plate grid ---
+  function buildPlate(){
+    plateEl.innerHTML='';
+    var corner=document.createElement('div'); corner.className='corner'; plateEl.appendChild(corner);
+    for(var c=1;c<=COLS;c++){ var cn=document.createElement('div'); cn.className='cn'; cn.textContent=c; plateEl.appendChild(cn); }
+    for(var r=0;r<ROWS.length;r++){
+      var rn=document.createElement('div'); rn.className='rn'; rn.textContent=ROWS[r]; plateEl.appendChild(rn);
+      for(var c2=1;c2<=COLS;c2++){
+        var w=document.createElement('div');
+        w.className='well'+(r>=USED?' idle':''); w.id='w-'+r+'-'+c2;
+        plateEl.appendChild(w);
+      }
+    }
+  }
+  buildPlate();
+  function colWells(c){ var a=[]; for(var r=0;r<USED;r++){ a.push(document.getElementById('w-'+r+'-'+c)); } return a; }
+  function paintCol(c,bg){ colWells(c).forEach(function(w){ w.style.background=bg; }); }
+  function ring(c,cls){ colWells(c).forEach(function(w){ w.classList.add(cls); }); }
+  function unring(c,cls){ colWells(c).forEach(function(w){ w.classList.remove(cls); }); }
+
+  // --- mix chips ---
+  MIXOPTS.forEach(function(m,i){
+    var b=document.createElement('button');
+    b.className='chip'+(m===mix?' on':''); b.id='chip'+i;
+    b.setAttribute('aria-pressed', m===mix?'true':'false');
+    b.innerHTML=m+'<small>'+(m===5?'default':'cycles')+'</small>';
+    b.addEventListener('click',function(){ if(running) return; selectMix(i); });
+    chipsEl.appendChild(b);
+  });
+  function selectMix(i){
+    mix=MIXOPTS[i];
+    MIXOPTS.forEach(function(_,j){ var c=document.getElementById('chip'+j); var on=j===i; c.classList.toggle('on',on); c.setAttribute('aria-pressed',on?'true':'false'); });
+    pmeta.textContent = mix+' mixes each \u00b7 33 wells \u00b7 100 uL';
+    LEGS=legDefs(); reset();
+  }
+
+  // --- legs (the 4 protocol phases) ---
+  function legDefs(){
+    return [
+      {t:'diluent fill',    d:'100 uL &middot; cols 2-12'},
+      {t:'dye add',         d:'200 uL &middot; col 1'},
+      {t:'serial dilution', d:'10x &middot; mix '+mix+'x'},
+      {t:'discard excess',  d:'100 uL &middot; col 11 &rarr; waste'}
+    ];
+  }
+  var LEGS=legDefs();
+  function buildLegs(){
+    legsEl.innerHTML='';
+    LEGS.forEach(function(l,i){
+      var d=document.createElement('div'); d.className='leg'; d.id='leg'+i; d.setAttribute('role','listitem');
+      d.innerHTML='<span class="n">'+(i+1)+'</span><span class="box"></span><span class="lt">'+l.t+'</span><span class="ld">'+l.d+'</span><span class="vh" id="lg'+i+'">pending</span>';
+      legsEl.appendChild(d);
+    });
+  }
+  buildLegs();
+
+  function wait(ms){ return new Promise(function(r){ setTimeout(r, REDUCE?Math.min(ms,120):ms); }); }
+  function setNow(tag,txt){ now.innerHTML='<span class="st">'+tag+'</span>'+txt; }
+  function legState(i,s){ var el=document.getElementById('leg'+i);
+    el.className='leg'+(s?' '+s:''); document.getElementById('lg'+i).textContent = s==='done'?'complete':(s==='active'?'in progress':'pending');
+    if(s==='active'){ el.setAttribute('aria-current','step'); el.scrollIntoView({block:'nearest',behavior:REDUCE?'auto':'smooth'}); }
+    else el.removeAttribute('aria-current');
+  }
+  function bump(){ opDone++; fill.style.width=(opDone/TOTAL*100)+'%'; pcount.textContent=opDone+' / '+TOTAL; track.setAttribute('aria-valuenow',opDone); }
+
+  function reset(){
+    buildLegs(); buildPlate(); opDone=0; fill.style.width='0'; pcount.textContent='0 / '+TOTAL; track.setAttribute('aria-valuenow','0');
+    bstate.textContent='staged \u00b7 empty';
+    setNow('sim','staged. reservoir loaded, tips at rail48 pos2, plate empty. ready when you are. <span aria-hidden="true">&#x1F375;</span>');
+    runBtn.textContent='run'; runBtn.className='run'; runBtn.disabled=false;
+  }
+
+  var CONC = ['1x','1/2','1/4','1/8','1/16','1/32','1/64','1/128','1/256','1/512','1/1024'];
+
+  async function run(){
+    if(running) return; running=true;
+    runBtn.disabled=true; runBtn.textContent='simulating dilution';
+    buildLegs(); buildPlate(); opDone=0; fill.style.width='0';
+
+    // 1. diluent into cols 2-12
+    legState(0,'active'); bstate.textContent='diluent \u00b7 cols 2-12';
+    for(var c=2;c<=12;c++){
+      setNow('sim','100 uL diluent \u2192 col '+c+(c===12?' (blank)':''));
+      paintCol(c, DILUENT); ring(c,'dst'); await wait(REDUCE?60:120); unring(c,'dst'); bump();
+    }
+    legState(0,'done');
+
+    // 2. dye into col 1
+    legState(1,'active'); bstate.textContent='dye \u00b7 col 1';
+    setNow('sim','200 uL rhodamine 1x \u2192 col 1');
+    paintCol(1, shade(1)); ring(1,'dst'); await wait(560); unring(1,'dst'); bump();
+    legState(1,'done');
+
+    // 3. serial dilution col 1 -> 11
+    legState(2,'active');
+    for(var s=1;s<=10;s++){
+      var dst=s+1;
+      bstate.textContent='serial \u00b7 col '+s+' \u2192 '+dst;
+      setNow('sim','col '+s+' \u2192 col '+dst+' \u00b7 100 uL \u00b7 '+CONC[dst-1]+' \u00b7 mixing '+mix+'x');
+      ring(s,'src'); ring(dst,'dst'); await wait(360);
+      paintCol(dst, shade(dst)); await wait(240);
+      unring(s,'src'); unring(dst,'dst');
+      // mix pulse on the destination
+      if(!REDUCE){ colWells(dst).forEach(function(w){ w.style.animation='mixp .42s ease-in-out '+mix; });
+        await wait(Math.min(420 + mix*60, 1050));
+        colWells(dst).forEach(function(w){ w.style.animation=''; });
+      } else { await wait(80); }
+      bump();
+    }
+    legState(2,'done');
+
+    // 4. discard excess from col 11
+    legState(3,'active'); bstate.textContent='discard \u00b7 col 11 \u2192 waste';
+    setNow('sim','discard 100 uL col 11 \u2192 waste A12 \u00b7 all wells now 100 uL');
+    ring(11,'src'); await wait(700); unring(11,'src'); bump();
+    legState(3,'done');
+
+    bstate.textContent='built \u00b7 1x \u2192 1/1024';
+    setNow('sim complete','gradient built \u00b7 11 points \u00b7 triplicate \u00b7 100 uL each \u00b7 visual only <span aria-hidden="true">&#x1F375;</span>');
+    runBtn.textContent='run again'; runBtn.className='run done'; runBtn.disabled=false; running=false;
+  }
+  runBtn.addEventListener('click',function(){ if(runBtn.classList.contains('done')){ reset(); return; } run(); });
+</script>
