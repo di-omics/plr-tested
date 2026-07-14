@@ -102,11 +102,16 @@ on that fix.
 
 ## Simulator
 
-`rhodamine-dilution-app.html` is a self-contained visual simulation of this
-build: the plate fills column by column into the 2-fold gradient (col 1 = 1x to
+Two self-contained visual simulations of this build (matching house style). The
+plate fills column by column into the 2-fold gradient (col 1 = 1x to
 col 11 = 1/1024, col 12 blank), with the mix-cycles knob wired to `--mix-cycles`.
-It is a preview only and does not drive the instrument. Open the file in any
-browser, or add it to a phone home screen.
+Both are previews only and do not drive the instrument.
+
+- `rhodamine-dilution-app.html` - phone layout, single column. Open in any
+  browser or add it to a phone home screen.
+- `rhodamine-dilution-app-desktop.html` - desktop console: big plate hero, a
+  four-phase tracker, and a live series readout (the 11 concentrations lighting
+  up 1x to 1/1024). For a laptop or projector.
 
 ## Safety
 
