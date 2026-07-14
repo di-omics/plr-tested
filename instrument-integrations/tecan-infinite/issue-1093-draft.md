@@ -1,74 +1,67 @@
-# DRAFT - upstream issue #1093 comment + PR scaffold
+# DRAFT - upstream issue #1093 comment (filled from the real 2026-07-12 hardware session)
 
-> DO NOT POST any of this until we have a real read result from the instrument.
-> Every claim about the read is a `<FILL ...>` placeholder. We have not run a read yet;
-> the reader was USB-identified only. Fill the placeholders from the actual
-> `06_tecan_read_absorbance_debug.py` output, then post. No claim we have not verified.
+> This is filled from actual runs on the instrument, not placeholders. It does NOT claim a
+> working read - because we did not get one. It reports exactly what works and what fails.
+> Post only with di-omics's explicit OK. Nothing here is published yet.
 
 Issue: https://github.com/pylabrobot/pylabrobot/issues/1093
 Upstream backend: `pylabrobot/plate_reading/tecan/infinite_backend.py`
-`ExperimentalTecanInfinite200ProBackend`, added in #797.
+`ExperimentalTecanInfinite200ProBackend` (from #797).
 
 ---
 
-## 1. Comment to post on #1093 (fill, then post)
+## Comment (ready for review, then post)
 
-Hi @isaacguerreir @rickwierenga - we have an Infinite `<FILL: 200 PRO / Nano+>` on a
-Raspberry Pi (Linux) and ran the same read path. Setup notes that may help others:
+Hi @isaacguerreir @rickwierenga - we hit this too and can add data. We have a Tecan Infinite
+(200 PRO / Nano+ class) on a Raspberry Pi (Linux), driving it through PyLabRobot over USB.
 
-- On the Pi, no Zadig step: `lsusb` shows `0c47:8007` and no kernel driver is bound to the
-  interface, so libusb claims it without a detach. Non-root access via a udev rule for
-  `0c47:8007` (or the `plugdev` group).
-- PyLabRobot `<FILL: version / commit>`, pyusb + libusb.
+Setup note that may help others: on the Pi there is no Zadig step. `lsusb` shows `0c47:8007`
+and no kernel driver is bound to the interface, so libusb claims it directly, no detach.
 
-What we ran (instrumented read that logs each command and the raw USB reads, and tags the
-reads after `SCANX`):
+**What works for us**
 
-```
-<FILL: paste the 06_tecan_read_absorbance_debug.py trace, especially the lines
-around "SCANX sent" and the DIAGNOSIS block>
-```
+- `setup()` (QQ + INIT FORCE), tray open, and tray close all work. One quirk: the `BY#T5000`
+  settle response after `ABSOLUTE MTP,IN` times out on our unit even though the drawer
+  physically moves in; tolerating that one TimeoutError lets us continue.
+- `read_absorbance` gets **past** the `ABSOLUTE MTP` / `SCANX` step and streams measurement
+  frames - we decode per-well sample/reference counts (~379 bytes). So on our unit the
+  absorbance scan itself runs, unlike the timeout you see there on the M200.
 
-Result: `<FILL: exactly one of the following, from the real run>`
+**Where it fails for us**
 
-- If it READ: absorbance completed; OD matrix `<FILL>`. Happy to share the working
-  settings; if it fails on the M200 specifically we can help narrow the difference.
-- If it TIMED OUT like yours: SCANX was sent and the reader returned `<FILL: N>` bytes /
-  reads before the timeout. So the connection is fine and the hang is in the
-  measurement-frame stream after `SCANX` (in `_await_measurements`). `<FILL: whatever the
-  trace shows - e.g. reads return empty, or a TimeoutError on the first 512 B read>`.
+- After the scan, `read_absorbance` raises `RuntimeError: ABS calibration packet not seen;
+  cannot compute calibrated OD`. The `PREPARE REF` reference/calibration packet is not
+  captured, so it cannot turn the raw counts into OD. The raw `sample` counts also peg at
+  65535 (saturated) even with dye loaded in every well, consistent with the reference not
+  being applied.
+- `read_fluorescence` **does** time out at the first `ABSOLUTE MTP,Y=`, matching your symptom.
+  We traced it to `_configure_fluorescence` issuing its ~19-command config **twice**
+  (`for _ in range(2)`) before `PREPARE REF` (sent `read_response=False`); that appears to
+  desync the USB stream so the next read hits nothing. Absorbance's shorter, single-pass
+  config gets through the same MTP move, which is why absorbance scans and fluorescence hangs.
 
-`<FILL: only if we actually found and tested a fix - describe it; otherwise say we are
-still investigating and will follow up.>`
+Corroborating your note: we also see USB read timeouts creep in after operations (same family
+as your "device disappears from lsusb"); a fresh connect recovers it here.
 
----
-
-## 2. PR scaffold (open only after a fix is validated on hardware)
-
-- **Target:** upstream classic backend `pylabrobot/plate_reading/tecan/infinite_backend.py`
-  (NOT the di-omics capabilities refactor - that is a separate conversation, and upstream is
-  mid its own v1 Device/Driver/Backend migration).
-- **Title:** `Fix Tecan Infinite absorbance read: <FILL one-line summary of the fix>`
-- **Body:**
-  - Closes #1093.
-  - Background: the Infinite backend (from #797) connects and moves the drawer, but
-    `read_absorbance` timed out at the `SCANX` scan step on `<FILL: hardware>`.
-  - Root cause: `<FILL: what the trace showed>`.
-  - Fix: `<FILL: the actual change>`.
-  - Hardware: validated on an Infinite `<FILL>` on a Raspberry Pi (Linux), `<FILL: date>`.
-- **Tests:** extend `pylabrobot/plate_reading/tecan/infinite_backend_tests.py` to cover the
-  fixed path with a mocked USB transport (no device). Keep the existing tests green.
-- **CHANGELOG:** add under `## Unreleased` -> `### Fixed` (Keep a Changelog format):
-  `- Tecan Infinite absorbance read <FILL: fix> (#1093)`
-- **Before opening:** run the repo's pre-commit (ruff), `pytest` on the reader tests, and
-  keep the diff minimal and scoped to the read path.
+Happy to run the smaller sequences you offered - setup+close, absorbance config without scan,
+and manual transport commands before `SCANX` - we have the hardware on the bench. Environment:
+Raspberry Pi, Linux, no vendor software.
 
 ---
 
-## 3. Pre-post checklist
+## PR scaffold (open only after a fix is validated on hardware)
 
-- [ ] Ran `06_tecan_read_absorbance_debug.py` on the instrument and captured the trace.
-- [ ] Filled every `<FILL ...>` from that real output. No unverified claims remain.
-- [ ] If claiming a fix: the fix was actually run on the instrument and read a plate.
-- [ ] Comment posted on #1093 first (engage before the PR).
-- [ ] PR only after a fix is validated; follows CONTRIBUTING (ruff, tests, CHANGELOG).
+- **Target:** upstream classic backend `pylabrobot/plate_reading/tecan/infinite_backend.py`.
+- **Two candidate fixes to test on the bench:**
+  1. Capture the `PREPARE REF` / ABS calibration packet so `read_absorbance` can compute OD
+     (right now `decoder.calibration` stays `None`).
+  2. Keep the USB stream in sync through `_configure_fluorescence` (the doubled config +
+     `read_response=False` on `PREPARE REF` is the prime suspect for the `MTP,Y` desync).
+- Tests in `pylabrobot/plate_reading/tecan/infinite_backend_tests.py`; CHANGELOG under
+  `## Unreleased` -> `### Fixed`; ruff pre-commit.
+
+## Pre-post checklist
+
+- [ ] di-omics has read this and approves the exact wording.
+- [ ] It claims nothing we did not observe (it does not claim a working read).
+- [ ] Post the comment on #1093 first; PR only after a fix is validated on hardware.
