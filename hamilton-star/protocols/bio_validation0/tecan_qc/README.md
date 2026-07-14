@@ -33,8 +33,9 @@ dilute (see the DoE map notes).
 1. **diluent** - 100 uL diluent into cols 2-12, rows A-C.
 2. **dye** - 200 uL Rhodamine 1x into col 1, rows A-C (seeds the chain).
 3. **serial** - 10 transfers of 100 uL, col 1 -> 2 -> ... -> 11, mixing each
-   destination, fresh tips per step. After col 10 -> 11, discard 100 uL from
-   col 11 to waste so col 11 also lands at 100 uL.
+   destination 5x (80 uL, tunable with `--mix-cycles`), fresh tips per step.
+   After col 10 -> 11, discard 100 uL from col 11 to waste so col 11 also lands
+   at 100 uL.
 
 Every dilution well briefly holds 200 uL mid-step (100 diluent + 100 transfer);
 the plate well useful volume is ~300 uL, so this is within range. Tips: one full
