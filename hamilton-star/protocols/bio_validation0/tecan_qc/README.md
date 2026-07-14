@@ -100,6 +100,14 @@ Full calibrated OD reads are still blocked upstream on the 20-byte calibration
 frame (PyLabRobot issue #1093); the go/no-go and the dilution build do not depend
 on that fix.
 
+## Simulator
+
+`rhodamine-dilution-app.html` is a self-contained visual simulation of this
+build: the plate fills column by column into the 2-fold gradient (col 1 = 1x to
+col 11 = 1/1024, col 12 blank), with the mix-cycles knob wired to `--mix-cycles`.
+It is a preview only and does not drive the instrument. Open the file in any
+browser, or add it to a phone home screen.
+
 ## Safety
 
 These scripts move real hardware. `--mode deck` is the only motion-free mode.
