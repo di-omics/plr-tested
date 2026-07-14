@@ -288,6 +288,54 @@ def check_method_xml():
     check("ampseq-pcr2(num_cycles=10): LoopNumber 9",
           text_of(steps10[3], "LoopNumber") == "9", f"got {text_of(steps10[3], 'LoopNumber')}")
 
+    # ---- EM-seq shear: 3 steps, 30 min at 37 C default, 15 min at 65 C, 4 C hold, lid 75
+    root, _ = method_xml_for(PROGRAMS["emseq-shear"])
+    method, steps = steps_of(root)
+    check("emseq-shear: 3 steps", len(steps) == 3, f"got {len(steps)}")
+    check("emseq-shear: 37 C 1800 s (30 min default)",
+          (text_of(steps[0], "PlateauTemperature"), text_of(steps[0], "PlateauTime")) == ("37", "1800"))
+    check("emseq-shear: 65 C 900 s",
+          (text_of(steps[1], "PlateauTemperature"), text_of(steps[1], "PlateauTime")) == ("65", "900"))
+    check("emseq-shear: 4 C hold via PostHeating",
+          (text_of(steps[2], "PlateauTemperature"), text_of(steps[2], "PlateauTime")) == ("4", "0"))
+    check("emseq-shear: lid 75 C", all(text_of(s, "LidTemp") == "75" for s in steps))
+
+    # ---- EM-seq shear time is settable
+    from odtc_protocols import emseq_shear
+    backend = _plr.ExperimentalODTCBackend(ip="192.0.2.1", client_ip="192.0.2.2")
+    xml25, _ = backend._generate_method_xml(emseq_shear(shear_minutes=25), 44.0, 25.0, 75.0, True,
+                                            method_name="OFFLINE_CHECK")
+    steps25 = ET.fromstring(xml25).find("Method").findall("Step")
+    check("emseq-shear(shear_minutes=25): 37 C 1500 s",
+          text_of(steps25[0], "PlateauTime") == "1500", f"got {text_of(steps25[0], 'PlateauTime')}")
+
+    # ---- EM-seq PCR: 5 steps, 8-cycle loop, 65 C final extension, 4 C hold, lid 105
+    root, _ = method_xml_for(PROGRAMS["emseq-pcr"])
+    method, steps = steps_of(root)
+    check("emseq-pcr: 6 steps (1 + 3 + 1 + 1)", len(steps) == 6, f"got {len(steps)}")
+    check("emseq-pcr: 4 C hold via PostHeating",
+          (text_of(steps[5], "PlateauTemperature"), text_of(steps[5], "PlateauTime")) == ("4", "0"))
+    check("emseq-pcr: cycle body is 98/10, 62/30, 65/60",
+          [(text_of(s, "PlateauTemperature"), text_of(s, "PlateauTime")) for s in steps[1:4]]
+          == [("98", "10"), ("62", "30"), ("65", "60")])
+    check("emseq-pcr: step 4 loops back to step 2 (GotoNumber 2)",
+          text_of(steps[3], "GotoNumber") == "2", f"got {text_of(steps[3], 'GotoNumber')}")
+    check("emseq-pcr: LoopNumber 7 == 8 cycles - 1 (default)",
+          text_of(steps[3], "LoopNumber") == "7", f"got {text_of(steps[3], 'LoopNumber')}")
+    check("emseq-pcr: 65 C 300 s final extension (not 72 C)",
+          (text_of(steps[4], "PlateauTemperature"), text_of(steps[4], "PlateauTime")) == ("65", "300"))
+    check("emseq-pcr: FluidQuantity 2 (90.0 uL reaction)",
+          text_of(method, "FluidQuantity") == "2", f"got {text_of(method, 'FluidQuantity')}")
+    check("emseq-pcr: lid 105 C", all(text_of(s, "LidTemp") == "105" for s in steps))
+
+    # ---- EM-seq ligation: manual "lid off" resolved to lid 50, FluidQuantity 2 (82.5 uL)
+    root, _ = method_xml_for(PROGRAMS["emseq-ligation"])
+    method, steps = steps_of(root)
+    check("emseq-ligation: lid 50 C (manual says lid off; backend cannot disable)",
+          all(text_of(s, "LidTemp") == "50" for s in steps))
+    check("emseq-ligation: FluidQuantity 2 (82.5 uL reaction)",
+          text_of(method, "FluidQuantity") == "2", f"got {text_of(method, 'FluidQuantity')}")
+
     # ---- step numbering is 1-based and contiguous across every program
     for name, program in sorted(PROGRAMS.items()):
         root, _ = method_xml_for(program)

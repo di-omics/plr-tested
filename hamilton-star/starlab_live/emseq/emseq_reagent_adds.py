@@ -197,7 +197,9 @@ STEPS: Dict[str, Step] = {
         "Q5U Master Mix (E8015 Section 1.9.1).",
         "Seal/spin, then run ODTC emseq-pcr (98 C 30 s; N x [98 C 10 s / 62 C 30 s / 65 C 60 s]; "
         "65 C 5 min; 4 C hold; lid 105 C). N is input-dependent (default 8 = 10 ng; see the E8015 "
-        "table). Then SPRI cleanup at 0.8X: emseq_cleanup.py --cleanup post-pcr.",
+        "table). Then SPRI cleanup at 0.8X: emseq_cleanup.py --cleanup post-pcr. Note: 45 uL "
+        "is the largest p50 add; its accuracy and any splash into the 40 uL already in the "
+        "well need a dye/gravimetric check on hardware.",
     ),
 }
 
@@ -274,14 +276,23 @@ async def transfer_reagent(lh: LiquidHandler, r: Dict[str, object], step: Step, 
         tips = r["p50_tips"][f"A{tip_col}:H{tip_col}"]
         src_h, src_off = P50_SOURCE_ASP_HEIGHT, P50_SOURCE_ASP_OFFSETS
         dsp_h, dsp_off = P50_WORK_DSP_HEIGHT, P50_WORK_DSP_OFFSETS
-        blowout = P50_BLOWOUT_AIR_VOLUME
+        tip_capacity, blowout = 50.0, P50_BLOWOUT_AIR_VOLUME
     elif step.tip_type == "p10":
         tips = r["p10_tips"][f"A{tip_col}:H{tip_col}"]
         src_h, src_off = P10_SOURCE_ASP_HEIGHT, P10_SOURCE_ASP_OFFSETS
         dsp_h, dsp_off = P10_WORK_DSP_HEIGHT, P10_WORK_DSP_OFFSETS
-        blowout = P10_BLOWOUT_AIR_VOLUME
+        tip_capacity, blowout = 10.0, P10_BLOWOUT_AIR_VOLUME
     else:
         raise RuntimeError(f"Unknown tip_type {step.tip_type!r} for mode {step.mode!r}")
+
+    # Guard the liquid volume only. Blowout is trailing air handled by the channel and is
+    # NOT summed against the tip's liquid capacity: the confirmed PTA/WGA p10 add is 6 uL
+    # liquid with a 7 uL blowout and runs clean on hardware.
+    if step.volume_ul > tip_capacity:
+        raise ValueError(
+            f"mode {step.mode!r}: {step.volume_ul} uL exceeds the {step.tip_type} tip "
+            f"liquid capacity ({tip_capacity} uL). Use a larger tip."
+        )
 
     print(f"\n=== {step.mode.upper()}: {step.label} ===")
     print(f"PREP: {step.manual_prep}")
