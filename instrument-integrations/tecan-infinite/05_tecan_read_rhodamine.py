@@ -65,11 +65,14 @@ async def run(args) -> int:
     print("connecting (the stage will home)...")
     await reader.setup()
     try:
-        print("opening drawer to seat the plate...")
-        await reader.loading_tray.open()
-        print(f"  seat the Rhodamine ladder plate flat. Closing in {args.seat_seconds:.0f} s, hands clear.")
-        await asyncio.sleep(args.seat_seconds)
-        await reader.loading_tray.close()
+        if args.preloaded:
+            print("preloaded: plate loaded and drawer already closed; reading with no tray commands...")
+        else:
+            print("opening drawer to seat the plate...")
+            await reader.loading_tray.open()
+            print(f"  seat the Rhodamine ladder plate flat. Closing in {args.seat_seconds:.0f} s, hands clear.")
+            await asyncio.sleep(args.seat_seconds)
+            await reader.loading_tray.close()
 
         print(
             f"reading fluorescence ex {args.ex} nm / em {args.em} nm, "
@@ -106,6 +109,7 @@ def main() -> int:
     parser.add_argument("--focal-height", type=float, default=20.0, help="mm (tune per plate)")
     parser.add_argument("--integration-us", type=int, default=20)
     parser.add_argument("--seat-seconds", type=float, default=15.0)
+    parser.add_argument("--preloaded", action="store_true", help="plate is already loaded; do not open the tray, just read")
     parser.add_argument("--ladder-col", type=int, default=0, help="1-based column of the ladder, for the monotonicity check")
     args = parser.parse_args()
     tecan_compat.require_confirm(args.confirm, "Fluorescence read (setup homes the stage, drawer and stage move)")
