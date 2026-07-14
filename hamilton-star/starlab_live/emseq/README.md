@@ -132,6 +132,38 @@ Known gaps that MUST be closed on hardware before trusting a real run:
   (`ODTC_CHILD_LOCATION_IS_MEASURED = False`); the iSWAP-into-ODTC geometry is inherited
   from the targeted PCR choreography and has not been re-confirmed for this workflow.
 
+## Controls and acceptance criteria
+
+Controls. The EM-seq chemistry has built-in conversion controls: unmethylated lambda DNA
+and CpG-methylated pUC19 are spiked into every sample at DNA prep (M7634 Section 3.1.1,
+dilution by input per the table). They report deamination efficiency directly from the
+sequencing data. For the automation itself, reserve at least one column well as a
+no-template control (control DNAs and reagents, no sample gDNA) to catch cross-well
+carryover; single-column runs can dedicate well H.
+
+Acceptance criteria. None of this is met yet; these are the bars a real run must clear
+before any leg is marked validated, in the repo's usual sense.
+
+- Liquid handling (per leg, on hardware): the dispense lands in-well with no splash or
+  climbing, tips leave clean, and delivered volume is within tolerance by gravimetric or
+  dye check. The high-volume adds (pcr-mm 45 uL, ligation-mm 31 uL) and every SPRI step
+  need their own dye/gravimetric confirmation, not just a dry motion pass.
+- SPRI cleanups: elution recovers the expected volume (28 / 16 / 20 uL kept) with no bead
+  carryover into the eluate (carryover degrades deamination and sequencing).
+- Thermocycling: each ODTC program holds every setpoint within about +/- 0.3 C (the bar
+  the ampseq-pcr1 run met), and the PCR completes despite the 98 C / 99 C-ceiling warnings.
+- End to end: conversion controls show high deamination of unmethylated lambda and
+  protection of methylated pUC19; the final library has the expected size distribution
+  (420-620 bp) and yield on a TapeStation/Bioanalyzer; the no-template control is clean.
+
+## Tip handling defaults
+
+Reagent adds and the full choreography follow the repo convention: default `--mode deck`
+(no motion), an explicit mode is required to move, and `--dry` runs the chatterbox. The
+cleanup script discards tips by default (it handles beads and ethanol; carryover is a
+hazard); `--return-tips` is for dry observation only. A runtime guard rejects any add
+whose liquid volume would exceed the tip (blowout is trailing air, not summed against it).
+
 ## Running
 
 Scripts execute on the Pi wired to the instruments, via each tree's `run_on_pi.sh`.

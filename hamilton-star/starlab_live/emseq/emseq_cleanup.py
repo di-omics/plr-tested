@@ -90,12 +90,14 @@ class Cleanup:
     source: str
 
 
+# supernatant_remove_ul is set a few uL ABOVE the exact reaction+beads sum so the aspirate
+# clears the well after binding; the tip pulls air once the well is empty, which is fine.
 CLEANUPS: Dict[str, Cleanup] = {
-    # 82.5 uL ligation reaction + 93 uL beads = 175.5 uL to remove after binding.
+    # 82.5 uL ligation reaction + 93 uL beads = 175.5 uL bound; remove 180 (margin).
     "post-ligation": Cleanup("post-ligation", "1.1X", 93.0, 180.0, 29.0, 28.0, "NEB #M7634 Section 3.4"),
-    # 51 uL stop reaction + 50 uL beads = 101 uL.
+    # 51 uL stop reaction + 50 uL beads = 101 uL bound; remove 105 (margin).
     "post-tet2": Cleanup("post-tet2", "1.0X", 50.0, 105.0, 17.0, 16.0, "NEB #E8015 Section 1.6"),
-    # 90 uL PCR reaction + 72 uL beads = 162 uL.
+    # 90 uL PCR reaction + 72 uL beads = 162 uL bound; remove 165 (margin).
     "post-pcr": Cleanup("post-pcr", "0.8X", 72.0, 165.0, 21.0, 20.0, "NEB #E8015 Section 1.10"),
 }
 
@@ -270,34 +272,48 @@ async def p50_remove_residual_to_waste(lh, r, volume_ul, discard_tips, tip_col):
         await finish_tips(lh, discard_tips, "p50")
 
 
-# Ordered cleanup motion sequence. Each entry: (label, coroutine-thunk-name, uses_trough_well).
+# The cleanup motion sequence, one leg per name, in order. Each leg is a coroutine
+# factory bound to the selected cleanup's volumes. Any single leg is also a valid --mode,
+# so heights can be tuned one step at a time on hardware (the same granularity the targeted PCR
+# cleanup script offers).
+LEG_ORDER = [
+    "beads-add", "supernatant-remove",
+    "ethanol-add1", "ethanol-remove1", "ethanol-add2", "ethanol-remove2",
+    "residual-remove", "elution-add",
+]
+
+
+def build_legs(cleanup: Cleanup):
+    return {
+        "beads-add": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_BEADS, cleanup.beads_ul, dt, tc, "beads add"),
+        "supernatant-remove": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, cleanup.supernatant_remove_ul, dt, tc, "supernatant remove"),
+        "ethanol-add1": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_ETOH1, VOL_ETHANOL_ADD, dt, tc, "ethanol wash 1 add"),
+        "ethanol-remove1": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, dt, tc, "ethanol wash 1 remove"),
+        "ethanol-add2": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_ETOH2, VOL_ETHANOL_ADD, dt, tc, "ethanol wash 2 add"),
+        "ethanol-remove2": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, dt, tc, "ethanol wash 2 remove"),
+        "residual-remove": lambda lh, r, dt, tc: p50_remove_residual_to_waste(lh, r, VOL_RESIDUAL_ETHANOL_REMOVE, dt, tc),
+        "elution-add": lambda lh, r, dt, tc: p50_add_from_trough_low(lh, r, TROUGH_ELUTION, cleanup.elution_ul, dt, tc, "elution add"),
+    }
+
+
+async def run_leg(lh, r, cleanup: Cleanup, name: str, discard_tips: bool, tip_col: int):
+    print(f"\n=== EM-seq {cleanup.name} cleanup ({cleanup.ratio_label}) - leg {name} ===")
+    await build_legs(cleanup)[name](lh, r, discard_tips, tip_col)
+    print(f"SUCCESS: {name} motion completed.")
+
+
 async def run_all(lh: LiquidHandler, r: Dict[str, object], cleanup: Cleanup, discard_tips: bool):
     print(f"\n=== EM-seq {cleanup.name} cleanup ({cleanup.ratio_label}) - all motions ===")
     print("Between beads-add and supernatant-remove: incubate 5 min RT, then let beads pellet on")
-    print("the magnet (operator/timed; not modeled here). Same before elution transfer.")
+    print("the magnet (operator/timed; not modeled here). Same before elution.")
+    legs = build_legs(cleanup)
     tip_col = 1
-
-    async def advance():
-        nonlocal tip_col
+    for name in LEG_ORDER:
+        if name == "elution-add":
+            print("\nAir-dry the beads 30 s - 2 min (operator/timed; do not over-dry). Then elute:")
+        await legs[name](lh, r, discard_tips, tip_col)
         if discard_tips:
             tip_col += 1
-
-    await p300_add_from_trough(lh, r, TROUGH_BEADS, cleanup.beads_ul, discard_tips, tip_col, "beads add")
-    await advance()
-    await p300_remove_to_waste(lh, r, cleanup.supernatant_remove_ul, discard_tips, tip_col, "supernatant remove")
-    await advance()
-    await p300_add_from_trough(lh, r, TROUGH_ETOH1, VOL_ETHANOL_ADD, discard_tips, tip_col, "ethanol wash 1 add")
-    await advance()
-    await p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, discard_tips, tip_col, "ethanol wash 1 remove")
-    await advance()
-    await p300_add_from_trough(lh, r, TROUGH_ETOH2, VOL_ETHANOL_ADD, discard_tips, tip_col, "ethanol wash 2 add")
-    await advance()
-    await p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, discard_tips, tip_col, "ethanol wash 2 remove")
-    await advance()
-    await p50_remove_residual_to_waste(lh, r, VOL_RESIDUAL_ETHANOL_REMOVE, discard_tips, tip_col)
-    await advance()
-    print("\nAir-dry the beads 30 s - 2 min (operator/timed; do not over-dry). Then elute:")
-    await p50_add_from_trough_low(lh, r, TROUGH_ELUTION, cleanup.elution_ul, discard_tips, tip_col, "elution add")
     print(f"\nSUCCESS: {cleanup.name} cleanup motions completed. Eluate ({cleanup.elution_ul} uL) is on the")
     print(f"beads; transfer the clear {cleanup.keep_ul} uL off the magnet to a fresh column (off-deck).")
 
@@ -316,17 +332,26 @@ async def main():
     )
     parser.add_argument("--cleanup", choices=sorted(CLEANUPS.keys()), required=True,
                         help="Which EM-seq cleanup: post-ligation (1.1X), post-tet2 (1.0X), post-pcr (0.8X).")
-    parser.add_argument("--mode", choices=["deck", "all"], default="deck",
-                        help="deck = assignment only (no motion). all = full cleanup motion sequence.")
+    parser.add_argument("--mode", choices=["deck", "all"] + LEG_ORDER, default="deck",
+                        help="deck = assignment only (no motion). all = full sequence. Or one leg name to tune it alone.")
     parser.add_argument("--dry", action="store_true",
                         help="Use STARChatterboxBackend (simulated, no movement). Default is real STARBackend.")
-    parser.add_argument("--discard-tips", action="store_true",
-                        help="Discard tips (production). Default returns tips (dry observation).")
+    parser.add_argument("--return-tips", action="store_true",
+                        help="Return tips instead of discarding. Dry observation only; this cleanup handles "
+                             "beads/ethanol, so real runs MUST discard (the default).")
+    parser.add_argument("--tip-col", type=int, default=1, help="Tip column for a single-leg --mode. Default: 1.")
     args = parser.parse_args()
 
+    if args.tip_col < 1 or args.tip_col > 12:
+        raise ValueError("--tip-col must be 1..12")
+
+    # Discard by default: this cleanup handles reagent-contaminated liquid (beads, ethanol),
+    # so returning tips is a carryover hazard. --return-tips is for dry observation only.
+    discard_tips = not args.return_tips
     cleanup = CLEANUPS[args.cleanup]
 
     print("Initializing STAR with skip_autoload=True...")
+    print(f"Tip behavior: discard_tips={discard_tips} (production discards; --return-tips is dry-observe only).")
     lh = LiquidHandler(backend=make_backend(args.dry), deck=STARDeck())
     await lh.setup(skip_autoload=True)
 
@@ -335,7 +360,10 @@ async def main():
         if args.mode == "deck":
             print("\nMode deck: assignment only. No movement or liquid handling executed.")
             return
-        await run_all(lh, r, cleanup, args.discard_tips)
+        if args.mode == "all":
+            await run_all(lh, r, cleanup, discard_tips)
+            return
+        await run_leg(lh, r, cleanup, args.mode, discard_tips, args.tip_col)
         return
     finally:
         print("Stopping STAR backend...")

@@ -88,7 +88,9 @@ def build_plan(sim_lh: bool):
         return ("run", f"reagent add: {mode} (tip col {tip_col})", argv)
 
     def cleanup(name):
-        argv = [str(CLEANUP), "--cleanup", name, "--mode", "all"] + lh_extra
+        # This is a dry, no-reagent rehearsal, so return tips (emseq_cleanup defaults to
+        # discard for real reagent/ethanol runs). A real run drops the --return-tips.
+        argv = [str(CLEANUP), "--cleanup", name, "--mode", "all", "--return-tips"] + lh_extra
         return ("run", f"SPRI cleanup: {name}", argv)
 
     def iswap(label, script, extra):
