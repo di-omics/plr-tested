@@ -419,6 +419,173 @@ EMSEQ_SHEAR = emseq_shear()
 EMSEQ_PCR = emseq_pcr()
 
 
+# ===========================================================================
+# NEBNext Single Cell / Low Input RNA Library Prep for Illumina (scRNA-seq).
+# A DIFFERENT protocol from everything above: RNA -> cDNA (reverse transcription +
+# template switching) -> cDNA amplification -> fragment/end-prep -> adaptor ligation
+# -> library PCR.
+#
+# Source (public NEB kit manual, transcribed the same way as the rest of this file,
+# every temperature/time/cycle copied and cited on the line where it is used):
+#   NEBNext Single Cell/Low Input RNA Library Prep Kit for Illumina, NEB #E6420
+#   manual, Version 6.0 (01/24), Section 1 "Protocol for Cells". Section 2 "Low Input
+#   RNA" shares the same thermal profiles; the only difference is the cDNA
+#   amplification mix and the front-end sample handling, not the ODTC programs.
+#
+# The thermal programs only. Reagent volumes and the liquid-handling map live in the
+# STAR scripts under hamilton-star/starlab_live/scrnaseq/, not here.
+#
+# Two device translations, identical to the ones already used above:
+#   - "Hold at 4 C" with no time is a final 4 C step, hold_seconds=0, post_heating=True.
+#   - The manual's "heated lid off" for the ligation step cannot be honored (the backend
+#     writes one lid temperature per method and cannot disable the lid). As with the
+#     existing `ligation` and `emseq-ligation` programs, sc-ligation runs the lid at 50 C.
+#     Flagged again at the constant below.
+#
+# Two values are NOT pinned down by the document and are flagged at each use:
+#   - sc-cdna-pcr cycle count. E6420 Section 1.5.3 gives an input-dependent table
+#     (HEK single cell 18, HeLa 17, Jurkat 20, 10 cells 14-17, 100 cells 11-14,
+#     2 pg 20-21, ... range 11-21). Default 18 (HEK single cell); pass num_cycles.
+#   - sc-lib-pcr cycle count. E6420 Section 1.11.3: default 8 for 1-20 ng cDNA input,
+#     input-dependent (100 pg-1 ng: 9-12, 20-100 ng: 3-6). Default 8; pass num_cycles.
+#
+# Block-ceiling caution, same as ampseq-pcr1 and emseq-pcr: both PCR programs denature
+# at 98 C, 1 C under the ODTC's 99 C block ceiling, so the block can graze it on the
+# ramp-in and the device may log "temperature out of specification" warnings (warnings,
+# not faults; see the ampseq-pcr1 note above and the odtc README).
+# ===========================================================================
+
+LID_C_SC_ANNEAL = 105.0     # E6420 Section 1.3.3: "heated lid set to 105 C".
+LID_C_SC_RT = 105.0         # E6420 Section 1.4.4: "heated lid set to 105 C".
+LID_C_SC_CDNA_PCR = 105.0   # E6420 Section 1.5.3: "heated lid set to 105 C".
+LID_C_SC_FS = 75.0          # E6420 Section 1.8.5: "heated lid set to 75 C".
+LID_C_SC_LIGATION = 50.0    # E6420 Section 1.9.5: "heated lid off". Backend cannot
+#                             disable the lid; 50 C mirrors ligation / emseq-ligation.
+LID_C_SC_USER = 47.0        # E6420 Section 1.9.7: "heated lid set to >= 47 C".
+LID_C_SC_LIB_PCR = 105.0    # E6420 Section 1.11.3 gives no lid temperature; 105 C is the
+#                             standard Q5 heated-lid default (matches the cDNA PCR here). Not transcribed.
+
+# Reaction volumes at the point each program runs (single reaction), summed from the
+# pipetting steps. These set block_max_volume -> FluidQuantity (<30 -> 0, <75 -> 1, else 2).
+VOL_UL_SC_ANNEAL = 9.0      # 5 lysed cells + 1 RT primer mix + 3 water (1.3.1A)
+VOL_UL_SC_RT = 20.0         # 9 annealed (1.3.3) + 11 RT mix (1.4.1)
+VOL_UL_SC_CDNA_PCR = 100.0  # 20 RT product (1.4.4) + 80 cDNA amplification mix (1.5.1)
+VOL_UL_SC_FS = 35.0         # 26 cleaned cDNA (1.6.20) + 9 FS mix (1.8.3)
+VOL_UL_SC_LIGATION = 68.5   # 35 FS reaction (1.8.5) + 2.5 adaptor + 31 ligation mix (1.9.3)
+VOL_UL_SC_USER = 71.5       # 68.5 ligation (1.9.5) + 3 USER enzyme (1.9.6)
+VOL_UL_SC_LIB_PCR = 50.0    # 15 adaptor-ligated (1.10.11) + 25 Q5 MM + 10 index primers (1.11.1)
+
+
+# ---------------------------------------------------------------------------
+# E6420 Section 1.3.3. Primer annealing for first-strand synthesis. Lid 105 C.
+#   5 minutes at 70 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+SC_ANNEAL = Protocol(stages=[
+    Stage(steps=[Step(temperature=[70.0], hold_seconds=5 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# E6420 Section 1.4.4. Reverse transcription and template switching. Lid 105 C.
+#   90 minutes at 42 C
+#   10 minutes at 70 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+SC_RT = Protocol(stages=[
+    Stage(steps=[Step(temperature=[42.0], hold_seconds=90 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[70.0], hold_seconds=10 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# E6420 Section 1.5.3. cDNA amplification by PCR. Lid 105 C.
+#   Initial Denaturation   98 C   45 seconds   1 cycle
+#   Denaturation           98 C   10 seconds  \
+#   Annealing              62 C   15 seconds   > 11-21 cycles (default 18, see header)
+#   Extension              72 C   3 minutes   /
+#   Final Extension        72 C   5 minutes    1 cycle
+#   Hold                    4 C   infinite
+# ---------------------------------------------------------------------------
+def sc_cdna_pcr(num_cycles: int = 18) -> "Protocol":
+    """Single-cell cDNA amplification PCR.
+
+    Source: E6420 Section 1.5.3 cycling table. Cycle count is input-dependent (see
+    header); default 18 matches a HEK293 single cell. The 98 C denaturation grazes
+    the ODTC's 99 C block ceiling (see header caution).
+    """
+    return Protocol(stages=[
+        Stage(steps=[Step(temperature=[98.0], hold_seconds=45)], repeats=1),
+        Stage(steps=[
+            Step(temperature=[98.0], hold_seconds=10),
+            Step(temperature=[62.0], hold_seconds=15),
+            Step(temperature=[72.0], hold_seconds=3 * 60),
+        ], repeats=num_cycles),
+        Stage(steps=[Step(temperature=[72.0], hold_seconds=5 * 60)], repeats=1),
+        Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+    ])
+
+# ---------------------------------------------------------------------------
+# E6420 Section 1.8.5. Fragmentation / End Prep (Ultra II FS). Lid 75 C.
+#   25 minutes at 37 C
+#   30 minutes at 65 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+SC_FS = Protocol(stages=[
+    Stage(steps=[Step(temperature=[37.0], hold_seconds=25 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[65.0], hold_seconds=30 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# E6420 Section 1.9.5. Adaptor ligation. Lid "off" -> 50 C (see header).
+#   15 minutes at 20 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+SC_LIGATION = Protocol(stages=[
+    Stage(steps=[Step(temperature=[20.0], hold_seconds=15 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# E6420 Section 1.9.7. USER enzyme incubation (cleaves the NEBNext adaptor). Lid >= 47 C.
+#   15 minutes at 37 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+SC_USER = Protocol(stages=[
+    Stage(steps=[Step(temperature=[37.0], hold_seconds=15 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# E6420 Section 1.11.3. PCR enrichment of adaptor-ligated DNA (Q5, 2-step). Lid 105 C.
+#   Initial Denaturation   98 C   30 seconds   1 cycle
+#   Denaturation           98 C   10 seconds  \  > 8 cycles (default, see header)
+#   Annealing/Extension    65 C   75 seconds  /
+#   Final Extension        65 C   5 minutes    1 cycle
+#   Hold                    4 C   infinite
+# ---------------------------------------------------------------------------
+def sc_lib_pcr(num_cycles: int = 8) -> "Protocol":
+    """Single-cell library enrichment PCR.
+
+    Source: E6420 Section 1.11.3 cycling table. Two-step PCR (combined annealing/
+    extension at 65 C). Default 8 cycles for 1-20 ng cDNA input (see header).
+    """
+    return Protocol(stages=[
+        Stage(steps=[Step(temperature=[98.0], hold_seconds=30)], repeats=1),
+        Stage(steps=[
+            Step(temperature=[98.0], hold_seconds=10),
+            Step(temperature=[65.0], hold_seconds=75),
+        ], repeats=num_cycles),
+        Stage(steps=[Step(temperature=[65.0], hold_seconds=5 * 60)], repeats=1),
+        Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+    ])
+
+
+SC_CDNA_PCR = sc_cdna_pcr()
+SC_LIB_PCR = sc_lib_pcr()
+
+
 # ---------------------------------------------------------------------------
 # Not biology. Hardware exercises.
 #
@@ -489,6 +656,20 @@ PROGRAMS = {
                                "NEB #E8015 EM-seq v2 manual, Section 1.8.3, APOBEC deamination"),
     "emseq-pcr": Program("emseq-pcr", EMSEQ_PCR, LID_C_EMSEQ_PCR, VOL_UL_EMSEQ_PCR,
                          "NEB #E8015 EM-seq v2 manual, Section 1.9.3, library PCR"),
+    "sc-anneal": Program("sc-anneal", SC_ANNEAL, LID_C_SC_ANNEAL, VOL_UL_SC_ANNEAL,
+                         "NEB #E6420 Single Cell RNA manual, Section 1.3.3, primer annealing"),
+    "sc-rt": Program("sc-rt", SC_RT, LID_C_SC_RT, VOL_UL_SC_RT,
+                     "NEB #E6420 Single Cell RNA manual, Section 1.4.4, RT + template switching"),
+    "sc-cdna-pcr": Program("sc-cdna-pcr", SC_CDNA_PCR, LID_C_SC_CDNA_PCR, VOL_UL_SC_CDNA_PCR,
+                           "NEB #E6420 Single Cell RNA manual, Section 1.5.3, cDNA amplification"),
+    "sc-fs": Program("sc-fs", SC_FS, LID_C_SC_FS, VOL_UL_SC_FS,
+                     "NEB #E6420 Single Cell RNA manual, Section 1.8.5, fragmentation / end prep"),
+    "sc-ligation": Program("sc-ligation", SC_LIGATION, LID_C_SC_LIGATION, VOL_UL_SC_LIGATION,
+                           "NEB #E6420 Single Cell RNA manual, Section 1.9.5, adaptor ligation"),
+    "sc-user": Program("sc-user", SC_USER, LID_C_SC_USER, VOL_UL_SC_USER,
+                       "NEB #E6420 Single Cell RNA manual, Section 1.9.7, USER enzyme"),
+    "sc-lib-pcr": Program("sc-lib-pcr", SC_LIB_PCR, LID_C_SC_LIB_PCR, VOL_UL_SC_LIB_PCR,
+                          "NEB #E6420 Single Cell RNA manual, Section 1.11.3, library enrichment PCR"),
     "timecheck": Program("timecheck", TIMECHECK, LID_C_HARDWARE_EXERCISE, 20.0,
                          "hardware exercise, not biology", is_biology=False),
     "selftest": Program("selftest", SELFTEST, LID_C_HARDWARE_EXERCISE, 20.0,
