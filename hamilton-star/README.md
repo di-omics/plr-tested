@@ -80,6 +80,17 @@ rail35 pos3 = trough/reservoir
   - ODTC programs (`sc-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
   - Status: written, simulation-first, not yet run on the instrument.
 
+## TIP-seq entrypoint (targeted insertion of promoters, JCB 2021)
+
+- `starlab_live/tipseq/` - the automatable T7 linear-amplification + library back half of
+  TIP-seq (CUT&Tag + pA-Tn5 tagmentation front end is off-deck). Gap-fill, T7 IVT (overnight),
+  RT, second-strand, Tn5 fragmentation, indexing PCR, with retained-bead SPRI reactivation
+  cleanups. See `starlab_live/tipseq/README.md`.
+  - `run_tipseq_odtc_1col_full_dry.py --print` shows the full 39-leg plan.
+  - `run_tipseq_odtc_1col_full_dry.py --sim-lh` runs the liquid-handling legs on the chatterbox.
+  - ODTC programs (`tip-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
+  - Status: written, simulation-first, not yet run on the instrument.
+
 ## Current priorities
 
 1. Hamilton bead clean for amplicon-seq.
