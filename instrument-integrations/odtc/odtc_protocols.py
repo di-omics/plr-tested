@@ -586,6 +586,178 @@ SC_CDNA_PCR = sc_cdna_pcr()
 SC_LIB_PCR = sc_lib_pcr()
 
 
+# ===========================================================================
+# TIP-seq (targeted insertion of promoters sequencing). A DIFFERENT protocol: it
+# combines CUT&Tag pA-Tn5 tagmentation with T7 RNA-polymerase linear amplification.
+# The CUT&Tag/tagmentation/FACS front end (conA beads, antibody incubations, pA-Tn5,
+# tagmentation, FACS) is operator/off-deck; these programs cover the automatable T7
+# linear-amplification + library back half, which the paper calls a single-tube protocol.
+#
+# Source (public, peer-reviewed method, transcribed the same way as the rest of this file,
+# every temperature/time/cycle copied and cited to the section where it appears):
+#   Bartlett, Dileep, Handa, Ohkawa, Kimura, Henikoff, Gilbert. "High-throughput single-cell
+#   epigenomic profiling by targeted insertion of promoters (TIP-seq)." J. Cell Biol. 2021,
+#   220(12):e202103078. https://doi.org/10.1083/jcb.202103078 . Materials and methods,
+#   "Bulk TIP-seq" (the linear-amp + library steps) and the PCR profile from "CUT&Tag".
+#
+# The thermal programs only. Reagent volumes and the liquid-handling map live in the STAR
+# scripts under hamilton-star/starlab_live/tipseq/, not here.
+#
+# Two values are flagged as choices, not transcriptions:
+#   - tip-ivt duration. The paper incubates T7 IVT for 16-19 h; default 17 h (pass ivt_hours).
+#     This ties up the ODTC overnight; launch it detached on the Pi.
+#   - tip-ivt / tip-rnaseh lid temperature. The paper uses an incubator/thermal cycler and does
+#     not give a lid temperature for the 37 C steps. The ODTC must set a lid; 47 C is used (well
+#     above the 37 C sample to limit condensation over a long hold, well under any bake risk).
+#     Not transcribed. tip-pcr uses the CUT&Tag 8 C hold as written (not 4 C).
+#
+# Block-ceiling caution, same as the other PCR programs here: tip-pcr denatures at 98 C, 1 C
+# under the ODTC 99 C block ceiling, so the block can graze it and log out-of-spec warnings.
+# ===========================================================================
+
+LID_C_TIP_GAPFILL = 105.0    # Taq gap-fill 72 C 3 min; standard heated lid.
+LID_C_TIP_IVT = 47.0         # 37 C long hold; lid not given by the paper (choice, see header).
+LID_C_TIP_RT_ANNEAL = 105.0  # random-hexamer anneal 70 C 3 min.
+LID_C_TIP_RT = 105.0         # SMART MMLV RT.
+LID_C_TIP_RNASEH = 47.0      # 37 C 20 min; lid not given (choice, see header).
+LID_C_TIP_SS_ANNEAL = 105.0  # second-strand primer anneal 65 C 2 min.
+LID_C_TIP_SS = 105.0         # second-strand synthesis 72 C 8 min (Taq).
+LID_C_TIP_TAG = 105.0        # cDNA Tn5 fragmentation 55 C 6 min.
+LID_C_TIP_PCR = 105.0        # NEBNext High-Fidelity 2X PCR; standard heated lid.
+
+# Reaction volumes at the point each program runs (single reaction), from the pipetting steps.
+VOL_UL_TIP_GAPFILL = 10.0    # 8 DNA+beads in water + 2 Taq 5X MM
+VOL_UL_TIP_IVT = 16.3        # 10 gap-fill + 2 NTP + 2 T7 buffer + 2 T7 pol + 0.3 RNase inhibitor
+VOL_UL_TIP_RT_ANNEAL = 11.5  # 9 purified RNA + 2.5 random hexamer
+VOL_UL_TIP_RT = 20.0         # 11.5 + 4 first-strand buffer + 2 dNTP + 2 DTT + 0.5 MMLV
+VOL_UL_TIP_RNASEH = 21.0     # 20 + 1 RNase H (1:10)
+VOL_UL_TIP_SS_ANNEAL = 23.5  # 21 + 2.5 sss oligo
+VOL_UL_TIP_SS = 29.4         # 23.5 + 5.9 Taq 5X MM
+VOL_UL_TIP_TAG = 11.0        # 7 purified cDNA + 2 TAPS buffer + 2 Tn5 (ME-B)
+VOL_UL_TIP_PCR = 40.0        # 16 purified DNA + 20 2X PCR MM + 2 index primer + 2 i7 index
+
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. Taq gap-fill of tagmented, purified gDNA (beads retained). Lid 105 C.
+#   3 minutes at 72 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+TIP_GAPFILL = Protocol(stages=[
+    Stage(steps=[Step(temperature=[72.0], hold_seconds=3 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. T7 in vitro transcription (HiScribe T7). Lid 47 C (choice, see header).
+#   16-19 hours at 37 C  (default 17)
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+def tip_ivt(ivt_hours: float = 17.0) -> "Protocol":
+    """T7 IVT linear amplification. Source: Bulk TIP-seq, 37 C for 16-19 h; default 17.
+
+    This is an overnight hold that ties up the ODTC. Launch it detached on the Pi.
+    """
+    return Protocol(stages=[
+        Stage(steps=[Step(temperature=[37.0], hold_seconds=ivt_hours * 60 * 60)], repeats=1),
+        Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+    ])
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. Random-hexamer anneal before first-strand synthesis. Lid 105 C.
+#   3 minutes at 70 C
+#   Hold at 4 C  (the paper says "immediately placing on ice")
+# ---------------------------------------------------------------------------
+TIP_RT_ANNEAL = Protocol(stages=[
+    Stage(steps=[Step(temperature=[70.0], hold_seconds=3 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. First-strand synthesis (SMART MMLV Reverse Transcriptase). Lid 105 C.
+#   10 minutes at 22 C
+#   60 minutes at 42 C
+#   10 minutes at 70 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+TIP_RT = Protocol(stages=[
+    Stage(steps=[Step(temperature=[22.0], hold_seconds=10 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[42.0], hold_seconds=60 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[70.0], hold_seconds=10 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. RNase H digestion of cDNA-RNA hybrids. Lid 47 C (choice, see header).
+#   20 minutes at 37 C
+#   Hold at 4 C
+# ---------------------------------------------------------------------------
+TIP_RNASEH = Protocol(stages=[
+    Stage(steps=[Step(temperature=[37.0], hold_seconds=20 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. Second-strand primer anneal (sss oligo). Lid 105 C.
+#   2 minutes at 65 C
+#   Hold at 4 C  (the paper says "placing immediately on ice")
+# ---------------------------------------------------------------------------
+TIP_SS_ANNEAL = Protocol(stages=[
+    Stage(steps=[Step(temperature=[65.0], hold_seconds=2 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. Second-strand synthesis (Taq 5X Master Mix). Lid 105 C.
+#   8 minutes at 72 C
+#   Hold at 4 C  (the paper says "then cooling on ice")
+# ---------------------------------------------------------------------------
+TIP_SS = Protocol(stages=[
+    Stage(steps=[Step(temperature=[72.0], hold_seconds=8 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# Bulk TIP-seq. cDNA fragmentation / 3' adapter tagging (Tn5, ME-B only). Lid 105 C.
+#   6 minutes at 55 C
+#   Hold at 4 C  (the paper says "briefly cooled on ice" before GuHCl)
+# ---------------------------------------------------------------------------
+TIP_TAG = Protocol(stages=[
+    Stage(steps=[Step(temperature=[55.0], hold_seconds=6 * 60)], repeats=1),
+    Stage(steps=[Step(temperature=[4.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+])
+
+# ---------------------------------------------------------------------------
+# TIP-seq PCR indexing (NEBNext High-Fidelity 2X). Profile from the CUT&Tag section. Lid 105 C.
+#   Gap fill            72 C   5 minutes    1 cycle
+#   Denaturation        98 C   30 seconds   1 cycle
+#   Denaturation        98 C   10 seconds  \  > N cycles (bulk ~7-9, sciTIP 7-12; default 8)
+#   Annealing           63 C   30 seconds  /
+#   Final Extension     72 C   60 seconds   1 cycle
+#   Hold                 8 C   infinite     (as written; the paper holds at 8 C, not 4 C)
+# ---------------------------------------------------------------------------
+def tip_pcr(num_cycles: int = 8) -> "Protocol":
+    """TIP-seq library indexing PCR.
+
+    Source: TIP-seq PCR ("optimal number of PCR cycles ~7-9", sciTIP 7-12); the cycling
+    profile is the CUT&Tag program (72 C 5 min gap fill; 98 C 30 s; N x [98 C 10 s, 63 C 30 s];
+    72 C 1 min; hold 8 C). Default 8 cycles. The 98 C denaturation grazes the 99 C ceiling.
+    """
+    return Protocol(stages=[
+        Stage(steps=[Step(temperature=[72.0], hold_seconds=5 * 60)], repeats=1),
+        Stage(steps=[Step(temperature=[98.0], hold_seconds=30)], repeats=1),
+        Stage(steps=[
+            Step(temperature=[98.0], hold_seconds=10),
+            Step(temperature=[63.0], hold_seconds=30),
+        ], repeats=num_cycles),
+        Stage(steps=[Step(temperature=[72.0], hold_seconds=60)], repeats=1),
+        Stage(steps=[Step(temperature=[8.0], hold_seconds=INFINITE_HOLD_SECONDS)], repeats=1),
+    ])
+
+
+TIP_IVT = tip_ivt()
+TIP_PCR = tip_pcr()
+
+
 # ---------------------------------------------------------------------------
 # Not biology. Hardware exercises.
 #
@@ -670,6 +842,24 @@ PROGRAMS = {
                        "NEB #E6420 Single Cell RNA manual, Section 1.9.7, USER enzyme"),
     "sc-lib-pcr": Program("sc-lib-pcr", SC_LIB_PCR, LID_C_SC_LIB_PCR, VOL_UL_SC_LIB_PCR,
                           "NEB #E6420 Single Cell RNA manual, Section 1.11.3, library enrichment PCR"),
+    "tip-gapfill": Program("tip-gapfill", TIP_GAPFILL, LID_C_TIP_GAPFILL, VOL_UL_TIP_GAPFILL,
+                           "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, Taq gap-fill"),
+    "tip-ivt": Program("tip-ivt", TIP_IVT, LID_C_TIP_IVT, VOL_UL_TIP_IVT,
+                       "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, T7 IVT (16-19 h)"),
+    "tip-rt-anneal": Program("tip-rt-anneal", TIP_RT_ANNEAL, LID_C_TIP_RT_ANNEAL, VOL_UL_TIP_RT_ANNEAL,
+                             "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, random-hexamer anneal"),
+    "tip-rt": Program("tip-rt", TIP_RT, LID_C_TIP_RT, VOL_UL_TIP_RT,
+                      "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, SMART MMLV first-strand"),
+    "tip-rnaseh": Program("tip-rnaseh", TIP_RNASEH, LID_C_TIP_RNASEH, VOL_UL_TIP_RNASEH,
+                          "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, RNase H"),
+    "tip-ss-anneal": Program("tip-ss-anneal", TIP_SS_ANNEAL, LID_C_TIP_SS_ANNEAL, VOL_UL_TIP_SS_ANNEAL,
+                             "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, second-strand anneal"),
+    "tip-ss": Program("tip-ss", TIP_SS, LID_C_TIP_SS, VOL_UL_TIP_SS,
+                      "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, second-strand synthesis"),
+    "tip-tag": Program("tip-tag", TIP_TAG, LID_C_TIP_TAG, VOL_UL_TIP_TAG,
+                       "TIP-seq (JCB 2021, e202103078), Bulk TIP-seq, cDNA Tn5 fragmentation"),
+    "tip-pcr": Program("tip-pcr", TIP_PCR, LID_C_TIP_PCR, VOL_UL_TIP_PCR,
+                       "TIP-seq (JCB 2021, e202103078), library indexing PCR (CUT&Tag profile)"),
     "timecheck": Program("timecheck", TIMECHECK, LID_C_HARDWARE_EXERCISE, 20.0,
                          "hardware exercise, not biology", is_biology=False),
     "selftest": Program("selftest", SELFTEST, LID_C_HARDWARE_EXERCISE, 20.0,
