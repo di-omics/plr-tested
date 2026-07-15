@@ -68,6 +68,18 @@ rail35 pos3 = trough/reservoir
   - ODTC programs (`emseq-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
   - Status: written, simulation-first, not yet run on the instrument.
 
+## scRNA-seq entrypoint (NEBNext Single Cell / Low Input RNA, E6420)
+
+- `starlab_live/scrnaseq/` - end-to-end NEBNext Single Cell/Low Input RNA library prep
+  (E6420 Section 1), single column, on the 35/48 deck. RT + template switching, cDNA
+  amplification, fragment/ligate/enrich, with a two-round cDNA cleanup. See
+  `starlab_live/scrnaseq/README.md`.
+  - `run_scrnaseq_odtc_1col_full_dry.py --print` shows the full 32-leg plan.
+  - `run_scrnaseq_odtc_1col_full_dry.py --sim-lh` runs the liquid-handling legs on the
+    chatterbox (no hardware).
+  - ODTC programs (`sc-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
+  - Status: written, simulation-first, not yet run on the instrument.
+
 ## Current priorities
 
 1. Hamilton bead clean for amplicon-seq.
