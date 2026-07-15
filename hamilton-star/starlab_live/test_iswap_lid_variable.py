@@ -39,6 +39,18 @@ PATCH LOG
               de-lid (pos0 -> pos4) are one recipe. Because each move's dest is the
               other's source, the two chain into a hands-free lid <-> de-lid cycle
               with no re-seating between reps.
+  2026-07-12  ODTC LID LEGS + FULL LOOP confirmed on hardware. This mover also
+              lids/de-lids the plate IN the ODTC nest (src/dst rail20 pos1), using
+              the plate mover's nest offsets x2/y36.5 to line up over the nest:
+                LID ON  pos4 -> rail20 pos1 : --pickup-z 9  --drop-x 2 --drop-y 36.5 --drop-z 12
+                LID OFF rail20 pos1 -> pos4 : --pickup-x 2 --pickup-y 36.5 --pickup-z 5  --drop-z 4
+              The lid-off grip (z5) sits ~7 mm below the lid-on drop (z12). Full
+              round trip ran clean end to end: bare plate rail35 pos0 -> ODTC
+              (plate mover, pickup z5 / drop x2/y36.5/z12), lid on, lid off, plate
+              back (return mover, pickup z0). NOTE the lid must be moved OFF before
+              the plate can be returned, and pos4 is bare carrier during the ODTC
+              trip (its plate is in the nest), so the lid-off drop z4 lands on the
+              carrier, not a plate.
 
 SAFETY
   - --mode deck assigns the deck and prints coordinates only. No movement.
