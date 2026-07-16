@@ -51,6 +51,24 @@ PATCH LOG
               the plate can be returned, and pos4 is bare carrier during the ODTC
               trip (its plate is in the nest), so the lid-off drop z4 lands on the
               carrier, not a plate.
+  2026-07-16  SUPERSEDED: the LID OFF --pickup-z 5 recorded above is KNOWN-BAD, do
+              not run it. At z5 the grip closes on the PLATE, not the lid, and
+              lifts the plate out of the nest. The firmware reports SUCCESS: the
+              iSWAP grip check compares grip WIDTH, and plate and lid share an
+              identical footprint (127.76 x 85.48), so nothing distinguishes them
+              on the axis the check runs on. The fault surfaces one leg later as
+              'Plate not found' on the plate return, which did nothing wrong.
+              CORRECTED value, in the orchestrator since 6420b40:
+                LID OFF rail20 pos1 -> pos4 : --pickup-x 2 --pickup-y 36.5 --pickup-z 7  --drop-z 4
+              z7 grabs the lid (higher) and leaves the plate seated. If a grip ever
+              catches the plate again, keep raising in 1-2 mm steps. The window
+              between 'catches lid' and 'catches plate' is only ~2 mm, so this is
+              worth teaching properly: the deeper root cause is that the ODTC nest
+              is not modeled as a resource, so these legs fake nest geometry with
+              hand-tuned CLI offsets instead of letting move_lid compute the grip
+              from geometry (see the header note: start at 0 and TRUST it). Teaching
+              the nest into the resource tree drives these offsets toward 0 and
+              removes the whole failure class.
 
 SAFETY
   - --mode deck assigns the deck and prints coordinates only. No movement.
