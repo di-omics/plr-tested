@@ -44,7 +44,23 @@ fi
 echo "[run_on_pi] sync $HERE/ -> $PI:~/$REMOTE/"
 rsync -a --delete \
   --exclude 'env' --exclude '.git' --exclude '__pycache__' --exclude '*.pyc' \
+  --exclude 'odtc_lib' \
   -e ssh "$HERE/" "$PI:$REMOTE/"
 
+# The ODTC thermal programs live in the sibling instrument-integrations/ tree, which this
+# script does not otherwise sync. Choreography that drives the cycler (see
+# starlab_live/run_ampseq_odtc_LIDDED_1col_full_thermocycle.py) needs them ON the Pi, so
+# put them alongside as odtc_lib/. Additive: scripts that do not import them are unaffected,
+# and the sync above excludes odtc_lib so --delete does not fight this.
+ODTC_SRC="$(cd "$HERE/.." && pwd)/instrument-integrations/odtc"
+if [ -d "$ODTC_SRC" ]; then
+  echo "[run_on_pi] sync $ODTC_SRC/ -> $PI:~/$REMOTE/odtc_lib/"
+  rsync -a --delete \
+    --exclude '__pycache__' --exclude '*.pyc' \
+    -e ssh "$ODTC_SRC/" "$PI:$REMOTE/odtc_lib/"
+fi
+
+# ODTC_IP is forwarded when set, so a choreography running --thermocycle can reach the
+# cycler. Lab addresses are never committed; this passes through from your environment.
 echo "[run_on_pi] run $SCRIPT on $PI"
-ssh "$PI" "source $VENV/bin/activate && cd ~/$REMOTE && python '$SCRIPT' $*"
+ssh "$PI" "source $VENV/bin/activate && cd ~/$REMOTE && ${ODTC_IP:+ODTC_IP='$ODTC_IP'} python '$SCRIPT' $*"
