@@ -57,11 +57,20 @@ DEST_COL = 1
 VOL_PCR2_MASTER_MIX = 20.5
 
 # Reuse the validated Bio Validation 0 column-1 P50 geometry.
-P50_WORK_DSP_HEIGHT = [0.5] * 8
+P50_WORK_DSP_HEIGHT = [1.5] * 8   # raised 0.5 -> 1.5 (2026-07-12): at 0.5 the tips crushed into the well at dispense
 P50_WORK_DSP_OFFSETS = [Coordinate(-0.68, 3.22, 0.0)] * 8
 P50_SOURCE_ASP_HEIGHT = [0.0] * 8
 P50_SOURCE_ASP_OFFSETS = [Coordinate(-0.65, 3.35, 0.0)] * 8
 P50_BLOWOUT_AIR_VOLUME = 6.0
+
+# In-line mix (no human dispensist in the loop): after the master-mix add, cycle the
+# destination well to combine master mix + template, then a HEAVY blowout on the last
+# dispense so no sample stays in the tip. Mix aspirate height must reach the shallow
+# liquid; tune on a wet run.
+MIX_CYCLES = 3
+MIX_VOLUME_UL = 18.0
+P50_MIX_ASP_HEIGHT = [0.5] * 8
+P50_MIX_BLOWOUT_AIR_VOLUME = 12.0
 
 # Define p10 resources too so deck layout stays identical, although PCR2-MM uses p50.
 P10_WORK_DSP_HEIGHT = [0.5] * 8
@@ -209,6 +218,28 @@ async def transfer_pcr2_master_mix(lh: LiquidHandler, r: Dict[str, object], disc
             offsets=P50_WORK_DSP_OFFSETS,
             blow_out_air_volume=[P50_BLOWOUT_AIR_VOLUME] * 8,
         )
+
+        # In-line mix, no human dispensist in the loop: cycle the destination well
+        # MIX_CYCLES times to combine master mix + template, then a heavy blowout on the
+        # last dispense so no sample is left in the tip. asp height reaches the liquid,
+        # dsp height stays above the crush.
+        print(f"Mixing {MIX_CYCLES}x {MIX_VOLUME_UL} uL in place at dest col {DEST_COL}; final blowout {P50_MIX_BLOWOUT_AIR_VOLUME} uL...")
+        for _cycle in range(MIX_CYCLES):
+            _last = _cycle == MIX_CYCLES - 1
+            await lh.aspirate(
+                wells_for_column(r["work_plate"], DEST_COL),
+                vols=[MIX_VOLUME_UL] * 8,
+                liquid_height=P50_MIX_ASP_HEIGHT,
+                offsets=P50_WORK_DSP_OFFSETS,
+                blow_out_air_volume=[0.0] * 8,
+            )
+            await lh.dispense(
+                wells_for_column(r["work_plate"], DEST_COL),
+                vols=[MIX_VOLUME_UL] * 8,
+                liquid_height=P50_WORK_DSP_HEIGHT,
+                offsets=P50_WORK_DSP_OFFSETS,
+                blow_out_air_volume=[(P50_MIX_BLOWOUT_AIR_VOLUME if _last else 0.0)] * 8,
+            )
         await asyncio.sleep(POST_DISPENSE_SETTLE_SECONDS)
     finally:
         await finish_tips(lh, discard_tips)
