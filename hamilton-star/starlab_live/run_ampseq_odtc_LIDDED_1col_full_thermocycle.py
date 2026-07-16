@@ -16,16 +16,35 @@ from pathlib import Path
 # PATCH LOG
 #   2026-07-16  Created from the validated 13-leg lidded choreography. Added two thermal
 #               legs (STEP 2t PCR1, STEP 8t PCR2) between LID ON and LID OFF on each ODTC
-#               trip, gated behind --thermocycle. DEFAULT IS OFF: without the flag the run
-#               is the same 13 motion legs as the validated parent, and the thermal legs
-#               only narrate what they WOULD run. They do not open a socket to the cycler.
-#               With --thermocycle the identical flow runs the real programs on the ODTC.
-#               No geometry changed. No leg script changed. No parent file edited.
+#               trip, gated behind --thermocycle. No geometry changed. No leg script
+#               changed. No parent file edited.
+#   2026-07-16  Dry now CALLS the cycler instead of skipping it. The default dry leg does a
+#               read-only GetStatus probe at STEP 2t / 8t, so a dry run proves the ODTC is
+#               reachable and answering at the exact point in the flow where it will later
+#               be asked to cycle. It cannot heat and cannot move the door. --no-odtc
+#               restores the old skip-entirely behaviour (pure motion, no cycler at all).
 #
 # THE POINT OF THIS FILE
-#   Dry  (default)      : 13 motion legs. Cycler untouched. Same as the validated parent.
-#   Wet  (--thermocycle): the same 13 legs, and the plate actually thermocycles in the
-#                         ODTC while the lid is sealed on it. Nothing else to remember.
+#   Dry (default)       : 13 motion legs, and the ODTC is CALLED read-only at STEP 2t / 8t
+#                         (GetStatus). Proves the whole chain reaches the cycler. No heat.
+#   --no-odtc           : 13 motion legs, cycler never contacted. The validated parent.
+#   --thermocycle       : the same 13 legs, and the plate actually thermocycles in the ODTC
+#                         while the lid is sealed on it.
+#
+# WHY THE DRY CALL IS A RAW PROBE AND NOT THE PLR BRING-UP
+#   At STEP 2t the plate is seated in the nest with a lid on it. 02_odtc_bringup.py (and
+#   05's setup) send Reset + Initialize, and Initialize HOMES THE DOOR. Homing the door
+#   with a plate and lid sitting in the nest is not something to do casually. The raw probe
+#   (01_odtc_probe_raw.py) only ever sends read-only queries: it never sends Reset,
+#   Initialize, OpenDoor, or ExecuteMethod. That is why the dry call uses it.
+#
+# OPEN QUESTION BEFORE ANY --thermocycle RUN (not resolved here)
+#   05_odtc_run_protocol.py calls setup(), which sends Reset + Initialize and therefore
+#   homes the door -- with the plate and lid already in the nest. That sequence has never
+#   been exercised with a plate loaded. Separately, this choreography never CLOSES the ODTC
+#   door around the thermal leg; the standalone ampseq-pcr1 run on 2026-07-10 completed
+#   regardless of door state, but an open door is not a thermally sound way to run a real
+#   PCR. Both need answering before --thermocycle is pointed at real chemistry.
 #
 # THE THERMAL LEGS (from instrument-integrations/odtc, hardware-validated 2026-07-10)
 #   PCR1: program `ampseq-pcr1`  98/30s x1, (98/10s, 67/15s, 72/15s) x30, 72/60s, 10 C hold
@@ -137,7 +156,7 @@ def find_odtc_lib():
 
 
 def odtc_thermal_argv(odtc_lib, program, odtc_ip):
-    """The real cycler invocation for one thermal leg."""
+    """The real cycler invocation for one thermal leg. This heats."""
     argv = [str(odtc_lib / "05_odtc_run_protocol.py"),
             "--program", program,
             "--confirm", "i-am-watching"]
@@ -146,18 +165,39 @@ def odtc_thermal_argv(odtc_lib, program, odtc_ip):
     return argv
 
 
-def build_steps(thermocycle, odtc_lib, odtc_ip):
+def odtc_dry_call_argv(odtc_lib, odtc_ip):
+    """A read-only touch of the cycler for a dry thermal leg.
+
+    GetStatus only. The raw probe never sends Reset, Initialize, OpenDoor, or
+    ExecuteMethod, so this cannot heat the block and cannot move the door out from under
+    the plate that is sitting in the nest at this point in the flow.
+    """
+    return [str(odtc_lib / "01_odtc_probe_raw.py"),
+            "--ip", odtc_ip, "--timeout", "8", "--commands", "GetStatus"]
+
+
+def build_steps(mode, odtc_lib, odtc_ip):
     """The 13 motion legs, with the two thermal legs woven in at the marked points.
 
-    When thermocycle is False the thermal legs carry argv None: run_step narrates them
-    and does not execute anything, so the cycler is never contacted.
+    mode is one of:
+      "call"  (default) read-only GetStatus at each thermal leg. Proves the cycler is
+              reachable at that moment in the flow. No heat, no door motion.
+      "skip"  thermal legs carry argv None: narrated, cycler never contacted.
+      "cycle" the real thermal programs run. This heats.
+
+    The 13 MOTION legs are byte-identical in every mode, and identical to the validated
+    parent run_ampseq_odtc_LIDDED_1col_full_dry.py.
     """
     def thermal(step, program, minutes):
         label = (f"{step}: ODTC {program} THERMAL PROGRAM, lid sealed "
                  f"(~{minutes} min, blocks until the cycler finishes)")
-        if not thermocycle:
-            return (label + "  [DRY: SKIPPED, cycler not contacted]", None)
-        return (label, odtc_thermal_argv(odtc_lib, program, odtc_ip))
+        if mode == "cycle":
+            return (label, odtc_thermal_argv(odtc_lib, program, odtc_ip))
+        if mode == "call":
+            return (f"{step}: ODTC {program} leg -- DRY, calling the cycler read-only "
+                    f"(GetStatus). No heat. Real run would cycle ~{minutes} min here.",
+                    odtc_dry_call_argv(odtc_lib, odtc_ip))
+        return (label + "  [--no-odtc: SKIPPED, cycler not contacted]", None)
 
     return [
         ("STEP 1: PCR1 master mix add, col 1 (dry)",
@@ -252,8 +292,13 @@ def main():
         "--thermocycle",
         action="store_true",
         help="Actually run the ODTC PCR1/PCR2 thermal programs at STEP 2t and STEP 8t. "
-             "Default OFF: the thermal legs are narrated and skipped, and the run is the "
-             "same 13 motion legs as the validated dry parent.",
+             "THIS HEATS. Default is a dry read-only call to the cycler instead.",
+    )
+    parser.add_argument(
+        "--no-odtc",
+        action="store_true",
+        help="Do not contact the cycler at all: the thermal legs are narrated and skipped. "
+             "This is the validated parent's behaviour (pure motion).",
     )
     parser.add_argument(
         "--odtc-ip",
@@ -267,25 +312,36 @@ def main():
     )
     args = parser.parse_args()
 
-    odtc_lib = find_odtc_lib()
-    steps = build_steps(args.thermocycle, odtc_lib, args.odtc_ip)
+    if args.thermocycle and args.no_odtc:
+        parser.error("--thermocycle and --no-odtc are contradictory. Pick one.")
+    mode = "cycle" if args.thermocycle else ("skip" if args.no_odtc else "call")
 
+    odtc_lib = find_odtc_lib()
+    steps = build_steps(mode, odtc_lib, args.odtc_ip)
+
+    banner = {"cycle": ", THERMOCYCLING LIVE (block heats)",
+              "call": ", DRY (cycler called read-only, no heat)",
+              "skip": ", DRY (cycler not contacted)"}[mode]
     print("")
-    print("FULL AMPSEQ + ODTC CHOREOGRAPHY, COLUMN 1, LIDDED"
-          + (", THERMOCYCLING LIVE" if args.thermocycle else ", DRY (cycler not contacted)"))
+    print("FULL AMPSEQ + ODTC CHOREOGRAPHY, COLUMN 1, LIDDED" + banner)
     print("13 motion legs: PCR1 add -> ODTC out / lid on / [PCR1] / lid off / back")
     print("                -> magnet clean out/back -> PCR2 add")
     print("                -> ODTC out / lid on / [PCR2] / lid off / back.")
     print("Every leg runs its own hardware-confirmed script; geometry is not re-derived here.")
-    if args.thermocycle:
-        print("")
+    print("")
+    if mode == "cycle":
         print("THERMOCYCLE MODE: STEP 2t runs ampseq-pcr1 (~37 min) and STEP 8t runs")
         print("ampseq-pcr2 (~15 min) on the real cycler, each with the lid sealed on the")
         print("plate. Tips are still returned and no reagent is consumed: this makes the")
         print("CYCLER real, not the chemistry.")
         print(f"ODTC address: {args.odtc_ip or '<unset, will refuse>'}")
+    elif mode == "call":
+        print("DRY: the 13 motion legs run, and at STEP 2t / 8t the ODTC is CALLED")
+        print("read-only (GetStatus) at the exact point it would otherwise cycle. This")
+        print("proves the chain reaches the cycler. It cannot heat and cannot move the")
+        print("door out from under the plate. Real cycling needs --thermocycle.")
+        print(f"ODTC address: {args.odtc_ip or '<unset, will refuse>'}")
     else:
-        print("")
         print("DRY: the two thermal legs are narrated and skipped. The cycler is never")
         print("contacted. This is the validated 13-leg motion choreography.")
     print("Deck fully staged: magnet rail35 pos2, LID rail35 pos4, ODTC nest rail20 pos1 empty. Human at E-stop.")
@@ -313,17 +369,25 @@ def main():
         print("Use --plan to see the step list without touching anything.")
         return
 
-    if args.thermocycle:
+    # Any mode that touches the cycler is pre-flighted before the arm moves. Reaching
+    # STEP 2t and finding the ODTC unreachable would leave a plate in the nest under a
+    # sealed lid, mid-choreography.
+    if mode in ("cycle", "call"):
         preflight_odtc(odtc_lib, args.odtc_ip)
 
     for label, argv in steps:
         run_step(label, argv)
 
     print("")
-    if args.thermocycle:
+    if mode == "cycle":
         print("SUCCESS: full LIDDED ampseq + ODTC column-1 choreography completed WITH both")
         print("thermal programs run on the cycler. Plate back on rail35 pos0, lid on pos4.")
         print("NOTE: the block holds its final temperature after a program (post_heating).")
+    elif mode == "call":
+        print("SUCCESS: full LIDDED ampseq + ODTC column-1 choreography completed, DRY,")
+        print("with the ODTC called read-only at both thermal legs. The cycler answered")
+        print("at each point it would cycle. Nothing was heated. Plate back on rail35 pos0,")
+        print("lid on pos4.")
     else:
         print("SUCCESS: full LIDDED ampseq + ODTC column-1 choreography completed, DRY.")
         print("The cycler was not contacted. Plate back on rail35 pos0, lid on pos4.")
