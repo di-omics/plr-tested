@@ -1,0 +1,27 @@
+{
+  "notes": "Placeholder expected-fiducials map for the read-only pre-flight gate. Physical ArUco tags must be placed on the deck slots (and, for grip work, on the iSWAP), the overhead camera fixed relative to the deck, and cx/cy calibrated against a representative frame before this governs a real run. tol_px is generous here on purpose; tighten it once real numbers exist. expect_mm and marker_mm are only used when a camera calibration is passed via --calib.",
+  "dict": "DICT_4X4_50",
+  "marker_mm": 12.0,
+  "slots": [
+    {
+      "name": "rail35_pos0_work_plate",
+      "tag_id": 0,
+      "expect_px": { "cx": 210, "cy": 170, "tol_px": 60 }
+    },
+    {
+      "name": "rail35_pos2_mag_block",
+      "tag_id": 2,
+      "expect_px": { "cx": 660, "cy": 170, "tol_px": 60 }
+    },
+    {
+      "name": "rail35_pos4_lid",
+      "tag_id": 4,
+      "expect_px": { "cx": 900, "cy": 170, "tol_px": 60 }
+    },
+    {
+      "name": "rail20_pos1_odtc_nest",
+      "tag_id": 20,
+      "expect_px": { "cx": 540, "cy": 420, "tol_px": 60 }
+    }
+  ]
+}

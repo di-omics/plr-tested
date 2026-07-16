@@ -1,7 +1,17 @@
 # Suggestion note: computer vision -> autonomous iSWAP handoffs
 
-Status: forward-looking design note, not implemented. Written 2026-07-12 after a
-manual iSWAP tuning session (plate drop into the ODTC nest + lidding the plate).
+Status: Phase 1 implemented (read-only, offline-validated); Phases 2-4 still
+forward-looking. Written 2026-07-12 after a manual iSWAP tuning session (plate
+drop into the ODTC nest + lidding the plate).
+
+Phase 1 landed as `fiducial_detect.py` + `fiducial_preflight.py` +
+`example_fiducial_config_star.json` + `test_fiducial_preflight.py` (see the
+README "Phase 1" section). It detects ArUco tags, checks presence + position per
+slot, and aborts a leg on a missing or shifted item, reading pixels only with no
+robot motion. The self-test proves the "inject a known offset, measure it back"
+trust check in software. Going live still needs physical tags on the deck, the
+overhead camera fixed to the deck, and the config calibrated to a real frame;
+mm-space pose additionally needs a camera calibration.
 
 ## The problem, stated plainly
 
