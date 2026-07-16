@@ -80,9 +80,33 @@ the deck, (3) `cx`/`cy` in the config calibrated against a representative frame.
 mm-space pose (`--calib`) additionally needs a camera calibration; pixel-space
 presence and shift checks work without one.
 
-Dictionary is `DICT_4X4_50` by default. The code runs on both the OpenCV >= 4.7
-`ArucoDetector` API and the legacy <= 4.6 function API, so the same file works on
-the Pi and on a host.
+The code runs on both the OpenCV >= 4.7 `ArucoDetector` API and the legacy <= 4.6 function
+API, so the same file works on the Pi and on a host.
+
+### Two things measured on the real deck, before you fit any tags
+
+Both came from running the real detector over 20 min of real footage; neither is a
+preference.
+
+1. **Do not run 4x4 dictionaries on this deck. Use AprilTag 36h11.** Over 77 frames x 10
+   dictionaries (770 detector calls) the 4x4 families returned 4 spurious ids and nothing
+   else did. They lock onto the **cooling-block fin stripes**, which read as a 4x4 code. A
+   dense 750-frame sweep gave 5 mutually-inconsistent ids at max persistence 15/750 -- noise,
+   where a real tag holds one id in nearly every frame. `DICT_5X5_*`, `DICT_6X6_*` and the
+   AprilTag families all returned a clean 0/770. `example_fiducial_config_star.json` now
+   defaults to `DICT_APRILTAG_36h11` for this reason. `fiducial_detect.py`'s module default
+   is still `DICT_4X4_50` because it is a generic library default, not a deck setting -- pass
+   the dictionary explicitly, or take it from the config.
+
+2. **A flat 12 mm tag does not work on the current camera, and megapixels will not save it.**
+   Measured scale on the labware row is 2.63 px/mm. A 12 mm tag is ~31.6 px facing the
+   camera (5.3 px/module, fine), but flat on the deck at the camera's ~28 deg grazing view it
+   is ~31.6 x 14.6 px = **2.4 px/module**, under the ~4 px/module floor measured from the real
+   point-spread (sigma 1.56 px across 67 step edges) and confirmed by pasting real tags into
+   real frames with matched blur and codec loss. **Flat tags on this camera need >= 20 mm.**
+   It fails on grazing incidence, not resolution. A near-nadir camera moves every tag from the
+   flat case to the square-on case and drops the floor to ~10 mm, which is the quantitative
+   argument for fitting that camera first.
 
 ### 1. Print the tags to place on the deck
 
