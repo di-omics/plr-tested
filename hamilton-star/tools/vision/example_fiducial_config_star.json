@@ -1,7 +1,11 @@
 {
-  "notes": "Placeholder expected-fiducials map for the read-only pre-flight gate. Physical ArUco tags must be placed on the deck slots (and, for grip work, on the iSWAP), the overhead camera fixed relative to the deck, and cx/cy calibrated against a representative frame before this governs a real run. tol_px is generous here on purpose; tighten it once real numbers exist. expect_mm and marker_mm are only used when a camera calibration is passed via --calib.",
-  "dict": "DICT_4X4_50",
+  "notes": "Placeholder expected-fiducials map for the read-only pre-flight gate. Physical tags must be placed on the deck slots (and, for grip work, on the iSWAP), the camera fixed relative to the deck, and cx/cy calibrated against a representative frame before this governs a real run. tol_px is generous here on purpose; tighten it once real numbers exist. expect_mm and marker_mm are only used when a camera calibration is passed via --calib.",
+
+  "dict": "DICT_APRILTAG_36h11",
+  "_dict_note": "NOT a 4x4 family, and this is measured rather than preference. Running the detector over 20 min of real deck footage (77 frames x 10 dictionaries = 770 calls) returned 4 spurious ids, ALL from 4x4 dictionaries: they lock onto the cooling-block fin stripes, which read as a 4x4 code. A dense 750-frame sweep gave 5 mutually-inconsistent ids with max persistence 15/750, i.e. noise, where a real tag holds one id in nearly every frame. DICT_5X5_*, DICT_6X6_* and the AprilTag families all returned a clean 0/770 on the same footage. Do not run 4x4 on this deck.",
+
   "marker_mm": 12.0,
+  "_marker_mm_note": "12.0 is a PLACEHOLDER and is too small for the current across-the-deck camera. Measured scale on the labware row is 2.63 px/mm (FFT of the tip band against the 9.0 mm SBS pitch; cross-checked against the 22.5 mm rail pitch at the rail tape). So a 12 mm tag is ~31.6 px facing the camera = 5.3 px/module (workable), but lying FLAT on the deck at the camera's ~28 deg grazing view it is ~31.6 x 14.6 px = 2.4 px/module, under the ~4 px/module floor measured from the real point-spread (sigma 1.56 px over 67 step edges) and confirmed by pasting real tags into real frames with matched blur and codec loss. FLAT TAGS ON THIS CAMERA NEED >= 20 mm. A near-nadir camera moves every tag from the flat case to the square-on case and drops the floor to ~10 mm. This fails on grazing incidence, not resolution, so a higher-megapixel sensor does not fix it.",
   "slots": [
     {
       "name": "rail35_pos0_work_plate",
