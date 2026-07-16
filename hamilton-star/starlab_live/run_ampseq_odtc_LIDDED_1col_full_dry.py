@@ -35,7 +35,7 @@ from pathlib import Path
 #   Magnet forward: pickup z8.5, drop z18.0 (defaults, confirmed in the 1-col choreography)
 #   Magnet return : pickup z14.0, drop z8.5 (confirmed tuned values)
 #   LID ON  (pos4 -> ODTC nest): pickup z9, drop x2 / y36.5 / z12       (confirmed 2026-07-12)
-#   LID OFF (ODTC nest -> pos4): pickup x2 / y36.5 / z5, drop z4        (confirmed 2026-07-12)
+#   LID OFF (ODTC nest -> pos4): pickup x2 / y36.5 / z7, drop z4        (z5 caught the plate; raised to z7)
 #   The lid rides pos4 <-> ODTC through BOTH trips: LID OFF returns it to pos4, so the
 #   second trip's LID ON picks it up from pos4 again. No re-staging between trips.
 #
@@ -72,9 +72,14 @@ LID_ON = [str(LID_MOVER), "--mode", "move",
           "--confirm", "RUN_LID_MOVE"]
 LID_OFF = [str(LID_MOVER), "--mode", "move",
            "--src-rail", "20", "--src-pos", "1", "--dst-rail", "35", "--dst-pos", "4",
-           "--pickup-x-offset-mm", "2", "--pickup-y-offset-mm", "36.5", "--pickup-z-offset-mm", "5",
+           "--pickup-x-offset-mm", "2", "--pickup-y-offset-mm", "36.5", "--pickup-z-offset-mm", "7",
            "--drop-z-offset-mm", "4",
            "--confirm", "RUN_LID_MOVE"]
+# NOTE: lid-off pickup raised z5 -> z7 (2026-07-12). At z5 the grip caught the PLATE, not
+# the lid, and lifted the plate out of the nest -- which then made STEP 3's return whiff
+# ('Plate not found') because the plate was no longer where the return expected it. z7
+# grabs the lid (higher), leaving the plate seated for the return. If z7 still catches the
+# plate, keep raising in 1-2 mm steps.
 
 STEPS = [
     ("STEP 1: PCR1 master mix add, col 1 (dry)",
