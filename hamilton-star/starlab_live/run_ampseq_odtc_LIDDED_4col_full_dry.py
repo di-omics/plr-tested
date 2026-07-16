@@ -149,7 +149,7 @@ def main():
         run_step(label, argv)
 
     print("")
-    print("SUCCESS: full LIDDED ampseq + ODTC column-1 choreography completed. Plate back on rail35 pos0, lid on pos4.")
+    print("SUCCESS: full LIDDED ampseq + ODTC choreography completed for columns 1-4 (32 reactions). Plate back on rail35 pos0, lid on pos4.")
 
 
 if __name__ == "__main__":
