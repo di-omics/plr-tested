@@ -70,7 +70,7 @@ P50_BLOWOUT_AIR_VOLUME = 6.0
 MIX_CYCLES = 3
 MIX_VOLUME_UL = 18.0
 P50_MIX_ASP_HEIGHT = [0.5] * 8
-P50_MIX_BLOWOUT_AIR_VOLUME = 12.0
+P50_MIX_BLOWOUT_AIR_VOLUME = 10.0
 
 # Define p10 resources too so deck layout stays identical, although PCR2-MM uses p50.
 P10_WORK_DSP_HEIGHT = [0.5] * 8
