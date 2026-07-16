@@ -69,6 +69,7 @@ P50_BLOWOUT_AIR_VOLUME = 6.0
 MIX_CYCLES = 3
 MIX_VOLUME_UL = 18.0
 MIX_FLOW_RATE = 100.0   # uL/s, in-well mix plunger speed (PLR Mix.flow_rate)
+MIX_POSITION_FROM_SURFACE = [2.0] * 8   # raise the mix 2 mm above the dispense surface so tips do not crush
 P50_MIX_BLOWOUT_AIR_VOLUME = 10.0
 
 # Define p10 resources too so deck layout stays identical, although PCR1-MM uses p50.
@@ -222,6 +223,7 @@ async def transfer_pcr1_master_mix(lh: LiquidHandler, r: Dict[str, object], disc
             offsets=P50_WORK_DSP_OFFSETS,
             blow_out_air_volume=[P50_MIX_BLOWOUT_AIR_VOLUME] * 8,
             mix=[Mix(volume=MIX_VOLUME_UL, repetitions=MIX_CYCLES, flow_rate=MIX_FLOW_RATE)] * 8,
+            mix_position_from_liquid_surface=MIX_POSITION_FROM_SURFACE,
         )
         await asyncio.sleep(POST_DISPENSE_SETTLE_SECONDS)
     finally:
