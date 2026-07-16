@@ -8,7 +8,6 @@ from pylabrobot.liquid_handling.backends import STARBackend
 from pylabrobot.resources.hamilton import STARDeck, TIP_CAR_480_A00
 from pylabrobot.resources import PLT_CAR_L5AC_A00, CellTreat_96_wellplate_350ul_Fb, Coordinate
 import pylabrobot.resources as plr_resources
-from pylabrobot.liquid_handling.standard import Mix
 
 # Targeted PCR Library Prep - PCR2 common master-mix addition, column 1 only
 #
@@ -68,10 +67,30 @@ P50_BLOWOUT_AIR_VOLUME = 6.0
 # destination well to combine master mix + template, then a HEAVY blowout on the last
 # dispense so no sample stays in the tip. Mix aspirate height must reach the shallow
 # liquid; tune on a wet run.
+# PATCH 2026-07-16: REVERTED the firmware in-well Mix() and restored this aspirate/dispense
+# loop, which is the version that ran clean on camera (tag ampseq-lidded-oncamera-2026-07-15).
+#   The firmware version passed mix_position_from_liquid_surface=2.0 with liquid_height=1.5.
+#   PROVEN ON HARDWARE (test_mix_position_sign_SAFE.py, 2026-07-16): that parameter is a
+#   DEPTH measured DOWNWARD from the surface, so the mix Z was
+#       well_bottom + liquid_height - param = 1.5 - 2.0 = well_bottom - 0.5 mm
+#   i.e. eight tips driven 0.5 mm INTO the plastic, three cycles, every plate. Nothing
+#   catches it: 2.0 -> 20 is inside the 0..900 range and the guard in dispense_pip is
+#   `assert any(...)` not `all(...)`. PLR 0.2.1's STARBackend.dispense docstring claims the
+#   parameter moves ABOVE the surface and is WRONG; dispense_pip ("Z- direction", firmware
+#   default 250 = 25 mm) is right. Do NOT reintroduce Mix() here without re-reading that.
+#
+# MIX_VOLUME_UL 18.0 -> 10.0: CellTreat 350 uL Fb bore is 6.96 mm = 38.046 mm2 = 0.0263 mm
+#   per uL, so the 25 uL reaction is only 0.657 mm deep. Aspirating 18 uL dropped the
+#   surface to 0.184 mm while the tip sits at 0.5 mm, so the tip pulled air for most of the
+#   stroke. 10 uL leaves the surface at 0.394 mm: more of the stroke stays in liquid.
+# MIX_FLOW_RATE 50.0: explicit and deliberate. Previously unset, so the mix strokes silently
+#   inherited the liquid-class default. Slower is gentler on a shallow well and on the sample.
+# Sample is single-embryo preimplantation DNA. Blowout stays at 10 uL on the LAST mix
+#   dispense so nothing precious is left in the tip; 12 uL was rejected as splash risk.
 MIX_CYCLES = 3
-MIX_VOLUME_UL = 18.0
-MIX_FLOW_RATE = 100.0   # uL/s, in-well mix plunger speed (PLR Mix.flow_rate)
-MIX_POSITION_FROM_SURFACE = [2.0] * 8   # raise the mix 2 mm above the dispense surface so tips do not crush
+MIX_VOLUME_UL = 10.0
+MIX_FLOW_RATE = 50.0   # uL/s on the mix aspirate and dispense strokes
+P50_MIX_ASP_HEIGHT = [0.5] * 8
 P50_MIX_BLOWOUT_AIR_VOLUME = 10.0
 
 # Define p10 resources too so deck layout stays identical, although PCR2-MM uses p50.
@@ -213,20 +232,38 @@ async def transfer_pcr2_master_mix(lh: LiquidHandler, r: Dict[str, object], disc
 
         print(f"Dispensing {step.volume_ul} uL x8 to destination col {DEST_COL} with blowout {P50_BLOWOUT_AIR_VOLUME} uL...")
         print(f"Post-dispense settle before tip return/discard: {POST_DISPENSE_SETTLE_SECONDS} sec")
-        # Dispense the master mix AND mix IN PLACE: the PLR/firmware Mix cycles the plunger
-        # while the tip stays IN the well (no head retraction between cycles), then a heavy
-        # blowout so no sample is left in the tip. This replaces a Python aspirate/dispense
-        # loop that moved the whole pipette up/down every cycle instead of mixing in the well.
-        print(f"Dispensing {step.volume_ul} uL x8 to dest col {DEST_COL}; in-well mix {MIX_CYCLES}x {MIX_VOLUME_UL} uL @ {MIX_FLOW_RATE} uL/s, blowout {P50_MIX_BLOWOUT_AIR_VOLUME} uL...")
         await lh.dispense(
             wells_for_column(r["work_plate"], DEST_COL),
             vols=vols,
             liquid_height=P50_WORK_DSP_HEIGHT,
             offsets=P50_WORK_DSP_OFFSETS,
-            blow_out_air_volume=[P50_MIX_BLOWOUT_AIR_VOLUME] * 8,
-            mix=[Mix(volume=MIX_VOLUME_UL, repetitions=MIX_CYCLES, flow_rate=MIX_FLOW_RATE)] * 8,
-            mix_position_from_liquid_surface=MIX_POSITION_FROM_SURFACE,
+            blow_out_air_volume=[P50_BLOWOUT_AIR_VOLUME] * 8,
         )
+
+        # In-line mix, no human dispensist in the loop: cycle the destination well
+        # MIX_CYCLES times to combine master mix + template, then a heavy blowout on the
+        # last dispense so no sample is left in the tip. asp height reaches the liquid,
+        # dsp height stays above the crush. See the PATCH note on MIX_VOLUME_UL above.
+        print(f"Mixing {MIX_CYCLES}x {MIX_VOLUME_UL} uL @ {MIX_FLOW_RATE} uL/s in place at dest col {DEST_COL}; "
+              f"final blowout {P50_MIX_BLOWOUT_AIR_VOLUME} uL...")
+        for _cycle in range(MIX_CYCLES):
+            _last = _cycle == MIX_CYCLES - 1
+            await lh.aspirate(
+                wells_for_column(r["work_plate"], DEST_COL),
+                vols=[MIX_VOLUME_UL] * 8,
+                flow_rates=[MIX_FLOW_RATE] * 8,
+                liquid_height=P50_MIX_ASP_HEIGHT,
+                offsets=P50_WORK_DSP_OFFSETS,
+                blow_out_air_volume=[0.0] * 8,
+            )
+            await lh.dispense(
+                wells_for_column(r["work_plate"], DEST_COL),
+                vols=[MIX_VOLUME_UL] * 8,
+                flow_rates=[MIX_FLOW_RATE] * 8,
+                liquid_height=P50_WORK_DSP_HEIGHT,
+                offsets=P50_WORK_DSP_OFFSETS,
+                blow_out_air_volume=[(P50_MIX_BLOWOUT_AIR_VOLUME if _last else 0.0)] * 8,
+            )
         await asyncio.sleep(POST_DISPENSE_SETTLE_SECONDS)
     finally:
         await finish_tips(lh, discard_tips)
