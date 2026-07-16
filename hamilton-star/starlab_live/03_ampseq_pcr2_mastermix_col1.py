@@ -94,7 +94,9 @@ P50_BLOWOUT_AIR_VOLUME = 6.0
 #   is left in the tip; 12 uL was rejected as splash risk in a shallow well.
 MIX_CYCLES = 3
 MIX_VOLUME_UL = 10.0
-MIX_FLOW_RATE = 50.0                     # uL/s, plunger speed for the in-well mix
+MIX_FLOW_RATE = 10.0                     # uL/s, plunger speed for the in-well mix. 50 -> 10
+                                         # (2026-07-16): at 50 the whole 3x 10 uL mix took 1.2 s,
+                                         # too fast to see or hear. At 10 it takes ~6 s.
 MIX_POSITION_FROM_SURFACE = [1.0] * 8    # -> mix Z = 1.5 - 1.0 = 0.5 mm above the well bottom
 P50_MIX_BLOWOUT_AIR_VOLUME = 10.0
 
