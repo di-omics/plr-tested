@@ -28,6 +28,26 @@ Reservoir wells: `A1` = Rhodamine B 1x working solution, `A2` = diluent
 (includes dead volume). Aim the col-1 (1x) target near OD 2-3 at 554 nm; err
 dilute (see the DoE map notes).
 
+### Same deck: the next step, plate normalization
+
+The plate-normalization step (`../normalization/`, which reads a plate's per-well
+concentration and adds per-well water to a common target) runs on the SAME deck
+geometry as this prep: p300 tips at rail48 pos2, the work plate at rail35 pos0, the
+12-well reservoir at rail35 pos1. Stage the carriers once; only the reservoir
+contents and the plate change between the two steps.
+
+| Rail / pos  | Rhodamine QC prep (this script) | Plate normalization (next) |
+|-------------|---------------------------------|----------------------------|
+| rail48 pos2 | p300 tips (one full rack)       | p300 tips (one tip is reused) |
+| rail35 pos0 | destination QC plate (built here)| the sample plate to normalize |
+| rail35 pos1 | reservoir: A1 dye, A2 diluent, A12 waste | reservoir: A1 water (>= 5 mL for a full plate) |
+
+So a run of this prep leaves the deck already staged for normalization: swap the
+plate at pos0 for the sample plate, and reload the reservoir with water in A1. The
+normalizer's geometry (reservoir aspirate, work-plate XY) is inherited from this
+script; only its dispense-from-above height is new and needs a dry tune. See
+`../normalization/README.md` for its run cards and the protocol values to pin.
+
 ## Method
 
 1. **diluent** - 100 uL diluent into cols 2-12, rows A-C.
