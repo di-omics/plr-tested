@@ -79,12 +79,31 @@ async def run(args) -> int:
         return 1
     for i, m in enumerate(dec.measurements):
         name = well_names[i] if i < len(well_names) else f"#{i}"
-        print(f"  {name:>4}   sample={m.sample:>8}   reference={m.reference:>8}")
+        items = list(m.items or [])
+        print(f"  {name:>4}   sample={m.sample:>8}   reference={m.reference:>8}"
+              f"   <- items[0] only, of {len(items)} flashes")
+        if items:
+            samples = [s for s, _ in items]
+            refs = [r for _, r in items]
+            pegged = sum(1 for s in samples if s >= 65535)
+            print(f"         sample    n={len(samples):<3} min={min(samples):<6} max={max(samples):<6} "
+                  f"pegged_at_65535={pegged}/{len(samples)}")
+            print(f"         reference n={len(refs):<3} min={min(refs):<6} max={max(refs):<6}")
+            print(f"         all flashes: {items}")
     print()
     if read_error:
         print(f"  (calibrated OD not computed: {type(read_error).__name__}: {read_error})")
-    print("  These are raw counts. Higher sample count where the dye absorbs less light;")
-    print("  the point here is the reader IS measuring the wells.")
+    print("  READ THIS BEFORE CONCLUDING ANYTHING:")
+    print("  sample/reference on the first line are items[0] ONLY, i.e. the FIRST of")
+    print("  flashes=25 reads. The real calibrated-OD path uses ALL items")
+    print("  (_absorbance_od_calibrated(cal, items)), not items[0]. A pegged items[0]")
+    print("  therefore does NOT mean the well was not measured, and it is NOT evidence")
+    print("  that the reader cannot see the dye. Judge by the per-flash spread above:")
+    print("    - if pegged_at_65535 == n on BOTH a dye well and a blank, the sample")
+    print("      channel really is saturated (no headroom at zero OD -> gain/reference)")
+    print("    - if only items[0] pegs and items[1:] vary, and the dye well's spread")
+    print("      sits below the blank's, the reader IS resolving the dye and only this")
+    print("      readout was misleading.")
     return 0
 
 
