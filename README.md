@@ -66,14 +66,16 @@ Inheco ODTC:
 | A the kit user guide program run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | plate-move legs drafted, geometry not yet tuned on hardware |
 
-Tecan Infinite 200 PRO (first contact 2026-07-11, read-only):
+Tecan Infinite 200 PRO (first contact 2026-07-11 read-only; stage first moved 2026-07-16
+from `starpi2`, the second Pi, which is where the reader now lives):
 
 | What | Result |
 |---|---|
-| `tecan_offline_checks.py`, 24 checks, backend shape and 96-well geometry, no device | passed on the Pi |
+| `tecan_offline_checks.py`, 24 checks, backend shape and 96-well geometry, no device | passed on both Pis |
 | USB probe of `0c47:8007`: identified as "TECAN AUSTRIA BIO", no kernel driver | passed on the instrument (read-only) |
-| Bring-up (`INIT FORCE`); tray cycle | written, not yet run |
-| Absorbance read of a known plate; `counts_per_mm` confirmed on this unit | written, not yet run |
+| Bring-up (`INIT FORCE`), stage homes | passed on the instrument, from `starpi2`. This unit rejects `ABS #BEAM DIAMETER` with `ERR1:Command is not valid`, so absorbance runs on the hardcoded 700 fallback |
+| Tray cycle, open and close, timed | passed on the instrument, from `starpi2`. Close is stable at 3.6 s; open varies 3.2 to 5.3 s with stage state, so budget the worst case |
+| Absorbance read of a known plate; `counts_per_mm` confirmed on this unit | **failed on the instrument, from `starpi2`.** Deterministic `TimeoutError`, 2 of 2, at `ABSOLUTE MTP,Y=` in `run_scan`. The reader never answers the Y-stage command, so no scan and no wells. This is **not** the 20-byte calibration bug, which is a decode failure downstream of a scan that streams. `counts_per_mm` is blocked behind it. See the tecan-infinite README |
 | Rhodamine-B fluorescence ladder read | written, not yet run |
 | STAR iSWAP handoff into the reader tray | not started |
 

@@ -23,22 +23,52 @@ been moved or read yet.
 ## Status
 
 First contact on 2026-07-11: the reader was plugged into the Pi, identified over USB
-read-only, and the backend brought up in an isolated venv. Everything below the USB probe
-is still a plan and a script ladder, in the same shape the ODTC work took before its first
-live session, kept honest by the same rule: a row stays marked written-or-planned until a
-run on the reader moves it. The read-only rungs earned their rows; nothing that moves the
-stage has run.
+read-only, and the backend brought up in an isolated venv.
+
+On 2026-07-16 the reader was moved to `starpi2`, the second Pi, and the ladder was run
+there with a person at the instrument. The stage now has run: bring-up and the tray
+round-trip both passed. **The absorbance read did not.** It fails deterministically, and
+earlier than the calibration bug the reads were previously parked on, so the two are not
+the same problem. Rows below say which Pi produced them, because that turned out to
+matter.
 
 | What | Result |
 | --- | --- |
-| `tecan_offline_checks.py`, 24 checks (backend shape + 96-well geometry), no device | passed on the Pi, 2026-07-11 |
-| USB probe: `0c47:8007` on the Pi's bus, identified, kernel driver state | passed on the instrument (read-only): "TECAN AUSTRIA BIO", bus 3 / addr 3, no kernel driver, endpoints 0x81 / 0x02 |
-| Bring-up: `setup()`, `INIT FORCE`, capability queries return | written, not yet run |
-| Tray open / close, drawer cycle timed | written, not yet run |
-| Absorbance read of a known plate at a fixed wavelength | written, not yet run |
+| `tecan_offline_checks.py`, 24 checks (backend shape + 96-well geometry), no device | passed on `starpi` 2026-07-11; passed again on `starpi2` 2026-07-16, 24/24 |
+| USB probe: `0c47:8007` on the Pi's bus, identified, kernel driver state | passed on the instrument (read-only): "TECAN AUSTRIA BIO", no kernel driver, endpoints 0x81 / 0x02. `starpi` bus 3 / addr 3 (2026-07-11); `starpi2` bus 1 / addr 4 (2026-07-16) |
+| Bring-up: `setup()`, `INIT FORCE`, capability queries return | passed on the instrument from `starpi2`, 2026-07-16. `INIT FORCE` completed, stage homed, driver ready. This unit answers `ABS #BEAM DIAMETER` with `ERR1:Command is not valid`, so the absorbance path is running on its hardcoded 700 fallback, not a value the reader gave it |
+| Tray open / close, drawer cycle timed | passed on the instrument from `starpi2`, 2026-07-16. Four clean cycles. Close is stable at 3.6 s every time. Open is **not** constant: 3.2 s twice from a settled stage, 5.3 s once with a plate loaded after a failed read left the stage parked mid-scan. Budget the worst case, not the best |
+| Absorbance read of a known plate at a fixed wavelength | **failed on the instrument from `starpi2`, 2026-07-16.** `TimeoutError` reading USB, raised at `driver.py` `run_scan` on `ABSOLUTE MTP,Y=<y_stage>`. Deterministic: 2 of 2 attempts, same command. `setup()` and the tray succeed in the same run, so the reader is talking and its drawer motor obeys; the Y-stage command is simply never answered. No wells, no OD matrix. See the note below |
 | Rhodamine-B fluorescence ladder read | written, not yet run |
-| `counts_per_mm` confirmed against this unit's plate map | not started |
+| `counts_per_mm` confirmed against this unit's plate map | not started, and blocked: the raster cannot be judged until a scan runs |
 | STAR iSWAP handoff into the open tray | not started |
+
+### The absorbance timeout is not the calibration bug
+
+Worth stating plainly, because the two are easy to conflate. The 20-byte calibration
+frame problem is a **decode** failure, downstream of a scan that streams. This is a
+**timeout before any scan happens at all**: the driver sends `ABSOLUTE MTP,Y=` and the
+reader never replies. Nothing is decoded because nothing is read.
+
+That also means the failure differs by Pi, with an identical environment on both sides:
+same PyLabRobot 0.2.1, same fork sha, same Python 3.13.5, same OS. Not yet explained.
+
+Open leads, cheapest first:
+
+- **Power-cycle the reader.** The first timeout may have latched an error state that every
+  later attempt inherits.
+- **Different USB cable, and one of the Pi's blue USB 3 ports.** `dmesg` on `starpi2`
+  showed `usb 1-1: device descriptor read/64, error -71` twice before enumeration
+  succeeded. `-71` is `EPROTO`. The link works, but it needed retries to come up, and a
+  marginal link is consistent with short commands succeeding while a long scan
+  transaction times out. Determinism argues against this, but it is cheap to rule out.
+- **Move the reader back to `starpi` and run the same read.** This is the decisive test.
+  If it reads there, the reader is fine and `starpi2`'s USB path is at fault. If it fails
+  there too, the reader or its firmware has changed since 2026-07-11, and `starpi2` did
+  not break anything, it found something.
+- `ERR1:Command is not valid` for `#BEAM DIAMETER` may be the same story: firmware that
+  does not answer what the backend expects. If so it is one root cause, not two, and
+  belongs with the upstream conversation rather than in this repo.
 
 The read-only first-contact evidence is captured in
 [`connection_verified.html`](connection_verified.html): the raw `lsusb` and probe output,
