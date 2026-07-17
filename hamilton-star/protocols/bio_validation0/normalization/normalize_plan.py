@@ -31,6 +31,7 @@ hardware run must refuse to proceed while any is still `todo`/`calibrate`.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Sequence
 
@@ -188,12 +189,26 @@ class NormConfig:
     min_vol_policy: str = "clamp"
 
     def blocking(self) -> List[str]:
-        """Sourced fields that still block a hardware run (todo/calibrate)."""
+        """Reasons a hardware run must refuse: unpinned provenance OR bad values."""
         out = []
         for name in ("target", "start_volume", "min_transfer", "well_capacity"):
             s: Sourced = getattr(self, name)
             if s.blocks_hardware:
                 out.append(f"{name}: {s.status} - {s.note}")
+        # numeric sanity: a zero/negative target divides by itself; a capacity below
+        # the start volume can never hold the diluted well.
+        t, v0 = self.target.value, self.start_volume.value
+        vmin, cap = self.min_transfer.value, self.well_capacity.value
+        if math.isfinite(t) and t <= 0:
+            out.append(f"target must be > 0, got {t}")
+        if math.isfinite(v0) and v0 <= 0:
+            out.append(f"start_volume must be > 0, got {v0}")
+        if math.isfinite(vmin) and vmin <= 0:
+            out.append(f"min_transfer must be > 0, got {vmin}")
+        if math.isfinite(cap) and math.isfinite(v0) and cap < v0:
+            out.append(f"well_capacity {cap} is below start_volume {v0}")
+        if math.isfinite(vmin) and math.isfinite(cap) and vmin > cap:
+            out.append(f"min_transfer {vmin} exceeds well_capacity {cap}")
         if self.min_vol_policy not in ("clamp", "skip"):
             out.append(f"min_vol_policy: unknown value {self.min_vol_policy!r}")
         return out
@@ -209,6 +224,10 @@ BELOW_TARGET = "below_target"      # conc <= target: cannot concentrate, carried
 MIN_VOL_CLAMPED = "min_vol_clamped"  # water add rounded to min_transfer per policy
 EXCEEDS_CAPACITY = "exceeds_capacity"  # target needs more volume than the well holds
 EMPTY = "empty"                    # conc <= 0
+INVALID = "invalid"                # conc is nan/inf: not a real reading, never touched
+
+# All statuses whose well was left NOT at the target concentration.
+OFF_TARGET_STATUSES = (BELOW_TARGET, MIN_VOL_CLAMPED, EXCEEDS_CAPACITY, EMPTY, INVALID)
 
 
 @dataclass
@@ -230,6 +249,12 @@ def plan_well(well: str, conc: float, start_ul: float, cfg: NormConfig) -> WellN
     target = cfg.target.value
     vmin = cfg.min_transfer.value
     cap = cfg.well_capacity.value
+
+    # nan/inf concentration (or start): not a real reading. Never touch the well.
+    # This must come FIRST: nan fails every < / <= comparison silently, so without
+    # this guard a nan concentration would fall through to water = nan and be aspirated.
+    if not math.isfinite(conc) or not math.isfinite(start_ul):
+        return WellNorm(well, conc, start_ul, 0.0, start_ul, conc, INVALID)
 
     if conc <= 0:
         return WellNorm(well, _round(conc), _round(start_ul), 0.0, _round(start_ul), 0.0, EMPTY)
