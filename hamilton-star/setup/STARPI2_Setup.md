@@ -15,8 +15,14 @@ this Pi yet. See the status table before assuming anything works.
 | `~/tecan-lab/env`: di-omics fork, `facsmelody-sorter`, pinned | passed, off-instrument |
 | `99-usb.rules`, byte-identical to `starpi` | passed |
 | Tecan Infinite `0c47:8007` enumerates on this Pi (sysfs read, read-only) | passed on the instrument |
-| Tecan bring-up (`INIT FORCE`), tray cycle, any read, from this Pi | not yet run |
+| Tecan `01_tecan_probe_usb.py`, libusb claims the device | passed on the instrument |
+| Tecan bring-up (`INIT FORCE`), stage homes | passed on the instrument |
+| Tecan tray open / close | passed on the instrument, four clean cycles |
+| Tecan absorbance read | failed: deterministic USB timeout at `ABSOLUTE MTP,Y=`, see the tecan-infinite README |
 | Hamilton STAR attached to this Pi | never |
+
+The Tecan lives on this Pi now, not on `starpi`. This Pi drove a real instrument on
+2026-07-16 with a person at the reader.
 
 Verified against `starpi` at build time: same OS (Debian 13 trixie), same kernel
 line, same Python (3.13.5), same PyLabRobot (0.2.1), same udev rule md5, same
