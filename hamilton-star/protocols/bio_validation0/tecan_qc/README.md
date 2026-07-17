@@ -44,20 +44,38 @@ the plate well useful volume is ~300 uL, so this is within range. Tips: one full
 
 ## Status
 
-**Written, not yet run on hardware.** Simulation-clean under the STAR chatterbox
-backend on PyLabRobot 0.2.1 (the Pi's version): `--mode deck`, `serial`, and
-`all` all complete without error, all 12 rack columns accounted for. The
-geometry (aspirate/dispense heights, XY offsets) is a **starting estimate**
-seeded from the validated targeted PCR work-plate dispense and the validated cleanup
-trough/waste geometry. It has **not** been tuned against this deck. Do not wet-run
-until the dry ladder below has been watched on the instrument.
+**Dry-validated on the instrument 2026-07-16 (starpi). Not wet.** The full build
+ran clean end to end with the in-well firmware Mix, verified leg by leg rather
+than by exit code. The geometry is no longer an estimate for the dry case: the
+p300 heights and the ampseq-inherited XY held across plate columns 1-11 on the
+first clean pass. It is still motion only: empty wells, so the mix cycled air and
+no gradient was made.
 
 | What | Result |
 |------|--------|
 | Chatterbox sim, `--mode deck` / `serial` / `all`, PLR 0.2.1 | passed, off-instrument |
-| `--mode deck` on the instrument (assignment only, no motion) | not yet run |
-| Dry motion, water, `--return-tips` (geometry tune) | not yet run |
-| Real Rhodamine build | not yet run |
+| `--mode deck` on the instrument (assignment only) | passed on the instrument |
+| Dry build, `--mode all --return-tips`: diluent 11/11, dye 1/1, serial 10/10, in-well mix 10/10 (50 cycles), discard 1/1, 0 faults, 0 Z errors | passed on the instrument |
+| Lid on, iSWAP rail35 pos4 -> pos0, pickup z+9 / drop z+18 | passed on the instrument |
+| Tecan tray opened and left open (reader on starpi), open 5.3 s | passed on the instrument |
+| Real Rhodamine build (wet) | written, not yet run |
+| Reader go/no-go on a built plate | blocked, see below |
+
+Two things a wet run needs that the dry run did not:
+
+- **A fresh full p300 rack.** Discard mode advances rack column 3 -> 12, and the
+  rack at rail48 pos2 currently only carries tips in columns 1-9. The first dry
+  attempt died exactly there (NoTipError, all three channels, at serial step 8).
+  The dry run now reuses one rack column, so it no longer notices.
+- **The reader cannot read yet.** Absorbance is blocked upstream: this unit
+  deterministically times out at `ABSOLUTE MTP,Y=` in `run_scan`, so no scan and
+  no wells. Building the plate does not depend on that; reading it does.
+
+Note on hardware location: the reader was on `starpi2` on 2026-07-16 per the repo
+README, but it is now physically on **starpi** (verified: `lsusb` shows both
+`08af:8000` STAR and `0c47:8007` TECAN on starpi). `starpi2` was unreachable
+(host down). Run the Tecan scripts with `VENV=/home/lab/tecan-lab/env` and the
+default `PI=starpi`.
 
 ## Run cards
 
