@@ -36,6 +36,7 @@ and have no defaults. A run refuses to start while any protocol value is unpinne
 import argparse
 import asyncio
 import csv
+import math
 import sys
 from typing import Dict, List, Optional
 
@@ -62,6 +63,21 @@ PLATE_XY = Coordinate(-0.68, 3.22, 0.0)
 PLATE_DSP_ABOVE_HEIGHT = 9.0
 DSP_BLOWOUT_AIR_VOLUME = 5.0
 
+# p300 usable single-aspirate volume (uL). Nominal 300 minus margin for the transport
+# air gap and the dispense blowout. A water add larger than this is split across
+# multiple aspirate/dispense cycles rather than silently truncated.
+TIP_MAX_SINGLE_ASPIRATE = 280.0
+
+# CellTreat 350 Fb well: bore 6.96 mm -> area ~38.05 mm2, so 1 uL is ~0.0263 mm of
+# liquid height. Used to check the dispense-from-above tip stays above the fullest
+# well by a real margin (a submerged reused tip would carry sample between wells).
+WELL_AREA_MM2 = 38.05
+MIN_DISPENSE_CLEARANCE_MM = 1.5
+
+
+def fill_height_mm(volume_ul: float) -> float:
+    return volume_ul / WELL_AREA_MM2
+
 P300_TIP_FACTORY_CANDIDATES = [
     "hamilton_96_tiprack_300uL_filter",
     "hamilton_96_tiprack_300ul_filter",
@@ -82,12 +98,32 @@ def all_wells() -> List[str]:
 # ---------------------------------------------------------------------------
 
 def read_conc_csv(path: str) -> Dict[str, float]:
-    out = {}
+    """Parse well,value rows. Fails loudly on a non-finite value or a duplicate well,
+    and validates every name against the 96-well grid, so a bad CSV cannot reach the
+    arm (the failure would otherwise surface mid-motion, after a tip is already up)."""
+    grid = set(all_wells())
+    out: Dict[str, float] = {}
+    dupes: List[str] = []
     with open(path, newline="") as f:
-        for row in csv.reader(f):
+        for lineno, row in enumerate(csv.reader(f), 1):
             if not row or row[0].strip().lower() in ("well", "#") or row[0].startswith("#"):
                 continue
-            out[row[0].strip()] = float(row[1])
+            if len(row) < 2:
+                raise SystemExit(f"{path}:{lineno}: expected 'well,value', got {row!r}")
+            well = row[0].strip()
+            try:
+                val = float(row[1])
+            except ValueError:
+                raise SystemExit(f"{path}:{lineno}: value {row[1]!r} for well {well} is not a number")
+            if not math.isfinite(val):
+                raise SystemExit(f"{path}:{lineno}: well {well} value {row[1]!r} is not finite")
+            if well not in grid:
+                raise SystemExit(f"{path}:{lineno}: well {well!r} is not on the 96-well grid (A1..H12)")
+            if well in out:
+                dupes.append(well)
+            out[well] = val
+    if dupes:
+        raise SystemExit(f"{path}: duplicate wells (last value would silently win): {sorted(set(dupes))}")
     return out
 
 
@@ -157,36 +193,48 @@ async def assign_deck(lh):
     return {"p300": p300, "plate": plate, "reservoir": reservoir}
 
 
+def split_volume(total: float, chunk_max: float) -> List[float]:
+    """Split a water add into aspirate/dispense chunks no larger than chunk_max, so a
+    volume above one p300 aspiration is delivered in passes rather than truncated."""
+    n = max(1, math.ceil(total / chunk_max - 1e-9))
+    each = total / n
+    return [each] * n
+
+
 async def dispense_water(lh, r, plan: List[NP.WellNorm], discard_tips: bool):
     """Single channel, one reused tip: aspirate water from the reservoir and dispense
-    it above each well's liquid. Only wells with water >= min are touched."""
+    it above each well's liquid. Only wells with water > 0 are touched; adds larger
+    than one p300 aspiration are split into chunks."""
     plate = r["plate"]
     reservoir = r["reservoir"]
     active = [w for w in plan if w.water_ul > 0.0]
     print(f"\n=== WATER ADD: {len(active)} wells, single channel, one reused tip ===")
     if not active:
-        print("  nothing to add (every well below target or empty). No motion.")
+        print("  nothing to add (every well below/at target, empty, or invalid). No motion.")
         return
 
     await lh.pick_up_tips(r["p300"]["A1"])  # one tip, channel 0
     try:
         for wn in active:
-            print(f"  {wn.well}: +{wn.water_ul} uL water (well -> {wn.final_ul} uL, "
+            chunks = split_volume(wn.water_ul, TIP_MAX_SINGLE_ASPIRATE)
+            note = "" if len(chunks) == 1 else f" in {len(chunks)} passes"
+            print(f"  {wn.well}: +{wn.water_ul} uL water{note} (well -> {wn.final_ul} uL, "
                   f"{wn.final_ng_per_ul} ng/uL, {wn.status})")
-            await lh.aspirate(
-                [reservoir[WATER_WELL][0]],
-                vols=[wn.water_ul],
-                liquid_height=[RES_ASP_HEIGHT],
-                offsets=[RES_ASP_OFFSET],
-                blow_out_air_volume=[0.0],
-            )
-            await lh.dispense(
-                [plate[wn.well][0]],
-                vols=[wn.water_ul],
-                liquid_height=[PLATE_DSP_ABOVE_HEIGHT],
-                offsets=[PLATE_XY],
-                blow_out_air_volume=[DSP_BLOWOUT_AIR_VOLUME],
-            )
+            for vol in chunks:
+                await lh.aspirate(
+                    [reservoir[WATER_WELL][0]],
+                    vols=[vol],
+                    liquid_height=[RES_ASP_HEIGHT],
+                    offsets=[RES_ASP_OFFSET],
+                    blow_out_air_volume=[0.0],
+                )
+                await lh.dispense(
+                    [plate[wn.well][0]],
+                    vols=[vol],
+                    liquid_height=[PLATE_DSP_ABOVE_HEIGHT],
+                    offsets=[PLATE_XY],
+                    blow_out_air_volume=[DSP_BLOWOUT_AIR_VOLUME],
+                )
     finally:
         if discard_tips:
             print("Discarding tip...")
@@ -194,7 +242,16 @@ async def dispense_water(lh, r, plan: List[NP.WellNorm], discard_tips: bool):
         else:
             print("Returning tip...")
             await lh.return_tips()
-    print("SUCCESS: water added. Every touched well now at the target concentration.")
+
+    # Honest close: only status==OK wells actually reached the target.
+    reached = [w for w in active if w.status == NP.OK]
+    off = [w for w in active if w.status != NP.OK]
+    print(f"SUCCESS: water dispensed to {len(active)} wells; {len(reached)} reached the "
+          f"target, {len(off)} touched but NOT at target.")
+    if off:
+        print("  off-target (touched, did not reach target):")
+        for w in off:
+            print(f"    {w.well}: {w.final_ng_per_ul} ng/uL ({w.status})")
 
 
 def build_backend(sim: bool):
@@ -226,6 +283,11 @@ def build_config(args) -> NP.NormConfig:
 
 
 def get_concentrations(args) -> Dict[str, float]:
+    supplied = [n for n, v in (("--conc-csv", args.conc_csv),
+                               ("--rfu-csv", args.rfu_csv),
+                               ("--demo", args.demo)) if v]
+    if len(supplied) > 1:
+        raise SystemExit(f"pass exactly one concentration source, got {supplied}")
     if args.conc_csv:
         return read_conc_csv(args.conc_csv)
     if args.rfu_csv:
@@ -247,13 +309,36 @@ def print_plan(plan: List[NP.WellNorm]):
           f"below_target={s['counts'].get(NP.BELOW_TARGET,0)} "
           f"min_vol_clamped={s['counts'].get(NP.MIN_VOL_CLAMPED,0)} "
           f"exceeds_capacity={s['counts'].get(NP.EXCEEDS_CAPACITY,0)} "
-          f"empty={s['counts'].get(NP.EMPTY,0)}")
+          f"empty={s['counts'].get(NP.EMPTY,0)} invalid={s['counts'].get(NP.INVALID,0)}")
     print(f"total water = {s['total_water_ul']} uL | max final volume = {s['max_final_ul']} uL")
-    flagged = [w for w in plan if w.status in (NP.EXCEEDS_CAPACITY, NP.BELOW_TARGET)]
+    # every status that did not reach target is flagged (this includes min_vol_clamped,
+    # which is counted above and so must also be listed here).
+    flagged = [w for w in plan if w.status in NP.OFF_TARGET_STATUSES]
     if flagged:
         print("FLAGGED wells (did not reach target):")
         for w in flagged:
             print(f"  {w.well}: {w.conc_ng_per_ul} ng/uL -> {w.final_ng_per_ul} ({w.status})")
+
+
+def preflight(plan: List[NP.WellNorm], reservoir_usable_ul: float) -> List[str]:
+    """Hardware-safety checks the pure planner cannot see. Returns blocking reasons."""
+    problems = []
+    active = [w for w in plan if w.water_ul > 0.0]
+    # 1. reservoir must hold all the water (fixed-height aspiration has LLD off, so
+    #    running dry would silently aspirate air well by well).
+    need = sum(w.water_ul for w in active)
+    if need > reservoir_usable_ul:
+        problems.append(f"reservoir needs {need:.0f} uL of water above the aspirate height, "
+                        f"but --reservoir-usable-ul is {reservoir_usable_ul:.0f}")
+    # 2. the reused tip dispenses from above; the fullest well must stay clear of the
+    #    tip by a margin, or a submerged tip would carry sample between wells.
+    max_final = max((w.final_ul for w in active), default=0.0)
+    fill = fill_height_mm(max_final)
+    if fill > PLATE_DSP_ABOVE_HEIGHT - MIN_DISPENSE_CLEARANCE_MM:
+        problems.append(f"fullest well is {max_final:.0f} uL = {fill:.2f} mm deep; the "
+                        f"dispense-from-above height {PLATE_DSP_ABOVE_HEIGHT} mm leaves less than "
+                        f"the {MIN_DISPENSE_CLEARANCE_MM} mm clearance the reused tip needs")
+    return problems
 
 
 async def main():
@@ -269,6 +354,8 @@ async def main():
     ap.add_argument("--standards", help='"conc_ng_per_ml:rfu,..." for the PicoGreen curve')
     ap.add_argument("--assay-dilution", type=float, default=1.0)
     ap.add_argument("--demo", action="store_true", help="synthetic concentrations for a dry motion proof")
+    ap.add_argument("--reservoir-usable-ul", type=float, default=12000.0,
+                    help="water available in the reservoir above the aspirate height, uL")
     ap.add_argument("--return-tips", action="store_true")
     args = ap.parse_args()
 
@@ -277,18 +364,23 @@ async def main():
     plan = NP.build_plan(concs, cfg)
     print_plan(plan)
 
+    # a real run must refuse on unpinned/bad protocol values AND on hardware-safety
+    # preflight failures; sim and deck print them as warnings so they surface early.
+    blocking = cfg.blocking() + preflight(plan, args.reservoir_usable_ul)
+
     if args.mode == "plan":
-        blocking = cfg.blocking()
         if blocking:
-            print("\nNOTE: plan only. These values are unpinned and would block a hardware run:")
+            print("\nNOTE: plan only. These would block a hardware run:")
             for b in blocking:
                 print(f"  - {b}")
         return
 
-    # deck / sim / run all touch PLR
-    blocking = cfg.blocking()
     if args.mode == "run" and blocking:
-        raise SystemExit("refusing hardware run; unpinned protocol values:\n  " + "\n  ".join(blocking))
+        raise SystemExit("refusing hardware run:\n  " + "\n  ".join(blocking))
+    if blocking:
+        print("\nWARNING (would block a real run; sim/deck proceeds):")
+        for b in blocking:
+            print(f"  - {b}")
 
     from pylabrobot.liquid_handling import LiquidHandler
     from pylabrobot.resources.hamilton import STARDeck

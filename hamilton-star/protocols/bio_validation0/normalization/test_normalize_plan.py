@@ -141,6 +141,28 @@ check("one empty", s["counts"].get(EMPTY, 0) == 1)
 check("one exceeds_capacity", s["counts"].get(EXCEEDS_CAPACITY, 0) == 1)
 check("total water is positive", s["total_water_ul"] > 0)
 
+print("=== non-finite concentration is INVALID, never touched (review finding) ===")
+from normalize_plan import INVALID, OFF_TARGET_STATUSES
+inf = plan_well("F1", float("inf"), 20.0, cfg())
+nan = plan_well("F2", float("nan"), 20.0, cfg())
+check("inf -> invalid, no water", inf.status == INVALID and inf.water_ul == 0.0)
+check("nan -> invalid, no water", nan.status == INVALID and nan.water_ul == 0.0)
+check("nan start volume -> invalid", plan_well("F3", 10.0, float("nan"), cfg()).status == INVALID)
+check("invalid is off-target", INVALID in OFF_TARGET_STATUSES)
+
+print("=== config value validation blocks bad numbers (review finding) ===")
+from normalize_plan import NormConfig
+bad_target = NormConfig(target=sourced(0.0, "x"), start_volume=sourced(20.0, "x"),
+                        min_transfer=sourced(1.0, "x"), well_capacity=sourced(300.0, "x"))
+check("target 0 blocks", any("target must be > 0" in s for s in bad_target.blocking()))
+bad_neg = NormConfig(target=sourced(-2.0, "x"), start_volume=sourced(20.0, "x"),
+                     min_transfer=sourced(1.0, "x"), well_capacity=sourced(300.0, "x"))
+check("negative target blocks", any("target must be > 0" in s for s in bad_neg.blocking()))
+bad_cap = NormConfig(target=sourced(2.0, "x"), start_volume=sourced(50.0, "x"),
+                     min_transfer=sourced(1.0, "x"), well_capacity=sourced(20.0, "x"))
+check("capacity below start blocks", any("below start_volume" in s for s in bad_cap.blocking()))
+check("good config still clean", cfg().blocking() == [])
+
 print()
 if FAILS:
     print(f"FAILED {len(FAILS)}: {FAILS}")
