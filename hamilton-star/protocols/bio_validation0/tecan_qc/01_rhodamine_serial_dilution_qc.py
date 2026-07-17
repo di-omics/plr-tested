@@ -385,7 +385,17 @@ async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool
             await asyncio.sleep(POST_DISPENSE_SETTLE_SECONDS)
         finally:
             await finish_tips(lh, discard_tips)
-        rack_col += 1
+        # Only burn a fresh rack column when we are actually discarding. This is the ampseq
+        # cleanup idiom (`if discard_tips: tip_col += 1`). Fresh tips per step are mandatory
+        # for a WET run (dilution accuracy, and the tip re-enters the shared chain), but a dry
+        # rehearsal returns tips, so reusing one column costs nothing and keeps the whole dry
+        # run inside a single rack column.
+        # 2026-07-16, on the instrument: without this, the dry run advanced 3 -> 12 and died at
+        # rack column 10 with NoTipError on all three channels (C0TPid0078er99 P108/75) after 7
+        # of 10 serial steps. The physical p300 rack at rail48 pos2 only carries tips in columns
+        # 1-9. A discard-mode (wet) run still needs 12 columns and therefore a fresh full rack.
+        if discard_tips:
+            rack_col += 1
     print("\nSUCCESS: serial dilution complete. Every well A-C, cols 1-12 holds 100 uL.")
 
 
