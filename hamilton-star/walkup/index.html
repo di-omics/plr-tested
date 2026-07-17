@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ampseq walk-up runner</title>
+<style>
+:root{
+  color-scheme: light;
+  --matcha:#98c73c; --matcha-deep:#5f8f1e; --matcha-text:#497015;
+  --matcha-tint:#eff7da; --matcha-wash:#f5fbe9; --iris:#b6a4e6;
+  --bg:#fbfbf9; --panel:#ffffff; --ink:#232320; --gray:#66655f;
+  --faint:#9d9c95; --line:#e9e8e2;
+  --stop:#b4243f; --stop-wash:#fdecef; --stop-line:#f3ccd5;
+  --warn:#7a5c12; --warn-wash:#fdf6e3; --warn-line:#efe0b8;
+  --r:15px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--ink);
+  font-family:'Space Grotesk',system-ui,-apple-system,sans-serif;
+  background:
+    radial-gradient(115% 70% at 12% -4%, #f1ecfb 0%, transparent 52%),
+    radial-gradient(110% 65% at 90% 2%, #fdedf3 0%, transparent 48%),
+    radial-gradient(120% 80% at 50% 108%, #e8f0fa 0%, transparent 58%),
+    var(--bg);
+  background-attachment:fixed;
+  line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding:30px 20px 90px}
+.lab{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+h1{font-size:38px;line-height:1;margin:8px 0 0;font-weight:800;letter-spacing:-.03em}
+h1 .d{background:linear-gradient(120deg,#98c73c,#7fb3dc,#b6a4e6,#efa8c6);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.live{
+  display:inline-flex;align-items:center;gap:7px;background:#1c1c1a;color:#fff;
+  border-radius:99px;padding:6px 13px;font-size:10px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;font-family:ui-monospace,monospace;
+}
+.live i{width:7px;height:7px;border-radius:99px;background:var(--matcha);
+  box-shadow:0 0 0 0 rgba(152,199,60,.8);animation:p 2s infinite}
+@keyframes p{70%{box-shadow:0 0 0 7px rgba(152,199,60,0)}100%{box-shadow:0 0 0 0 rgba(152,199,60,0)}}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:14px 0}
+h2{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin:0 0 4px}
+h2 .n{color:var(--faint);font-weight:600}
+.sub{font-size:13px;color:var(--gray);margin:0 0 14px}
+.gate{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;font-family:ui-monospace,monospace}
+.dot{width:9px;height:9px;border-radius:99px;flex:none}
+.g-ok .dot{background:var(--matcha)} .g-ok{color:var(--matcha-text)}
+.g-no .dot{background:var(--stop)} .g-no{color:var(--stop)}
+.g-wait .dot{background:var(--faint)} .g-wait{color:var(--faint)}
+.builds{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:560px){.builds{grid-template-columns:1fr}}
+.b{
+  border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;cursor:pointer;
+  background:var(--panel);text-align:left;font:inherit;color:inherit;transition:.12s;
+}
+.b:hover{border-color:#cfd6c2}
+.b.on{border-color:var(--matcha);background:var(--matcha-wash);box-shadow:0 0 0 3px rgba(152,199,60,.13)}
+.b .t{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.b .m{font-size:11.5px;color:var(--gray);margin-top:2px}
+.b .rec{font-size:10px;color:var(--matcha-text);font-weight:700;margin-top:6px;
+  font-family:ui-monospace,monospace}
+.tag{
+  font-family:ui-monospace,monospace;font-size:11.5px;background:var(--matcha-wash);
+  border:1px solid #dcefb9;color:var(--matcha-text);border-radius:8px;padding:9px 11px;
+  margin-top:10px;word-break:break-all;
+}
+.tag.bad{background:var(--stop-wash);border-color:var(--stop-line);color:var(--stop)}
+.drift{margin:8px 0 0;padding-left:16px;font-size:11px;color:var(--stop);
+  font-family:ui-monospace,monospace}
+.drift li{margin:1px 0}
+.ck{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);
+  border-radius:11px;margin-bottom:7px;cursor:pointer;background:var(--panel);transition:.12s}
+.ck:hover{background:#fcfdfa}
+.ck.on{border-color:var(--matcha);background:var(--matcha-wash)}
+.ck input{margin:2px 0 0;width:17px;height:17px;accent-color:var(--matcha-deep);flex:none;cursor:pointer}
+.ck .l{font-size:13.5px;font-weight:700}
+.ck .w{font-size:11.5px;color:var(--gray);margin-top:1px}
+.ck.on .w{color:var(--matcha-text)}
+input[type=text]{
+  width:100%;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);color:var(--ink);
+}
+input[type=text]:focus{outline:2px solid var(--matcha);outline-offset:1px;border-color:var(--matcha)}
+.run{
+  width:100%;border:0;border-radius:14px;padding:19px;font:inherit;font-size:19px;
+  font-weight:800;letter-spacing:-.01em;background:var(--matcha);color:#20300f;
+  cursor:pointer;position:relative;overflow:hidden;transition:.12s;
+}
+.run:disabled{background:#e9e8e2;color:var(--faint);cursor:not-allowed}
+.run .fill{position:absolute;inset:0 auto 0 0;width:0;background:rgba(32,48,15,.19);
+  pointer-events:none;transition:width .05s linear}
+.run span{position:relative}
+.stop{
+  width:100%;border:0;border-radius:14px;padding:19px;font:inherit;font-size:19px;
+  font-weight:800;background:var(--stop);color:#fff;cursor:pointer;
+}
+.bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;margin:12px 0 6px}
+.bar i{display:block;height:100%;width:0;background:var(--matcha);
+  border-radius:99px;transition:width .3s}
+.term{
+  background:#fbfbf9;border:1px solid var(--line);border-radius:11px;padding:12px;
+  font-family:ui-monospace,monospace;font-size:11.5px;line-height:1.6;height:260px;
+  overflow-y:auto;white-space:pre-wrap;word-break:break-word;
+}
+.term .step{color:var(--matcha-text);font-weight:700}
+.term .success{color:var(--matcha-deep)}
+.term .error{color:var(--stop);font-weight:700}
+.term .log{color:var(--gray)}
+.note{border-left:2px solid var(--matcha);background:var(--matcha-wash);padding:11px 14px;
+  border-radius:0 9px 9px 0;font-size:12.5px;color:#3f5713;margin:12px 0 0}
+.note.warn{border-left-color:var(--warn);background:var(--warn-wash);color:var(--warn)}
+.note.bad{border-left-color:var(--stop);background:var(--stop-wash);color:#6d4450}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--faint);padding:0 10px 7px 0;font-weight:700}
+td{padding:7px 10px 7px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+code{font-family:ui-monospace,monospace;font-size:11.5px}
+.pill{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;
+  font-family:ui-monospace,monospace;letter-spacing:.05em}
+.pill.ok{background:var(--matcha-wash);color:var(--matcha-text);border:1px solid #d9edb4}
+.pill.no{background:var(--stop-wash);color:var(--stop);border:1px solid var(--stop-line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <p class="lab">amplicon-seq &middot; hamilton star + odtc &middot; starpi</p>
+      <h1>walk-up<span class="d">.</span></h1>
+    </div>
+    <div class="live"><i></i> live &middot; drives the arm</div>
+  </div>
+
+  <div class="note warn" style="margin-top:16px">
+    <b>This is not the simulator.</b> The sibling pages <code>ampseq-run-app*.html</code> are
+    badged SIMULATION and cannot reach the Pi. This one really moves metal. A human stays at
+    the deck with a hand near the E-stop for the whole run. Nothing here changes that.
+  </div>
+
+  <!-- 1. BUILD + TAG PIN -->
+  <div class="card">
+    <h2>1 <span class="n">&middot; pick the build</span></h2>
+    <p class="sub">Only builds that have passed on hardware are offered.</p>
+    <div class="builds" id="builds"></div>
+    <div id="tagbox"></div>
+  </div>
+
+  <!-- 2. SAMPLES -->
+  <div class="card">
+    <h2>2 <span class="n">&middot; samples</span></h2>
+    <p class="sub">Comma separated. Logged with the run so you can trace a plate back later.
+    Optional, and it does not change what the robot does.</p>
+    <input type="text" id="samples" placeholder="EMB-014, EMB-015, EMB-016">
+    <input type="text" id="note" placeholder="note, optional" style="margin-top:8px">
+  </div>
+
+  <!-- 3. DECK -->
+  <div class="card">
+    <h2>3 <span class="n">&middot; deck staging</span></h2>
+    <p class="sub">Look at the deck and confirm each one. Getting these wrong is how an iSWAP
+    releases a plate into open space. This checklist is the gate: the confirm token is not
+    released until every box is ticked by someone who looked.</p>
+    <div id="deck"></div>
+  </div>
+
+  <!-- 4. ARM -->
+  <div class="card">
+    <h2>4 <span class="n">&middot; arm and run</span></h2>
+    <label class="ck" id="presentrow">
+      <input type="checkbox" id="present">
+      <div>
+        <div class="l">I am at the deck, hand near the E-stop</div>
+        <div class="w">The run is about 18 minutes of arm motion. Do not walk away.</div>
+      </div>
+    </label>
+    <div id="gates" style="display:flex;flex-direction:column;gap:6px;margin:14px 0"></div>
+    <button class="run" id="run" disabled>
+      <span class="fill" id="fill"></span><span id="runlabel">hold to run</span>
+    </button>
+    <p class="sub" style="margin:9px 0 0;font-size:11.5px">Hold the button for 2 seconds. That
+    hold replaces typing <code>--confirm RUN_AMPSEQ_ODTC_LIDDED_FULL</code>. It is deliberate.</p>
+  </div>
+
+  <!-- LIVE -->
+  <div class="card" id="livecard" style="display:none">
+    <h2>running <span class="n" id="runmeta"></span></h2>
+    <div class="bar"><i id="prog"></i></div>
+    <p class="sub" id="progtext" style="margin:0 0 12px"></p>
+    <button class="stop" id="stop">stop after this leg</button>
+    <div class="note bad">
+      <b>What stop does.</b> It signals the runner between legs. The leg in flight finishes its
+      motion, then nothing further launches. It does <b>not</b> freeze the arm mid-transfer,
+      because aborting mid-leg is what strands a plate. If you need the arm to stop <b>now</b>,
+      hit the E-stop, then use <code>recover_*.py</code> to bring the plate home.
+      <br><br>
+      This abort path has not yet been exercised on hardware. Treat the E-stop as the real stop.
+    </div>
+    <div class="term" id="term" style="margin-top:12px"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card">
+    <h2>history</h2>
+    <div id="hist"><p class="sub" style="margin:0">No runs recorded yet.</p></div>
+  </div>
+
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let S = null, build = "1col", deckOn = new Set(), holdT = null, holdStart = 0, running = false;
+
+async function load(){
+  S = await (await fetch("/api/state")).json();
+  build = build in S.builds ? build : Object.keys(S.builds)[0];
+  paintBuilds(); paintDeck(); paintHist(); refreshGates();
+  if(S.run.active){ running = true; $("#livecard").style.display="block"; }
+}
+
+function paintBuilds(){
+  const el = $("#builds"); el.innerHTML = "";
+  for(const [k,b] of Object.entries(S.builds)){
+    const d = document.createElement("button");
+    d.className = "b" + (k===build ? " on" : "");
+    d.innerHTML = `<div class="t">${b.label.split(" - ")[0]}</div>
+      <div class="m">${b.label.split(" - ")[1]} &middot; ~${b.minutes} min</div>
+      <div class="rec">${b.record}</div>`;
+    d.onclick = () => { build = k; paintBuilds(); refreshGates(); };
+    el.appendChild(d);
+  }
+  paintTag();
+}
+
+function paintTag(){
+  const b = S.builds[build], t = b.tag_status, el = $("#tagbox");
+  if(t.ok){
+    const d = t.main_drift || {drifted:false, files:[]};
+    el.innerHTML = `<div class="tag"><b>PINNED</b> &middot; ${t.tag} @ ${t.sha}
+      <br>This run is launched from a worktree parked on that tag, so the tagged code is
+      what reaches the robot. Your checkout is not consulted and does not need changing.</div>`
+      + (d.drifted ? `<div class="note" style="margin-top:8px;font-size:11.5px">
+          Your main checkout currently differs from this tag by ${d.files.length} file(s),
+          including <code>run_on_pi.sh</code>. That used to be the hazard. It is now inert:
+          the pinned worktree is what runs. Nothing for you to do.
+        </div>` : "");
+  } else if(t.reason === "tag-missing"){
+    el.innerHTML = `<div class="tag bad"><b>TAG MISSING</b> &middot; ${t.tag}<br>${t.detail}</div>`;
+  } else if(t.reason === "worktree-dirty"){
+    el.innerHTML = `<div class="tag bad"><b>BLOCKED &middot; PINNED WORKTREE HAS EDITS</b>
+      &middot; ${t.tag} @ ${t.sha}<br>${t.detail}<br><code>rm -rf ${t.path}</code></div>
+      <ul class="drift">${(t.dirty||[]).map(f=>`<li>${f}</li>`).join("")}</ul>`;
+  } else {
+    el.innerHTML = `<div class="tag bad"><b>BLOCKED &middot; CANNOT PIN THE TAG</b>
+      &middot; ${t.tag}<br>${t.detail||t.reason}<br><br>
+      Refusing to launch: without a pin there is no guarantee the validated build runs.</div>`;
+  }
+}
+
+function paintDeck(){
+  const el = $("#deck"); el.innerHTML = "";
+  S.deck.forEach(it => {
+    const l = document.createElement("label");
+    l.className = "ck";
+    l.innerHTML = `<input type="checkbox"><div><div class="l">${it.label}</div>
+      <div class="w">${it.why}</div></div>`;
+    const cb = l.querySelector("input");
+    cb.onchange = () => {
+      cb.checked ? deckOn.add(it.key) : deckOn.delete(it.key);
+      l.classList.toggle("on", cb.checked);
+      refreshGates();
+    };
+    el.appendChild(l);
+  });
+}
+
+function gate(ok, label, wait){
+  return `<div class="gate ${wait?"g-wait":(ok?"g-ok":"g-no")}"><i class="dot"></i>${label}</div>`;
+}
+
+function refreshGates(){
+  const t = S.builds[build].tag_status;
+  const deckOK = deckOn.size === S.deck.length;
+  const present = $("#present").checked;
+  const ok = t.ok && deckOK && present && !running;
+  $("#gates").innerHTML =
+    gate(t.ok, t.ok ? "tag pinned" : "tag drifted, blocked") +
+    gate(deckOK, `deck confirmed ${deckOn.size}/${S.deck.length}`) +
+    gate(present, present ? "human at the deck" : "nobody has confirmed presence") +
+    gate(!running, running ? "a run is already in flight" : "star free (checked at launch)");
+  $("#run").disabled = !ok;
+  $("#runlabel").textContent = running ? "run in flight"
+    : (!t.ok ? "blocked: check out the tag" : (ok ? "hold to run" : "complete the gates above"));
+  $("#presentrow").classList.toggle("on", present);
+}
+$("#present").onchange = refreshGates;
+
+// hold to arm. the deliberate 2s replaces typing the confirm token.
+const HOLD = 2000;
+function down(){
+  if($("#run").disabled) return;
+  holdStart = Date.now();
+  holdT = setInterval(()=>{
+    const p = Math.min(1,(Date.now()-holdStart)/HOLD);
+    $("#fill").style.width = (p*100)+"%";
+    if(p>=1){ up(true); go(); }
+  },30);
+}
+function up(done){ clearInterval(holdT); holdT=null; if(!done) $("#fill").style.width="0"; }
+$("#run").addEventListener("mousedown",down);
+$("#run").addEventListener("touchstart",e=>{e.preventDefault();down();});
+$("#run").addEventListener("mouseup",()=>up(false));
+$("#run").addEventListener("mouseleave",()=>up(false));
+$("#run").addEventListener("touchend",()=>up(false));
+
+async function go(){
+  $("#fill").style.width="0";
+  const samples = $("#samples").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const r = await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({build, deck:[...deckOn], present:true, samples, note:$("#note").value})});
+  const j = await r.json();
+  if(!r.ok){
+    alert((j.message||j.error||"blocked") + (j.detail && j.detail.procs ?
+      "\n\n"+j.detail.procs.join("\n") : ""));
+    await load(); return;
+  }
+  running = true; $("#term").innerHTML=""; $("#livecard").style.display="block";
+  $("#runmeta").textContent = "&middot; " + S.builds[build].tag;
+  refreshGates();
+  $("#livecard").scrollIntoView({behavior:"smooth"});
+}
+
+$("#stop").onclick = async () => {
+  if(!confirm("Stop after the leg in flight finishes?\n\nThe current leg completes its motion, "
+    + "then nothing further launches. This does NOT stop the arm right now. For that, use the E-stop."))
+    return;
+  const j = await (await fetch("/api/stop",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:"{}"})).json();
+  add("stopping: " + (j.detail||""), "error");
+};
+
+function add(line, kind){
+  const t = $("#term");
+  const d = document.createElement("div");
+  d.className = kind; d.textContent = line;
+  t.appendChild(d); t.scrollTop = t.scrollHeight;
+}
+
+const es = new EventSource("/api/stream");
+es.onmessage = e => {
+  const m = JSON.parse(e.data);
+  if(m.t === "start"){ add("$ " + m.cmd, "step"); }
+  if(m.t === "line"){
+    add(m.line, m.kind);
+    // Progress tracks LEGS, not SUCCESS lines. The runner defines exactly 13 legs
+    // and prints a "STEP N:" banner for each, so that denominator is known and
+    // stable. SUCCESS lines are an implementation detail of the leg scripts and
+    // are NOT 1 per leg: STEP 1 and STEP 7 print none at all, while the STEP 5
+    // cleanup prints one per sub-action (8 actions + a rollup). An earlier cut
+    // divided by a guessed success count and would have read "20 / 13".
+    const legs = S.builds[build].legs || 13;
+    const p = Math.min(100, Math.round(100*m.steps/legs));
+    $("#prog").style.width = p+"%";
+    // ASCII only: this is textContent, so an HTML entity would render literally.
+    $("#progtext").textContent =
+      `leg ${Math.min(m.steps, legs)} of ${legs}  |  ${m.success} SUCCESS so far`;
+  }
+  if(m.t === "stopping"){ add("stop requested, waiting for the leg in flight", "error"); }
+  if(m.t === "end"){
+    running = false;
+    add(m.exit === 0 ? "DONE. exit 0" : "ENDED. exit " + m.exit, m.exit===0?"success":"error");
+    load();
+  }
+};
+
+// Sample IDs and notes are free text that came in over a POST and were persisted
+// to runs.jsonl. They are rendered back into innerHTML below, so an unescaped
+// value is stored XSS in a page that can fire a robot. Escape everything that
+// came from outside. Found by adversarial review 2026-07-16.
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+function paintHist(){
+  const el = $("#hist");
+  if(!S.history.length){ el.innerHTML = `<p class="sub" style="margin:0">No runs recorded yet.</p>`; return; }
+  el.innerHTML = `<table><tr><th>when</th><th>build</th><th>result</th><th>samples</th></tr>` +
+    S.history.map(h=>`<tr>
+      <td>${esc(h.at ? String(h.at).replace("T"," ").replace("+00:00","") : "")}</td>
+      <td><code>${esc(h.build)}</code></td>
+      <td>${h.exit===0 && !h.stopped
+            ? `<span class="pill ok">${esc(h.success)} ok</span>`
+            : `<span class="pill no">${h.stopped?"stopped":"exit "+esc(h.exit)}</span>`}</td>
+      <td>${(h.samples||[]).map(esc).join(", ")||"<span style='color:var(--faint)'>none</span>"}</td>
+    </tr>`).join("") + `</table>`;
+}
+
+load();
+</script>
+</body>
+</html>

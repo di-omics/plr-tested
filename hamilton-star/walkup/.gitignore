@@ -1,0 +1,3 @@
+# Run history is local runtime state: it records what this machine actually ran.
+# Not shared, and not meaningful in another checkout.
+runs.jsonl
