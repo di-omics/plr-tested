@@ -16,11 +16,22 @@ import pylabrobot.resources as plr_resources
 
 # Tecan Infinite QC - Rhodamine B 2-fold serial dilution, built on the STAR
 #
-# Written 2026-07-14. STATUS: written, NOT yet run on hardware.
-# Geometry below is a STARTING ESTIMATE seeded from validated ampseq/cleanup
-# scripts. Tune it dry on the physical deck (see run cards in README.md) before
-# any wet run. Do not trust these heights until a --mode deck and a dry motion
-# pass have been watched on the instrument.
+# Written 2026-07-14. STATUS: DRY-validated on the instrument 2026-07-16 (starpi).
+#   --mode all --return-tips, clean end to end, verified leg by leg (not by exit code):
+#     diluent 11/11, dye 1/1, serial 10/10, in-well mix 10/10 (50 cycles), discard 1/1,
+#     0 faults, 0 Z errors.
+#   That means the geometry below is no longer an estimate for the DRY case: the p300
+#   heights (asp/dsp 1.5) and the ampseq-inherited XY (-0.68, 3.22) held across plate
+#   columns 1-11 with the tip planted at mix Z +0.5 mm, first clean pass.
+#   The first attempt that day died at serial step 8 with NoTipError on all three
+#   channels: the tip plan advanced rack column 3 -> 12 but the physical p300 rack at
+#   rail48 pos2 only carries tips in columns 1-9. Fixed by only advancing the rack
+#   column in discard mode (see the tip plan below). Not a geometry failure.
+#
+# STILL NOT WET. This is motion only: empty wells, so the in-well mix cycled air and
+# the gradient was never made. It proves the choreography and the Z geometry, NOT the
+# dilution. A wet run is owed, and a wet run additionally needs a FRESH FULL p300 rack
+# (discard mode advances 3 -> 12 and the current rack is only good to column 9).
 #
 # Purpose:
 # - Build the Rhodamine B absorbance/linearity QC plate for the Tecan Infinite
