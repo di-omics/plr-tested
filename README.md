@@ -63,6 +63,9 @@ Inheco ODTC:
 | `odtc_offline_checks.py`, 72 checks, on the Pi under PyLabRobot 0.2.1 | passed, off-instrument |
 | Bring-up, block hold to 45.00 C, full cycling profile to 50.00 C, `PlateauTime` = seconds | passed on the instrument |
 | `ampseq-pcr1`: 30 real PCR cycles, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument (98 C denaturation grazes the 99 C ceiling; see odtc README) |
+| Full lidded targeted PCR choreography with the ODTC **called live** at both thermal legs: 13 motion legs, 22 SUCCESS, 0 failures, deck self-returned | passed on the instrument |
+| ODTC Reset + Initialize with a plate and lid seated in the nest | benign, proven on the instrument |
+| The two thermal programs run **inside** the choreography (`--thermocycle`) | written, reached STEP 2t clean, stopped in pre-warm on purpose; not yet run to completion |
 | A the kit user guide program run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | plate-move legs drafted, geometry not yet tuned on hardware |
 

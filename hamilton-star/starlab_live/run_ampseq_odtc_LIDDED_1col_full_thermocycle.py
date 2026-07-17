@@ -23,6 +23,13 @@ from pathlib import Path
 #               reachable and answering at the exact point in the flow where it will later
 #               be asked to cycle. It cannot heat and cannot move the door. --no-odtc
 #               restores the old skip-entirely behaviour (pure motion, no cycler at all).
+#   2026-07-16  RUN ON HARDWARE, default mode: 15 steps, 22 SUCCESS, 0 failures. All 13
+#               motion legs plus both ODTC calls; the cycler answered at 2t and 8t; deck
+#               self-returned (plate rail35 pos0, lid pos4). This is the validated build.
+#               A --thermocycle run was also started and reached STEP 2t cleanly before
+#               being stopped in pre-warm on purpose, which is what settled the
+#               Reset-with-plate-loaded question below. --thermocycle has NOT yet been run
+#               to completion.
 #
 # THE POINT OF THIS FILE
 #   Dry (default)       : 13 motion legs, and the ODTC is CALLED read-only at STEP 2t / 8t
@@ -38,13 +45,19 @@ from pathlib import Path
 #   (01_odtc_probe_raw.py) only ever sends read-only queries: it never sends Reset,
 #   Initialize, OpenDoor, or ExecuteMethod. That is why the dry call uses it.
 #
-# OPEN QUESTION BEFORE ANY --thermocycle RUN (not resolved here)
+# ANSWERED ON HARDWARE 2026-07-16: Reset + Initialize with a plate loaded is BENIGN.
 #   05_odtc_run_protocol.py calls setup(), which sends Reset + Initialize and therefore
-#   homes the door -- with the plate and lid already in the nest. That sequence has never
-#   been exercised with a plate loaded. Separately, this choreography never CLOSES the ODTC
-#   door around the thermal leg; the standalone ampseq-pcr1 run on 2026-07-10 completed
-#   regardless of door state, but an open door is not a thermally sound way to run a real
-#   PCR. Both need answering before --thermocycle is pointed at real chemistry.
+#   homes the door. The worry was that it does this with the plate and lid already seated
+#   in the nest. A --thermocycle run was started and reached STEP 2t: the choreography
+#   found odtc_lib on the Pi, drove 05, uploaded ampseq-pcr1, and began pre-warming, all
+#   with the plate and lid in the nest, with zero failures. Nothing was disturbed. The run
+#   was then stopped by operator choice during the lid pre-warm (block never left 25 C), so
+#   the thermal programs themselves are still not run end to end inside this choreography.
+#
+# STILL OPEN: this choreography never CLOSES the ODTC door around the thermal leg. The
+#   standalone ampseq-pcr1 run on 2026-07-10 completed regardless of door state, but an
+#   open door is not a thermally sound way to run a real PCR. Worth settling before
+#   --thermocycle is pointed at real chemistry.
 #
 # THE THERMAL LEGS (from instrument-integrations/odtc, hardware-validated 2026-07-10)
 #   PCR1: program `ampseq-pcr1`  98/30s x1, (98/10s, 67/15s, 72/15s) x30, 72/60s, 10 C hold
@@ -172,8 +185,13 @@ def odtc_dry_call_argv(odtc_lib, odtc_ip):
     ExecuteMethod, so this cannot heat the block and cannot move the door out from under
     the plate that is sitting in the nest at this point in the flow.
     """
-    return [str(odtc_lib / "01_odtc_probe_raw.py"),
-            "--ip", odtc_ip, "--timeout", "8", "--commands", "GetStatus"]
+    argv = [str(odtc_lib / "01_odtc_probe_raw.py"),
+            "--timeout", "8", "--commands", "GetStatus"]
+    if odtc_ip:
+        # Omitted rather than passed as None so --plan works with no address set; the
+        # pre-flight hard-requires an address before anything actually runs.
+        argv += ["--ip", odtc_ip]
+    return argv
 
 
 def build_steps(mode, odtc_lib, odtc_ip):
@@ -191,6 +209,9 @@ def build_steps(mode, odtc_lib, odtc_ip):
     def thermal(step, program, minutes):
         label = (f"{step}: ODTC {program} THERMAL PROGRAM, lid sealed "
                  f"(~{minutes} min, blocks until the cycler finishes)")
+        if mode in ("cycle", "call") and odtc_lib is None:
+            # Narrate rather than crash: preflight_odtc refuses before anything moves.
+            return (label + "  [ODTC code NOT FOUND -- pre-flight will refuse]", None)
         if mode == "cycle":
             return (label, odtc_thermal_argv(odtc_lib, program, odtc_ip))
         if mode == "call":
