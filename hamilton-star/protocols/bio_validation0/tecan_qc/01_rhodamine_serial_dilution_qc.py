@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from pylabrobot.liquid_handling import LiquidHandler
 from pylabrobot.liquid_handling.backends import STARBackend
+from pylabrobot.liquid_handling.standard import Mix
 from pylabrobot.resources.hamilton import STARDeck, TIP_CAR_480_A00
 from pylabrobot.resources import (
     PLT_CAR_L5AC_A00,
@@ -109,8 +110,37 @@ DILUENT_PREFILL = 100.0      # diluent into cols 2-12
 DYE_COL1_VOL = 200.0         # neat dye into col 1 (seeds the chain)
 TRANSFER_VOL = 100.0         # 2-fold: transfer half the working volume
 FINAL_DISCARD_VOL = 100.0    # col 11 -> waste, leaves col 11 at 100 uL
-MIX_VOL = 80.0               # in-place mix at the destination
-MIX_CYCLES = 5               # in-place mix cycles per destination (override with --mix-cycles)
+# IN-WELL MIX (firmware Mix), lifted from the validated ampseq build
+# (tag ampseq-lidded-inwellmix-2026-07-16). The tip stays planted IN the well and the
+# plunger cycles in place. A Python aspirate/dispense loop is NOT mixing: it retracts the
+# head between cycles (squirt-and-repeat). Observed on the instrument 2026-07-16 and
+# rejected by the operator for that reason. This script used that rejected loop until
+# 2026-07-16; it is now the same firmware Mix the ampseq build proved.
+#
+# THE SIGN IS PROVEN, DO NOT GUESS IT AGAIN. test_mix_position_sign_SAFE.py ran on the
+# instrument 2026-07-16. mix_position_from_liquid_surface is a DEPTH measured DOWNWARD:
+#
+#     mix Z = well_bottom + liquid_height - mix_position_from_liquid_surface
+#
+# lld_mode is never passed and defaults to LLDMode.OFF, so the modelled surface is
+# well_bottom + liquid_height (the value passed to dispense), NOT the real meniscus.
+# With liquid_height = 1.5 and param 1.0 -> mix Z = +0.5 mm above the well bottom, the
+# same proven-safe geometry as ampseq. param 2.0 would give -0.5 mm = tips INTO the
+# plastic (the 87b6e52 bug). PLR 0.2.1's STARBackend.dispense docstring calls this
+# "above the liquid surface" and is WRONG; dispense_pip ("Z- direction") is right.
+# Nothing guards it. The number below is load-bearing.
+MIX_CYCLES = 5               # in-well mix cycles per destination (override with --mix-cycles)
+MIX_VOLUME_UL = 80.0         # 40% of the 200 uL working volume. CellTreat 350 uL Fb bore =
+                             # 6.96 mm = 38.046 mm2 = 0.0263 mm per uL, so 200 uL is 5.26 mm
+                             # deep and an 80 uL stroke drops the surface to 3.16 mm: the tip
+                             # at 0.5 mm stays submerged for the whole stroke (unlike ampseq's
+                             # shallow 25 uL reaction, which had to drop to 6 uL to stay under).
+MIX_FLOW_RATE = 50.0         # uL/s. ampseq uses 10 because its 10 uL stroke at 50 finished in
+                             # 1.2 s, too fast to see or hear. An 80 uL stroke at 50 takes
+                             # 1.6 s, so 5 cycles is ~16 s per column: visible, and it keeps
+                             # the 10-column serial from spending 13 min mixing. 50 is a rate
+                             # the firmware already accepted on this instrument.
+MIX_POSITION_FROM_SURFACE = 1.0   # -> mix Z = 1.5 - 1.0 = 0.5 mm above the well bottom
 
 # --- Geometry: STARTING ESTIMATES, tune dry first ---------------------------
 # Reservoir aspirate, seeded from the validated cleanup trough geometry
@@ -122,9 +152,13 @@ P300_RES_ASP_OFFSET = Coordinate(0.0, 1.5, 0.0)
 # (Coordinate(-0.68, 3.22, 0.0)). Y MUST stay > 3.20: Y = 3.20 trips the
 # <9 mm adjacent-channel spacing safety error and is blacklisted repo-wide.
 P300_PLATE_XY = Coordinate(-0.68, 3.22, 0.0)
-P300_PLATE_DSP_HEIGHT = 1.0   # dispense low into the receiving liquid, no splash
-P300_PLATE_ASP_HEIGHT = 0.5   # aspirate near the bottom of a ~200 uL well
-P300_PLATE_MIX_HEIGHT = 1.0   # in-place mix height
+P300_PLATE_DSP_HEIGHT = 1.5   # PROVEN, DO NOT LOWER. ampseq raised this 0.5 -> 1.5 on
+                              # 2026-07-12 because at 0.5 the tips crushed into this same
+                              # CellTreat 350 uL Fb well at dispense. It is also the mix Z
+                              # anchor: mix Z = this - MIX_POSITION_FROM_SURFACE = 0.5 mm.
+P300_PLATE_ASP_HEIGHT = 1.5   # was 0.5, i.e. BELOW the height already shown to crush tips in
+                              # this plate. 200 uL is 5.26 mm deep, so 1.5 mm is still well
+                              # submerged; there is no reason to go lower.
 
 # Waste dispense, seeded from the validated cleanup waste geometry.
 P300_WASTE_DSP_HEIGHT = 12.0
@@ -132,6 +166,10 @@ P300_WASTE_DSP_OFFSET = Coordinate(0.0, 1.5, 0.0)
 
 DSP_BLOWOUT_AIR_VOLUME = 3.0
 WASTE_BLOWOUT_AIR_VOLUME = 2.0
+P300_MIX_BLOWOUT_AIR_VOLUME = 10.0   # heavy blowout after the in-well mix so nothing is left
+                                     # in the tip, per the ampseq build. 200 uL is deep enough
+                                     # that the shallow-well splash risk ampseq worried about
+                                     # at 12 uL does not apply here.
 
 POST_DISPENSE_SETTLE_SECONDS = 1.0
 
@@ -205,7 +243,14 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
     print(f"  P300_PLATE_XY         = {P300_PLATE_XY}  (Y must stay > 3.20)")
     print(f"  P300_PLATE_ASP_HEIGHT = {P300_PLATE_ASP_HEIGHT}")
     print(f"  P300_PLATE_DSP_HEIGHT = {P300_PLATE_DSP_HEIGHT}")
-    print(f"  P300_PLATE_MIX_HEIGHT = {P300_PLATE_MIX_HEIGHT}")
+    print("\nIn-well mix (firmware Mix, tip planted in the well):")
+    print(f"  MIX_CYCLES (default)  = {MIX_CYCLES}   (override --mix-cycles)")
+    print(f"  MIX_VOLUME_UL         = {MIX_VOLUME_UL}")
+    print(f"  MIX_FLOW_RATE         = {MIX_FLOW_RATE} uL/s")
+    print(f"  MIX_POSITION_FROM_SURFACE = {MIX_POSITION_FROM_SURFACE}  (DOWNWARD depth)")
+    print(f"  -> mix Z = {P300_PLATE_DSP_HEIGHT} - {MIX_POSITION_FROM_SURFACE} = "
+          f"{P300_PLATE_DSP_HEIGHT - MIX_POSITION_FROM_SURFACE} mm above the well bottom")
+    print(f"  P300_MIX_BLOWOUT_AIR_VOLUME = {P300_MIX_BLOWOUT_AIR_VOLUME}")
     print(f"  P300_WASTE_DSP_HEIGHT = {P300_WASTE_DSP_HEIGHT}, offset {P300_WASTE_DSP_OFFSET}")
 
     return {
@@ -278,23 +323,11 @@ async def fill_dye(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool, 
     print("SUCCESS: dye fill complete.")
 
 
-async def mix_column(lh: LiquidHandler, plate, col: int, mix_cycles: int):
-    vols = [MIX_VOL] * N_CH
-    for i in range(mix_cycles):
-        await lh.aspirate(
-            plate_col(plate, col),
-            vols=vols,
-            liquid_height=[P300_PLATE_MIX_HEIGHT] * N_CH,
-            offsets=[P300_PLATE_XY] * N_CH,
-            blow_out_air_volume=[0.0] * N_CH,
-        )
-        await lh.dispense(
-            plate_col(plate, col),
-            vols=vols,
-            liquid_height=[P300_PLATE_MIX_HEIGHT] * N_CH,
-            offsets=[P300_PLATE_XY] * N_CH,
-            blow_out_air_volume=[0.0] * N_CH,
-        )
+def in_well_mix(mix_cycles: int):
+    # Firmware Mix: the tip stays planted IN the well and the plunger cycles in place.
+    # Handed to lh.dispense alongside mix_position_from_liquid_surface. See the constants
+    # block: mix Z = P300_PLATE_DSP_HEIGHT - MIX_POSITION_FROM_SURFACE = 0.5 mm.
+    return [Mix(volume=MIX_VOLUME_UL, repetitions=mix_cycles, flow_rate=MIX_FLOW_RATE)] * N_CH
 
 
 async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool, first_rack_col: int, mix_cycles: int):
@@ -314,15 +347,24 @@ async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool
                 offsets=[P300_PLATE_XY] * N_CH,
                 blow_out_air_volume=[0.0] * N_CH,
             )
+            # Dispense the transfer AND mix IN PLACE: the firmware Mix cycles the plunger
+            # while the tip stays IN the well (the head does NOT retract between cycles),
+            # then a heavy blowout so nothing is left in the tip. mix Z =
+            # P300_PLATE_DSP_HEIGHT - MIX_POSITION_FROM_SURFACE = 1.5 - 1.0 = 0.5 mm above
+            # the well bottom. That parameter is a DOWNWARD depth, proven on hardware.
+            print(f"    dispense {TRANSFER_VOL} uL -> col {dst}; in-well mix {mix_cycles}x "
+                  f"{MIX_VOLUME_UL} uL @ {MIX_FLOW_RATE} uL/s at mix Z "
+                  f"{P300_PLATE_DSP_HEIGHT - MIX_POSITION_FROM_SURFACE} mm above the well bottom; "
+                  f"blowout {P300_MIX_BLOWOUT_AIR_VOLUME} uL")
             await lh.dispense(
                 plate_col(plate, dst),
                 vols=xfer,
                 liquid_height=[P300_PLATE_DSP_HEIGHT] * N_CH,
                 offsets=[P300_PLATE_XY] * N_CH,
-                blow_out_air_volume=[DSP_BLOWOUT_AIR_VOLUME] * N_CH,
+                blow_out_air_volume=[P300_MIX_BLOWOUT_AIR_VOLUME] * N_CH,
+                mix=in_well_mix(mix_cycles),
+                mix_position_from_liquid_surface=[MIX_POSITION_FROM_SURFACE] * N_CH,
             )
-            print(f"    mixing col {dst} ({mix_cycles} x {MIX_VOL} uL)")
-            await mix_column(lh, plate, dst, mix_cycles)
 
             if dst == DILUTION_COLS[-1]:   # col 11: discard the extra 100 uL to waste
                 print(f"    discard {FINAL_DISCARD_VOL} uL col {dst} -> waste {WASTE_WELL} (same tips)")
