@@ -31,6 +31,15 @@ rail35 pos3 = trough/reservoir
 
 ## Current whole-genome sequencing entrypoints
 
+- `starlab_live/run_pta_pipetting_hhs_LIDDED_1col_dry.py`
+  - Guarded single-column engineering runner: dry lysis + reaction, corrected
+    HHS forward, lid on, delid, and plate return.
+  - Defaults to an inert plan; `--backend chatterbox --stage all` passed offline.
+  - `--stage deck` is connection-free: it creates no backend and performs no homing.
+  - Physical STAR mode is one stage per invocation with per-stage confirmation
+    and labware acknowledgements. Delid and corrected-Y return remain unvalidated.
+  - See `starlab_live/PTA_HHS_LIDDED_DRY_RUN_CARD.md` before any hardware run.
+
 - `protocols/bio_validation0/pta_wga/run_pta_wga_dry_e2e.sh`
   - Dry observation only.
   - Uses `--return-tips`.
