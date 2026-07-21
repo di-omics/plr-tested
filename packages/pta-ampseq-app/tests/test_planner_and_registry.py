@@ -18,18 +18,105 @@ class PlannerTests(unittest.TestCase):
             ("A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"),
         )
         payload = plan.to_dict()
+        self.assertEqual(payload["column_count"], 1)
+        self.assertEqual(payload["actuated_columns"], [1])
         self.assertEqual(payload["robot_reaction_count"], 8)
         self.assertEqual(payload["unused_positions"], 7)
+        self.assertEqual(payload["unused_plate_wells"], 88)
+        self.assertTrue(payload["current_runner"]["eligible"])
         self.assertEqual(payload["mode"], "dry_planning_only")
 
-    def test_eight_samples_fill_the_only_validated_column(self):
-        plan = plan_samples(8)
+    def test_eight_samples_fill_the_physically_eligible_column(self):
+        payload = plan_samples(8).to_dict()
 
         self.assertEqual(
-            plan.sample_wells,
-            ("A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"),
+            payload["sample_wells"],
+            ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"],
         )
-        self.assertEqual(plan.blank_wells, ())
+        self.assertEqual(payload["blank_wells"], [])
+        self.assertEqual(payload["column_count"], 1)
+        self.assertTrue(payload["current_runner"]["eligible"])
+
+    def test_nine_samples_fill_column_major_and_pad_final_column(self):
+        payload = plan_samples(9).to_dict()
+
+        self.assertEqual(
+            payload["sample_wells"],
+            ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1", "A2"],
+        )
+        self.assertEqual(
+            payload["blank_wells"],
+            ["B2", "C2", "D2", "E2", "F2", "G2", "H2"],
+        )
+        self.assertEqual(payload["actuated_columns"], [1, 2])
+        self.assertEqual(payload["column_count"], 2)
+        self.assertEqual(payload["robot_reaction_count"], 16)
+        self.assertEqual(payload["unused_plate_wells"], 80)
+        self.assertFalse(payload["current_runner"]["eligible"])
+
+    def test_partial_columns_have_blanks_only_at_the_end(self):
+        expected = {
+            15: (["H2"], 2),
+            17: (["B3", "C3", "D3", "E3", "F3", "G3", "H3"], 3),
+            95: (["H12"], 12),
+        }
+        for sample_count, (blank_wells, column_count) in expected.items():
+            with self.subTest(sample_count=sample_count):
+                payload = plan_samples(sample_count).to_dict()
+                self.assertEqual(payload["blank_wells"], blank_wells)
+                self.assertEqual(payload["column_count"], column_count)
+                self.assertEqual(
+                    payload["robot_reaction_count"],
+                    column_count * 8,
+                )
+                self.assertEqual(
+                    payload["actuated_wells"],
+                    payload["sample_wells"] + payload["blank_wells"],
+                )
+
+    def test_full_plate_contains_all_96_wells(self):
+        payload = plan_samples(96).to_dict()
+
+        expected_column_major = [
+            f"{row}{column}"
+            for column in range(1, 13)
+            for row in "ABCDEFGH"
+        ]
+        self.assertEqual(payload["sample_wells"], expected_column_major)
+        self.assertEqual(payload["blank_wells"], [])
+        self.assertEqual(payload["actuated_columns"], list(range(1, 13)))
+        self.assertEqual(payload["robot_reaction_count"], 96)
+        self.assertEqual(payload["unused_plate_wells"], 0)
+        self.assertFalse(payload["current_runner"]["eligible"])
+
+    def test_plate_layout_always_describes_96_unique_wells(self):
+        for sample_count in (1, 9, 64, 96):
+            with self.subTest(sample_count=sample_count):
+                payload = plan_samples(sample_count).to_dict()
+                layout = payload["plate_layout"]
+                by_well = {item["well"]: item["state"] for item in layout}
+                self.assertEqual(len(layout), 96)
+                self.assertEqual(len(by_well), 96)
+                self.assertEqual(
+                    set(by_well),
+                    {f"{row}{column}" for row in "ABCDEFGH" for column in range(1, 13)},
+                )
+                self.assertEqual(
+                    sum(state == "sample" for state in by_well.values()),
+                    sample_count,
+                )
+                self.assertEqual(
+                    sum(state == "blank" for state in by_well.values()),
+                    len(payload["blank_wells"]),
+                )
+
+    def test_physical_runner_eligibility_stops_after_eight_samples(self):
+        for sample_count, expected in ((1, True), (8, True), (9, False), (96, False)):
+            with self.subTest(sample_count=sample_count):
+                payload = plan_samples(sample_count).to_dict()
+                self.assertIs(payload["current_runner"]["eligible"], expected)
+                self.assertEqual(payload["current_runner"]["sample_count_max"], 8)
+                self.assertEqual(payload["current_runner"]["column_count_max"], 1)
 
     def test_sample_count_has_no_hidden_ntc_or_control_allowance(self):
         payload = plan_samples(3).to_dict()
@@ -48,14 +135,14 @@ class PlannerTests(unittest.TestCase):
 
         self.assertEqual(caught.exception.code, "below_minimum")
 
-    def test_more_than_one_column_fails_closed(self):
+    def test_more_than_one_plate_fails_closed(self):
         with self.assertRaises(SampleCountError) as caught:
-            plan_samples(9)
+            plan_samples(97)
 
-        self.assertEqual(caught.exception.code, "no_validated_multicolumn_build")
+        self.assertEqual(caught.exception.code, "above_plate_capacity")
 
     def test_non_integer_inputs_are_never_coerced(self):
-        malformed = (None, True, False, 1.0, "8", {}, [])
+        malformed = (None, True, False, 1.0, "96", {}, [])
         for value in malformed:
             with self.subTest(value=value):
                 with self.assertRaises(SampleCountError) as caught:

@@ -25,6 +25,8 @@
 
     * { box-sizing: border-box; }
 
+    [hidden] { display: none !important; }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -252,6 +254,12 @@
     .secondary:hover { border-color: var(--green); background: var(--green-wash); }
     .secondary:active { transform: translateY(1px); }
     .secondary:focus-visible { outline: 3px solid rgba(137, 189, 49, .5); outline-offset: 2px; }
+    .secondary:disabled {
+      border-color: var(--line);
+      background: var(--gray-wash);
+      color: var(--faint);
+      cursor: not-allowed;
+    }
 
     .error {
       display: none;
@@ -316,22 +324,35 @@
     }
 
     .well-key .sample-dot { border-color: var(--green); background: var(--green); }
+    .well-key .blank-dot { border-style: dashed; background: #fff; }
+    .well-key .unused-dot { border-color: var(--line); background: var(--gray-wash); }
+
+    .plate-scroll {
+      overflow-x: auto;
+      padding: 2px 2px 8px;
+      scrollbar-color: var(--line-strong) transparent;
+    }
 
     .wells {
       display: grid;
-      grid-template-columns: repeat(8, minmax(42px, 1fr));
-      gap: 8px;
+      grid-template-columns: 20px repeat(12, minmax(27px, 1fr));
+      gap: 4px;
+      width: 100%;
+      min-width: 430px;
+      max-width: 720px;
+      margin: 0 auto;
+      align-items: center;
     }
 
     .well {
       display: grid;
       place-items: center;
       aspect-ratio: 1;
-      border: 1.5px dashed var(--line-strong);
+      border: 1.5px solid var(--line);
       border-radius: 50%;
-      background: #fff;
+      background: var(--gray-wash);
       color: var(--faint);
-      font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      font: 800 clamp(7px, 1vw, 9px)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
     .well.sample {
@@ -339,6 +360,43 @@
       border-color: var(--green);
       background: var(--green-wash);
       color: var(--green-deep);
+    }
+
+    .well.blank {
+      border-style: dashed;
+      border-color: var(--line-strong);
+      background: #fff;
+      color: var(--gray-strong);
+    }
+
+    .plate-axis {
+      display: grid;
+      place-items: center;
+      min-height: 20px;
+      color: var(--muted);
+      font: 800 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .runner-boundary,
+    .deck-boundary {
+      margin: 13px 0 0;
+      padding: 11px 13px;
+      border: 1px solid #d3e5b7;
+      border-left: 4px solid var(--green);
+      border-radius: 10px;
+      background: var(--green-wash);
+      color: var(--green-deep);
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.5;
+    }
+
+    .runner-boundary.layout-only,
+    .deck-boundary.layout-only {
+      border-color: var(--line-strong);
+      border-left-color: var(--gray-strong);
+      background: var(--gray-wash);
+      color: var(--ink);
     }
 
     .plain-note {
@@ -525,7 +583,6 @@
       .step-head { align-items: flex-start; flex-direction: column; gap: 8px; }
       .deck-actions { width: 100%; align-items: stretch; }
       .secondary { width: 100%; }
-      .wells { grid-template-columns: repeat(4, 1fr); }
       .check { grid-template-columns: 24px 72px minmax(0, 1fr); padding: 10px 8px; }
       footer { flex-direction: column; }
     }
@@ -653,9 +710,9 @@
           <path d="M75 188C97 170 108 142 113 117C91 134 80 159 75 188Z"/>
         </svg>
         <div>
-          <p class="eyebrow">di-omics / Hamilton STAR / dry v0.1</p>
+          <p class="eyebrow">di-omics / Hamilton STAR / planner v0.2</p>
           <h1>bench plan<span>.</span></h1>
-          <p class="lede">Enter the sample count, map the one validated dry column, and walk the deck position by position. Nothing on this page can start an instrument.</p>
+          <p class="lede">Map 1–96 biological samples across the full plate. The app clearly separates full-plate planning from the current one-column physical runner, and nothing on this page can start an instrument.</p>
         </div>
       </div>
       <div class="mode-badge">planning only</div>
@@ -666,7 +723,7 @@
         <strong>Protocol scope:</strong> TAS-068.5 supplies the ResolveDNA PTA/WGA and universal WGS library-prep instructions. It is not the team's targeted AmpSeq SOP. The AmpSeq dry choreography here comes from the team's separate Hamilton workflow.
       </div>
       <div class="notice lock">
-        <strong>Wet mode is locked.</strong> This v0.1 plans empty sacrificial labware, returned tips, no HHS heat or shake, and no ODTC command or heat.
+        <strong>Wet mode is locked.</strong> The full-plate layout supports 1–96 samples, but the current dry runner and validated setup sheet remain limited to one eight-channel column (1–8 samples).
       </div>
     </div>
 
@@ -675,12 +732,12 @@
       <div class="step-body">
         <div class="step-head">
           <h2 id="samples-title">How many samples?</h2>
-          <span class="step-meta">1 to 8 / one full column</span>
+          <span class="step-meta">1 to 96 / one full plate</span>
         </div>
         <form id="sample-form" class="sample-form">
           <div>
             <label class="field-label" for="sample-count">Biological samples</label>
-            <input id="sample-count" type="number" min="1" max="8" step="1" value="8" inputmode="numeric" required>
+            <input id="sample-count" type="number" min="1" max="96" step="1" value="8" inputmode="numeric" required>
           </div>
           <button class="primary" type="submit">Build the dry plan</button>
         </form>
@@ -689,16 +746,20 @@
         <div id="plan-result" class="plan-result" aria-live="polite">
           <div class="metrics">
             <div class="metric"><b id="m-samples">8</b><span>sample wells</span></div>
-            <div class="metric"><b>1</b><span>actuated column</span></div>
-            <div class="metric"><b>8</b><span>robot positions</span></div>
+            <div class="metric"><b id="m-columns">1</b><span>planned columns</span></div>
+            <div class="metric"><b id="m-positions">8</b><span>planned positions</span></div>
             <div class="metric"><b id="m-blanks">0</b><span>explicit blanks</span></div>
           </div>
           <div class="well-key">
             <span><i class="sample-dot"></i>sample</span>
-            <span><i></i>blank channel position</span>
+            <span><i class="blank-dot"></i>blank in final column</span>
+            <span><i class="unused-dot"></i>unused plate well</span>
           </div>
-          <div id="wells" class="wells" aria-label="Column 1 well plan"></div>
-          <p class="plain-note">The arm plan remains A1:H1. Fewer than eight samples do not create a partial-channel run; the unused positions stay visible as blanks.</p>
+          <div class="plate-scroll">
+            <div id="wells" class="wells" role="grid" aria-label="96-well plate plan"></div>
+          </div>
+          <p id="plan-note" class="plain-note">Samples fill A1:H1, then A2:H2, through A12:H12. A final partial eight-channel column stays visible with explicit blanks.</p>
+          <p id="runner-boundary" class="runner-boundary"></p>
         </div>
       </div>
     </section>
@@ -719,9 +780,10 @@
             <button id="print-checklist" class="secondary print-action" type="button">Print / save setup sheet</button>
           </div>
         </div>
+        <p id="deck-boundary" class="deck-boundary"></p>
         <div class="print-meta print-only" aria-hidden="true">
           <div><span>Samples</span><b id="print-samples">8 biological</b></div>
-          <div><span>Run envelope</span><b>Dry / one column / A1:H1</b></div>
+          <div><span>Run envelope</span><b id="print-envelope">Dry / one column / A1:H1</b></div>
           <div><span>NTC + controls</span><b>None</b></div>
           <div class="print-signoff">
             <span>Operator</span>
@@ -769,9 +831,16 @@
       result: document.getElementById("plan-result"),
       wells: document.getElementById("wells"),
       samples: document.getElementById("m-samples"),
+      columns: document.getElementById("m-columns"),
+      positions: document.getElementById("m-positions"),
       blanks: document.getElementById("m-blanks"),
+      planNote: document.getElementById("plan-note"),
+      runnerBoundary: document.getElementById("runner-boundary"),
       printSamples: document.getElementById("print-samples"),
+      printEnvelope: document.getElementById("print-envelope"),
       printChecklist: document.getElementById("print-checklist"),
+      progress: document.querySelector(".check-progress"),
+      deckBoundary: document.getElementById("deck-boundary"),
       deck: document.getElementById("deck-list"),
       globals: document.getElementById("global-list"),
       fill: document.getElementById("check-fill"),
@@ -891,20 +960,87 @@
 
     function renderPlan(plan) {
       setText(ui.samples, plan.sample_count);
+      setText(ui.columns, plan.column_count);
+      setText(ui.positions, plan.robot_reaction_count);
       setText(ui.blanks, plan.blank_wells.length);
       setText(ui.printSamples, plan.sample_count + " biological");
       ui.wells.replaceChildren();
-      const sampleSet = new Set(plan.sample_wells);
-      plan.actuated_wells.forEach(function (well) {
-        const item = document.createElement("div");
-        item.className = "well" + (sampleSet.has(well) ? " sample" : "");
-        item.setAttribute("aria-label", well + (sampleSet.has(well) ? " sample" : " blank"));
-        setText(item, well);
-        ui.wells.appendChild(item);
+
+      const corner = document.createElement("div");
+      corner.className = "plate-axis";
+      corner.setAttribute("aria-hidden", "true");
+      ui.wells.appendChild(corner);
+      for (let column = 1; column <= 12; column += 1) {
+        const header = document.createElement("div");
+        header.className = "plate-axis";
+        header.setAttribute("role", "columnheader");
+        setText(header, column);
+        ui.wells.appendChild(header);
+      }
+
+      const layout = new Map(plan.plate_layout.map(function (entry) {
+        return [entry.well, entry.state];
+      }));
+      "ABCDEFGH".split("").forEach(function (row) {
+        const rowHeader = document.createElement("div");
+        rowHeader.className = "plate-axis";
+        rowHeader.setAttribute("role", "rowheader");
+        setText(rowHeader, row);
+        ui.wells.appendChild(rowHeader);
+
+        for (let column = 1; column <= 12; column += 1) {
+          const well = row + column;
+          const state = layout.get(well) || "unused";
+          const item = document.createElement("div");
+          item.className = "well " + state;
+          item.setAttribute("role", "gridcell");
+          item.setAttribute("aria-label", well + " " + state);
+          setText(item, well);
+          ui.wells.appendChild(item);
+        }
       });
+
+      const columnLabel = plan.column_count === 1 ? "column" : "columns";
+      const blankSummary = plan.blank_wells.length
+        ? "The final planned column is padded with " + plan.blank_wells.length +
+          " explicit blank channel position" + (plan.blank_wells.length === 1 ? "." : "s.")
+        : "Every planned column is full; no blank channel positions are needed.";
+      setText(
+        ui.planNote,
+        plan.sample_count + " samples use " + plan.column_count + " planned " + columnLabel +
+          " (" + plan.actuated_columns.join(", ") + "). " + blankSummary
+      );
+      setText(ui.runnerBoundary, plan.current_runner.message);
+      ui.runnerBoundary.classList.toggle("layout-only", !plan.current_runner.eligible);
       ui.result.classList.add("show");
       ui.error.classList.remove("show");
       setText(ui.error, "");
+    }
+
+    function applyDeckPlanScope(plan) {
+      const eligible = plan.current_runner.eligible;
+      ui.deck.hidden = !eligible;
+      ui.globals.hidden = !eligible;
+      ui.progress.hidden = !eligible;
+      ui.printChecklist.disabled = !eligible;
+
+      if (eligible) {
+        setText(
+          ui.deckBoundary,
+          "Released setup-sheet scope: one dry eight-channel column (A1:H1). Complete this checklist before any separately supervised runner launch."
+        );
+        ui.deckBoundary.classList.remove("layout-only");
+        setText(ui.printChecklist, "Print / save setup sheet");
+        setText(ui.printEnvelope, "Dry / one column / A1:H1");
+      } else {
+        setText(
+          ui.deckBoundary,
+          "Setup sheet locked for this layout. The packaged checklist describes only the validated one-column deck; multi-column tips, sources, transfers, and motion are not released."
+        );
+        ui.deckBoundary.classList.add("layout-only");
+        setText(ui.printChecklist, "Setup sheet locked above 8");
+        setText(ui.printEnvelope, "Layout only / not released");
+      }
     }
 
     ui.form.addEventListener("submit", async function (event) {
@@ -918,6 +1054,7 @@
         });
         renderPlan(payload.plan);
         renderDeck(payload.deck);
+        applyDeckPlanScope(payload.plan);
         renderRelease(payload.release);
       } catch (error) {
         ui.result.classList.remove("show");

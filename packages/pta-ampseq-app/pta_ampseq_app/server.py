@@ -16,8 +16,11 @@ from urllib.parse import urlsplit
 
 from . import __version__
 from .planner import (
-    MAX_VALIDATED_SAMPLE_COUNT,
+    MAX_HARDWARE_VALIDATED_SAMPLE_COUNT,
+    MAX_PLANNABLE_SAMPLE_COUNT,
     MIN_SAMPLE_COUNT,
+    PLATE_COLUMN_COUNT,
+    PLATE_WELL_COUNT,
     SampleCountError,
     plan_samples,
 )
@@ -42,11 +45,14 @@ def app_state() -> Dict[str, object]:
         },
         "constraints": {
             "sample_count_min": MIN_SAMPLE_COUNT,
-            "sample_count_max": MAX_VALIDATED_SAMPLE_COUNT,
+            "sample_count_max": MAX_PLANNABLE_SAMPLE_COUNT,
             "sample_count_basis": "biological_samples_only",
             "automatic_control_wells": 0,
-            "actuated_column_count": 1,
+            "plate_well_count": PLATE_WELL_COUNT,
+            "plate_column_count": PLATE_COLUMN_COUNT,
             "channels_per_column": 8,
+            "current_runner_sample_count_max": MAX_HARDWARE_VALIDATED_SAMPLE_COUNT,
+            "current_runner_column_count_max": 1,
         },
         "deck": combined_dry_deck().to_dict(),
         "release": release_summary().to_dict(),

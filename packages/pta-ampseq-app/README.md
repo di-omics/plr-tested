@@ -3,11 +3,11 @@
 A local, planning-only wizard for the combined Hamilton STAR whole-genome amplification + HHS and
 Targeted PCR + ODTC dry workflow.
 
-The operator enters a sample count. The app converts it into the one-column
-layout currently supported by the hardened dry runners, identifies sample and
-blank wells, and presents the complete position-by-position deck checklist.
-Sample count means biological samples only. The app does not add NTCs or
-control wells, and there is no hidden control-well allowance.
+The operator enters a sample count. Planner v0.2 lays out 1 through 96
+biological samples column-major across as many as 12 eight-channel columns,
+identifies sample and blank wells, and presents the corresponding planning
+information. Sample count means biological samples only. The app does not add
+NTCs or control wells, and there is no hidden control-well allowance.
 
 ## Safety boundary
 
@@ -21,24 +21,39 @@ combined physical-validation manifest. Adding such a manifest in the future
 will make the release visible, but this planning-only package will still need a
 separately reviewed execution layer before it can move metal.
 
-## Current planning limit
+## Planner v0.2 capacity
 
-- Accepted input: 1 through 8 biological samples.
+- Accepted planning input: 1 through 96 biological samples.
 - NTC/control allocation: none.
-- Robot plan: one complete vertical column, A1 through H1.
-- Fewer than 8 samples: remaining wells are explicit blanks.
-- More than 8 samples: refused because no hardened combined multi-column build
-  has been validated.
+- Layout order: column-major, filling A1:H1, then A2:H2, through A12:H12.
+- Each complete group of eight samples occupies one vertical eight-channel
+  column.
+- A final partial column is blank-padded after the last biological sample. For
+  example, 10 samples fill A1:H1 and A2:B2, with C2:H2 marked as blanks.
+
+Planning capacity is not physical-release capacity. The hardened combined
+Hamilton runner remains locked to 1 through 8 samples and one A1:H1 column.
+The printable validated deck checklist is likewise available only for that
+1-through-8 release envelope. Plans containing 9 through 96 samples must not be
+used to run hardware or represented as validated setup sheets.
+
+Multi-column physical execution remains blocked until its tip allocation,
+source layout, per-column liquid handling and motion have been implemented,
+tested offline, and validated in attended bench runs.
 
 The planned mode is dry only: empty sacrificial labware, returned tips, no HHS
 heating or shaking, and no ODTC command or heating.
 
 ## Team setup sheet
 
-The deck section includes **Print / save setup sheet**. It produces a compact,
+For the validated 1-through-8 physical-release envelope, the deck section
+includes **Print / save setup sheet**. It produces a compact,
 green-and-grayscale checklist containing the selected biological-sample count,
 the complete rail/position setup, global safety checks, and operator/date/Git
 SHA sign-off lines. Browser print can send it to paper or save it as a PDF.
+
+For plans of 9 through 96 samples, the printable validated checklist remains
+locked because no combined multi-column hardware release exists yet.
 
 ## Run locally
 

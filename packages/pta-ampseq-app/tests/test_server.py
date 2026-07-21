@@ -63,6 +63,17 @@ class PlanningServerTests(unittest.TestCase):
             "biological_samples_only",
         )
         self.assertEqual(payload["constraints"]["automatic_control_wells"], 0)
+        self.assertEqual(payload["constraints"]["sample_count_min"], 1)
+        self.assertEqual(payload["constraints"]["sample_count_max"], 96)
+        self.assertEqual(payload["constraints"]["plate_well_count"], 96)
+        self.assertEqual(payload["constraints"]["plate_column_count"], 12)
+        self.assertEqual(payload["constraints"]["channels_per_column"], 8)
+        self.assertEqual(
+            payload["constraints"]["current_runner_sample_count_max"], 8
+        )
+        self.assertEqual(
+            payload["constraints"]["current_runner_column_count_max"], 1
+        )
         self.assertFalse(payload["release"]["available"])
         self.assertEqual(headers["X-Frame-Options"], "DENY")
         self.assertIn("default-src 'self'", headers["Content-Security-Policy"])
@@ -81,11 +92,32 @@ class PlanningServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(payload["plan"]["blank_wells"], [])
         self.assertEqual(len(payload["plan"]["sample_wells"]), 8)
+        self.assertTrue(payload["plan"]["current_runner"]["eligible"])
+
+    def test_valid_plans_for_nine_and_96_samples(self):
+        status, payload, _headers = self.post_json("/api/plan", {"sample_count": 9})
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["plan"]["column_count"], 2)
+        self.assertEqual(payload["plan"]["sample_wells"][-1], "A2")
+        self.assertEqual(
+            payload["plan"]["blank_wells"],
+            ["B2", "C2", "D2", "E2", "F2", "G2", "H2"],
+        )
+        self.assertEqual(len(payload["plan"]["plate_layout"]), 96)
+        self.assertFalse(payload["plan"]["current_runner"]["eligible"])
+
+        status, payload, _headers = self.post_json("/api/plan", {"sample_count": 96})
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["plan"]["column_count"], 12)
+        self.assertEqual(payload["plan"]["sample_wells"][-1], "H12")
+        self.assertEqual(payload["plan"]["blank_wells"], [])
+        self.assertEqual(len(payload["plan"]["plate_layout"]), 96)
+        self.assertFalse(payload["plan"]["current_runner"]["eligible"])
 
     def test_out_of_range_counts_fail_closed(self):
         cases = (
             (0, "below_minimum"),
-            (9, "no_validated_multicolumn_build"),
+            (97, "above_plate_capacity"),
         )
         for value, code in cases:
             with self.subTest(value=value):
@@ -176,8 +208,16 @@ class PlanningServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("TAS-068.5", html)
         self.assertIn("not the team's targeted AmpSeq SOP", html)
-        self.assertIn("Wet mode is locked", html)
+        self.assertIn("full-plate layout supports 1–96 samples", html)
+        self.assertIn(
+            "current dry runner and validated setup sheet remain limited to one "
+            "eight-channel column (1–8 samples)",
+            html,
+        )
         self.assertIn("adds no NTC or control wells", html)
+        self.assertIn('max="96"', html)
+        self.assertIn('aria-label="96-well plate plan"', html)
+        self.assertIn('id="runner-boundary"', html)
         self.assertIn('class="flower-mark"', html)
         self.assertIn("stroke-width: 1.55", html)
         self.assertIn("Print / save setup sheet", html)
