@@ -30,7 +30,8 @@ from pathlib import Path
 # Modes:
 #   --print              print the ordered plan and exit. No execution. Review this first.
 #   --deck               initialize the STAR for each distinct deck/geometry view and print
-#                        all assignments. No arm, channel, iSWAP, or liquid movement.
+#                        all assignments. Normal STAR setup/homing can occur, but no
+#                        pipetting or iSWAP transfer is issued after setup.
 #   --sim-lh             run the liquid-handling legs on the chatterbox backend (--dry);
 #                        iSWAP and ODTC legs become printed notes. Fully local, no hardware.
 #   --confirm RUN_EMSEQ_ODTC_FULL
@@ -183,7 +184,8 @@ def build_deck_preflight():
 
     The scoped scripts remain the source of geometry truth. Running each once in deck
     mode catches missing resources/imports on the Pi and prints the exact coordinates
-    the following dry rehearsal will use without issuing a pipetting or iSWAP command.
+    the following dry rehearsal will use without issuing a pipetting or iSWAP transfer
+    after each script's normal STAR setup/initialization.
     """
     return [
         ("note", "physical deck checklist",
@@ -253,7 +255,7 @@ def main():
     modes.add_argument("--print", dest="print_only", action="store_true",
                        help="Print the ordered plan and exit. No execution.")
     modes.add_argument("--deck", action="store_true",
-                       help="Run every distinct deck assignment/coordinate print on the STAR. No movement.")
+                       help="Run every deck/coordinate view on the STAR. Setup/homing only; no protocol transfer.")
     modes.add_argument("--sim-lh", action="store_true",
                        help="Run liquid-handling legs on the chatterbox backend; iSWAP/ODTC legs become notes. Local, no hardware.")
     parser.add_argument("--confirm", default="",
@@ -268,13 +270,14 @@ def main():
 
     if args.deck:
         print("")
-        print("EM-seq v2 FULL-DECK PREFLIGHT (REAL STAR BACKEND, NO MOVEMENT)")
+        print("EM-seq v2 FULL-DECK PREFLIGHT (REAL STAR BACKEND; SETUP/HOMING ONLY)")
         print("Each scoped script initializes the STAR, assigns its resources, prints coordinates,")
-        print("and exits in --mode deck. Watch the console for any resource or geometry mismatch.")
+        print("and exits in --mode deck without pipetting or iSWAP transfer. Normal STAR setup/homing")
+        print("can occur. Watch the console for any resource or geometry mismatch.")
         for kind, label, payload in build_deck_preflight():
             run_step(kind, label, payload)
         print("")
-        print("SUCCESS: all EM-seq dry-run deck/coordinate views initialized without movement.")
+        print("SUCCESS: all EM-seq deck/coordinate views initialized without protocol transfer.")
         print(f"Next, with the staged dry deck and a human at the E-stop: --confirm {CONFIRM_PHRASE}")
         return
 

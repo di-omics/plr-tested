@@ -20,7 +20,7 @@ class HamiltonRunnerTests(unittest.TestCase):
         self.assertEqual(sum(kind == "note" and label.startswith("ODTC thermal:")
                              for kind, label, _ in plan), 8)
 
-    def test_deck_preflight_is_motion_free(self):
+    def test_deck_preflight_uses_only_scoped_deck_modes(self):
         preflight = MODULE.build_deck_preflight()
         commands = [payload for kind, _, payload in preflight if kind == "run"]
         self.assertEqual(len(commands), 6)

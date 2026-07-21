@@ -41,7 +41,8 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
   selects the bead ratio and elution volume; `--mode all` runs the motion sequence.
 - `run_emseq_odtc_1col_full_dry.py` - the full choreography (36 executed legs + ODTC notes).
   `--print` shows the plan, `--deck` initializes and prints every distinct real-STAR deck
-  assignment without movement, `--sim-lh` runs the liquid-handling legs on the chatterbox,
+  assignment (normal setup/homing, no protocol transfer), `--sim-lh` runs the
+  liquid-handling legs on the chatterbox,
   and `--confirm RUN_EMSEQ_ODTC_FULL` runs the dry rehearsal on hardware.
 - ODTC thermal programs live in `instrument-integrations/odtc/odtc_protocols.py`
   (`emseq-shear`, `emseq-endprep`, `emseq-ligation`, `emseq-tet2`, `emseq-tet2-stop`,
@@ -173,7 +174,7 @@ Scripts execute on the Pi wired to the instruments, via each tree's `run_on_pi.s
 # review first
 python run_emseq_odtc_1col_full_dry.py --print
 
-# on the Pi: initialize every deck/geometry view, no movement
+# on the Pi: initialize every deck/geometry view; setup/homing, no protocol transfer
 ./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py --deck
 
 # exercise the liquid-handling legs locally, no hardware
