@@ -32,6 +32,9 @@ says otherwise.
     imager. See its [WALKTHROUGH.md](packages/immunoassay-automation/WALKTHROUGH.md).
   - [`gene-edit/`](packages/gene-edit) - QC-gated whole-genome amplification + targeted PCR for confirming
     gene edits.
+  - [`emseq/`](packages/emseq) - QC-gated NEBNext EM-seq v2 with UltraShear: sparse
+    manifest to a sourced 24-step plan, deterministic simulation, conversion-control
+    gates, dossier, and an explicitly blocked live run until hardware qualification.
   - [`iswap-move/`](packages/iswap-move) - STAR iSWAP plate-lid moves.
 
 ## What "tested" means here

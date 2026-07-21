@@ -227,7 +227,7 @@ def main():
 
     print("")
     print("EM-seq v2 FULL CHOREOGRAPHY, COLUMN 1, DRY")
-    print("Reagent adds -> ODTC out/back (x7 programs) -> 3x magnet + SPRI cleanup out/back.")
+    print("Reagent adds -> ODTC out/back (x8 programs) -> 3x magnet + SPRI cleanup out/back.")
     print("Every leg runs its own scoped script; geometry is not re-derived here.")
     print("STATUS: written, simulation-first, NOT yet run on hardware. Tune each leg before trusting it.")
 
@@ -236,7 +236,7 @@ def main():
         print("legs are printed as notes only.")
     elif args.confirm != CONFIRM_PHRASE:
         print("")
-        print("Refusing to run on hardware. This moves the arm through many transfers, seven ODTC")
+        print("Refusing to run on hardware. This moves the arm through many transfers, eight ODTC")
         print("round trips, and three magnet round trips. Review the plan first with --print, run")
         print(f"each leg's --mode deck, stage the full deck, then add: --confirm {CONFIRM_PHRASE}")
         print("Or exercise the liquid-handling legs locally with --sim-lh.")
