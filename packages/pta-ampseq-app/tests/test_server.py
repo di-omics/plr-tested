@@ -179,6 +179,10 @@ class PlanningServerTests(unittest.TestCase):
         self.assertIn("Wet mode is locked", html)
         self.assertIn("adds no NTC or control wells", html)
         self.assertIn('class="flower-mark"', html)
+        self.assertIn("stroke-width: 1.55", html)
+        self.assertIn("Print / save setup sheet", html)
+        self.assertIn("@media print", html)
+        self.assertIn('id="print-samples"', html)
         for removed_color in ("--violet", "--amber", "--red", "#eeeafb", "#fff7e5", "#fff0f3"):
             self.assertNotIn(removed_color, html)
         self.assertIn('id="arm"', html)

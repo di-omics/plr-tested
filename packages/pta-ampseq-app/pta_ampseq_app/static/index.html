@@ -63,14 +63,13 @@
     .flower-mark {
       width: 82px;
       height: 112px;
-      color: var(--green-deep);
-      filter: drop-shadow(0 8px 14px rgba(32, 36, 34, .10));
+      color: var(--ink);
     }
 
     .flower-mark path {
       fill: none;
       stroke: currentColor;
-      stroke-width: 3.2;
+      stroke-width: 1.55;
       stroke-linecap: round;
       stroke-linejoin: round;
       vector-effect: non-scaling-stroke;
@@ -237,6 +236,23 @@
     .primary:active { transform: translateY(1px); }
     .primary:focus-visible { outline: 3px solid rgba(137, 189, 49, .5); outline-offset: 2px; }
 
+    .secondary {
+      min-height: 40px;
+      padding: 0 13px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .secondary:hover { border-color: var(--green); background: var(--green-wash); }
+    .secondary:active { transform: translateY(1px); }
+    .secondary:focus-visible { outline: 3px solid rgba(137, 189, 49, .5); outline-offset: 2px; }
+
     .error {
       display: none;
       margin: 11px 0 0;
@@ -338,6 +354,15 @@
       gap: 10px;
       min-width: 185px;
     }
+
+    .deck-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .print-only { display: none; }
 
     .track {
       flex: 1;
@@ -498,9 +523,118 @@
       .step-body { padding: 18px 14px 20px; }
       .sample-form { grid-template-columns: 1fr; }
       .step-head { align-items: flex-start; flex-direction: column; gap: 8px; }
+      .deck-actions { width: 100%; align-items: stretch; }
+      .secondary { width: 100%; }
       .wells { grid-template-columns: repeat(4, 1fr); }
       .check { grid-template-columns: 24px 72px minmax(0, 1fr); padding: 10px 8px; }
       footer { flex-direction: column; }
+    }
+
+    @media print {
+      @page { size: letter portrait; margin: .38in; }
+
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      body { background: #fff; }
+      .shell { width: auto; padding: 0; }
+      header { margin-bottom: 12px; }
+      .brand-lockup { grid-template-columns: 46px minmax(0, 1fr); gap: 10px; }
+      .flower-mark { width: 46px; height: 62px; }
+      .eyebrow { margin-bottom: 4px; font-size: 8px; }
+      h1 { font-size: 29px; }
+
+      .lede,
+      .mode-badge,
+      .notice-grid,
+      .sample-step,
+      .release-step,
+      footer,
+      .print-action,
+      .check-progress { display: none !important; }
+
+      .print-only { display: grid; }
+      .deck-step {
+        display: block;
+        margin: 0;
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .deck-step .step-no { display: none; }
+      .deck-step .step-body { padding: 0; }
+      .deck-step .step-head { display: block; margin-bottom: 8px; }
+      .deck-step .step-head .plain-note { margin-top: 3px; }
+
+      .print-meta {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .print-meta div {
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--gray-wash);
+      }
+      .print-meta span {
+        display: block;
+        color: var(--muted);
+        font: 700 7px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .print-meta b { display: block; margin-top: 2px; font-size: 10px; }
+      .print-signoff {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        padding: 4px 0 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+      }
+      .print-signoff span {
+        padding-bottom: 3px;
+        border-bottom: 1px solid var(--line-strong);
+        color: var(--ink);
+        text-transform: none;
+      }
+
+      #deck-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 10px;
+      }
+      .rail-group { break-inside: avoid; }
+      .rail-group + .rail-group { margin-top: 5px; }
+      .rail-title { margin-bottom: 2px; font-size: 7px; }
+      .check {
+        grid-template-columns: 16px 60px minmax(0, 1fr);
+        gap: 6px;
+        margin-top: 3px;
+        padding: 5px 6px;
+        border-radius: 6px;
+        break-inside: avoid;
+        background: #fff !important;
+      }
+      .check input {
+        width: 13px;
+        height: 13px;
+        margin-top: 0;
+        appearance: none;
+        border: 1px solid var(--gray-strong);
+        border-radius: 2px;
+        background: #fff;
+      }
+      .position { padding: 3px 4px; border-radius: 4px; font-size: 7px; }
+      .check-copy b { margin-bottom: 1px; font-size: 9px; }
+      .check-copy span { font-size: 7.5px; line-height: 1.25; }
+      .global-grid { grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 7px; }
+      .global-grid .check { grid-template-columns: 16px minmax(0, 1fr); }
     }
   </style>
 </head>
@@ -536,7 +670,7 @@
       </div>
     </div>
 
-    <section class="step" aria-labelledby="samples-title">
+    <section class="step sample-step" aria-labelledby="samples-title">
       <div class="step-no">01</div>
       <div class="step-body">
         <div class="step-head">
@@ -569,7 +703,7 @@
       </div>
     </section>
 
-    <section class="step" aria-labelledby="deck-title">
+    <section class="step deck-step" aria-labelledby="deck-title">
       <div class="step-no">02</div>
       <div class="step-body">
         <div class="step-head">
@@ -577,9 +711,22 @@
             <h2 id="deck-title">Stage the deck</h2>
             <p class="plain-note">Read left to right by rail. Put the named item in the named position, then check it.</p>
           </div>
-          <div class="check-progress" aria-label="Deck checklist progress">
-            <div class="track"><i id="check-fill"></i></div>
-            <span id="check-count" class="count">0 / 0</span>
+          <div class="deck-actions">
+            <div class="check-progress" aria-label="Deck checklist progress">
+              <div class="track"><i id="check-fill"></i></div>
+              <span id="check-count" class="count">0 / 0</span>
+            </div>
+            <button id="print-checklist" class="secondary print-action" type="button">Print / save setup sheet</button>
+          </div>
+        </div>
+        <div class="print-meta print-only" aria-hidden="true">
+          <div><span>Samples</span><b id="print-samples">8 biological</b></div>
+          <div><span>Run envelope</span><b>Dry / one column / A1:H1</b></div>
+          <div><span>NTC + controls</span><b>None</b></div>
+          <div class="print-signoff">
+            <span>Operator</span>
+            <span>Date / time</span>
+            <span>Git SHA</span>
           </div>
         </div>
         <div id="deck-list" aria-live="polite"></div>
@@ -587,7 +734,7 @@
       </div>
     </section>
 
-    <section class="step" aria-labelledby="release-title">
+    <section class="step release-step" aria-labelledby="release-title">
       <div class="step-no">03</div>
       <div class="step-body">
         <div class="step-head">
@@ -623,6 +770,8 @@
       wells: document.getElementById("wells"),
       samples: document.getElementById("m-samples"),
       blanks: document.getElementById("m-blanks"),
+      printSamples: document.getElementById("print-samples"),
+      printChecklist: document.getElementById("print-checklist"),
       deck: document.getElementById("deck-list"),
       globals: document.getElementById("global-list"),
       fill: document.getElementById("check-fill"),
@@ -743,6 +892,7 @@
     function renderPlan(plan) {
       setText(ui.samples, plan.sample_count);
       setText(ui.blanks, plan.blank_wells.length);
+      setText(ui.printSamples, plan.sample_count + " biological");
       ui.wells.replaceChildren();
       const sampleSet = new Set(plan.sample_wells);
       plan.actuated_wells.forEach(function (well) {
@@ -774,6 +924,10 @@
         setText(ui.error, error.message);
         ui.error.classList.add("show");
       }
+    });
+
+    ui.printChecklist.addEventListener("click", function () {
+      window.print();
     });
 
     async function start() {

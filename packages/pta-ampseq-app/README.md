@@ -33,6 +33,13 @@ separately reviewed execution layer before it can move metal.
 The planned mode is dry only: empty sacrificial labware, returned tips, no HHS
 heating or shaking, and no ODTC command or heating.
 
+## Team setup sheet
+
+The deck section includes **Print / save setup sheet**. It produces a compact,
+green-and-grayscale checklist containing the selected biological-sample count,
+the complete rail/position setup, global safety checks, and operator/date/Git
+SHA sign-off lines. Browser print can send it to paper or save it as a PDF.
+
 ## Run locally
 
 ```bash
