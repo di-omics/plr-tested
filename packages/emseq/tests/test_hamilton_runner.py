@@ -29,6 +29,15 @@ class HamiltonRunnerTests(unittest.TestCase):
             self.assertEqual(command[command.index("--mode") + 1], "deck")
             self.assertNotIn("--confirm", command)
 
+    def test_moving_plate_model_is_consistent_across_hamilton_scripts(self):
+        repo = Path(__file__).resolve().parents[3]
+        reagent = (repo / "hamilton-star/starlab_live/emseq/emseq_reagent_adds.py").read_text()
+        cleanup = (repo / "hamilton-star/starlab_live/emseq/emseq_cleanup.py").read_text()
+        runner = RUNNER.read_text()
+        self.assertIn("work_plate = Cor_96_wellplate_360ul_Fb", reagent)
+        self.assertIn("mag_plate = Cor_96_wellplate_360ul_Fb", cleanup)
+        self.assertIn("Cor_96_wellplate_360ul_Fb work plate", runner)
+
 
 if __name__ == "__main__":
     unittest.main()

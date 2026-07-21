@@ -40,8 +40,8 @@ from pathlib import Path
 #
 # FULL DECK required before a hardware run (all at once):
 #   rail48 pos0 = p10 tips        rail48 pos1 = p50 tips        rail48 pos2 = p300 tips
-#   rail35 pos0 = work plate (the plate that gets moved around)
-#   rail35 pos1 = reagent source (swap the reagent between reagent legs; see PREP lines)
+#   rail35 pos0 = Cor_96_wellplate_360ul_Fb work plate (moves throughout the run)
+#   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb reagent source (swap between legs)
 #   rail35 pos2 = magnet block (iSWAP target for the three cleanups)
 #   rail35 pos3 = 12-well reservoir (beads, 2x ethanol, elution buffer, waste)
 #   rail20 pos1 = ODTC nest, EMPTY and open to receive the plate
@@ -193,8 +193,8 @@ def build_deck_preflight():
          "  rail48 pos0 = p10 filter tips\n"
          "  rail48 pos1 = p50 filter tips\n"
          "  rail48 pos2 = p300 filter tips\n"
-         "  rail35 pos0 = EMPTY sacrificial 96-well work plate\n"
-         "  rail35 pos1 = EMPTY reagent-source 96-well plate/strip\n"
+         "  rail35 pos0 = EMPTY Cor_96_wellplate_360ul_Fb sacrificial work plate\n"
+         "  rail35 pos1 = EMPTY CellTreat_96_wellplate_350ul_Fb reagent-source plate\n"
          "  rail35 pos2 = magnetic rack/nest, empty and seated\n"
          "  rail35 pos3 = EMPTY/DRY 12-well reservoir\n"
          "  rail20 pos1 = ODTC nest, empty, open, and clear\n"

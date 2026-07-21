@@ -7,7 +7,12 @@ from pylabrobot.liquid_handling import LiquidHandler
 from pylabrobot.liquid_handling.backends import STARBackend
 from pylabrobot.liquid_handling.backends.hamilton.STAR_chatterbox import STARChatterboxBackend
 from pylabrobot.resources.hamilton import STARDeck, TIP_CAR_480_A00
-from pylabrobot.resources import PLT_CAR_L5AC_A00, CellTreat_96_wellplate_350ul_Fb, Coordinate
+from pylabrobot.resources import (
+    PLT_CAR_L5AC_A00,
+    CellTreat_96_wellplate_350ul_Fb,
+    Cor_96_wellplate_360ul_Fb,
+    Coordinate,
+)
 import pylabrobot.resources as plr_resources
 
 # EM-seq v2 (UltraShear-coupled) - staged reagent additions, column 1 only, swap-source.
@@ -49,8 +54,9 @@ import pylabrobot.resources as plr_resources
 # Deck (current 35/48 deck):
 #   rail48 pos0 = p10 tips
 #   rail48 pos1 = p50 tips
-#   rail35 pos0 = destination/work 96WP, column 1
-#   rail35 pos1 = source 96WP/strip, column 1 only (swap the reagent here between modes)
+#   rail35 pos0 = Cor_96_wellplate_360ul_Fb destination/work plate, column 1
+#   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, column 1 only
+#                 (swap the reagent here between modes)
 #
 # Geometry provenance and its limit (read before a hardware run)
 # -------------------------------------------------------------
@@ -63,6 +69,12 @@ import pylabrobot.resources as plr_resources
 # may submerge the tip and drag liquid on withdrawal. This is a real tuning item and is
 # why every EM-seq mode is sim-only until a person tunes the high-volume dispense on the
 # deck, one step at a time, the way every other coordinate in this repo was tuned.
+#
+# The moving work plate is modeled as Cor_96_wellplate_360ul_Fb throughout the EM-seq
+# choreography because every hardware-confirmed ODTC/magnet iSWAP leg uses that resource.
+# The inherited liquid offsets were originally tuned with the CellTreat 350 uL plate, so
+# the Cor model makes the dry choreography internally consistent but does NOT validate
+# wet liquid handling. Dye/gravimetric tuning is still required before samples or reagents.
 #
 # This script adds and blows out; it does NOT mix on deck. The manual asks for 10x pipette
 # mixing at most steps. On-deck mixing is deliberately out of scope here (it is new,
@@ -237,7 +249,7 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
 
     p10_tips = make_p10_tips("r48_pos0_p10_filter_tips")
     p50_tips = make_p50_tips("r48_pos1_p50_filter_tips")
-    work_plate = CellTreat_96_wellplate_350ul_Fb(name="rail35_pos0_emseq_work_96wp")
+    work_plate = Cor_96_wellplate_360ul_Fb(name="rail35_pos0_emseq_work_cor_360_96wp")
     source_96wp = CellTreat_96_wellplate_350ul_Fb(name="rail35_pos1_emseq_reagent_source_96wp")
 
     tip_carrier[P10_TIP_POS] = p10_tips
@@ -248,8 +260,9 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
     print("\nDeck:")
     print("  rail48 pos0 = p10 tips")
     print("  rail48 pos1 = p50 tips")
-    print("  rail35 pos0 = destination/work 96WP, column 1")
-    print("  rail35 pos1 = source 96WP/strip, SOURCE COLUMN 1 ONLY (swap reagent between modes)")
+    print("  rail35 pos0 = Cor_96_wellplate_360ul_Fb destination/work plate, column 1")
+    print("  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY")
+    print("                  (swap reagent between modes)")
 
     print("\nGeometry (reused verbatim from confirmed ampseq/PTA-WGA col-1 adds; see header):")
     print(f"  P50 source asp height {P50_SOURCE_ASP_HEIGHT[0]}, work dsp height {P50_WORK_DSP_HEIGHT[0]}, "
