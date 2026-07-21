@@ -31,6 +31,15 @@ rail35 pos3 = trough/reservoir
 
 ## Current whole-genome sequencing entrypoints
 
+- `starlab_live/run_pta_pipetting_hhs_LIDDED_1col_singlehome_dry.py`
+  - Continuous one-column dry composition: lysis, reaction, HHS forward,
+    lid-on, delid, and plate return in one setup/deck/session.
+  - Uses one persistent CellTreat plate and Corning lid resource; every teach
+    offset is scoped to one move and restored afterward.
+  - Full Chatterbox motion signatures match the individually proven stages.
+  - STAR release requires exact intent, dry-deck, and labware tokens; there is
+    no operator pause after release. See the single-home run card first.
+
 - `starlab_live/run_pta_pipetting_hhs_LIDDED_1col_dry.py`
   - Guarded single-column engineering runner: dry lysis + reaction, corrected
     HHS forward, lid on, delid, and plate return.
