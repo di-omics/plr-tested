@@ -7,23 +7,19 @@
   <title>PTA + AmpSeq bench planner</title>
   <style>
     :root {
-      --ink: #17201a;
-      --muted: #657069;
-      --faint: #8d9690;
-      --paper: #fbfcf9;
+      --ink: #202422;
+      --muted: #69706c;
+      --faint: #939995;
+      --paper: #f5f7f5;
       --panel: #ffffff;
-      --line: #dfe5dd;
-      --line-strong: #cbd5c9;
-      --green: #89bd31;
-      --green-deep: #477512;
-      --green-wash: #f1f8e4;
-      --violet: #8a76c8;
-      --violet-wash: #f2effb;
-      --amber: #9a6a0d;
-      --amber-wash: #fff7e5;
-      --red: #a32c45;
-      --red-wash: #fff0f3;
-      --shadow: 0 24px 80px -52px rgba(26, 47, 30, .45);
+      --line: #dde2de;
+      --line-strong: #c4cbc6;
+      --gray-wash: #f0f2f0;
+      --gray-strong: #505753;
+      --green: #82b528;
+      --green-deep: #456f13;
+      --green-wash: #eef6e2;
+      --shadow: 0 24px 80px -52px rgba(28, 32, 29, .42);
       --radius: 18px;
     }
 
@@ -35,8 +31,8 @@
       color: var(--ink);
       font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
-        radial-gradient(900px 420px at 5% -8%, #edf5df 0, transparent 63%),
-        radial-gradient(760px 400px at 100% 0, #eeeafb 0, transparent 62%),
+        radial-gradient(900px 420px at 5% -8%, #e9f3d9 0, transparent 63%),
+        radial-gradient(760px 400px at 100% 0, #e8ebe9 0, transparent 62%),
         var(--paper);
       -webkit-font-smoothing: antialiased;
     }
@@ -51,10 +47,33 @@
 
     header {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 24px;
       margin-bottom: 24px;
+    }
+
+    .brand-lockup {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+    }
+
+    .flower-mark {
+      width: 82px;
+      height: 112px;
+      color: var(--green-deep);
+      filter: drop-shadow(0 8px 14px rgba(32, 36, 34, .10));
+    }
+
+    .flower-mark path {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 3.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
     }
 
     .eyebrow {
@@ -123,8 +142,8 @@
     }
 
     .notice strong { color: var(--ink); }
-    .notice.protocol { border-color: #dcd4f2; background: var(--violet-wash); }
-    .notice.lock { border-color: #f0dfb7; background: var(--amber-wash); }
+    .notice.protocol { border-color: #d3e5b7; background: var(--green-wash); }
+    .notice.lock { border-color: var(--line-strong); background: var(--gray-wash); }
 
     .step {
       display: grid;
@@ -222,10 +241,11 @@
       display: none;
       margin: 11px 0 0;
       padding: 10px 12px;
-      border: 1px solid #efc9d2;
+      border: 1px solid var(--line-strong);
+      border-left: 4px solid var(--green-deep);
       border-radius: 10px;
-      background: var(--red-wash);
-      color: var(--red);
+      background: var(--gray-wash);
+      color: var(--ink);
       font-size: 13px;
       font-weight: 700;
     }
@@ -413,9 +433,9 @@
       gap: 16px;
       align-items: center;
       padding: 17px;
-      border: 1px solid #efcbd3;
+      border: 1px solid var(--line-strong);
       border-radius: 14px;
-      background: var(--red-wash);
+      background: var(--gray-wash);
     }
 
     .release-state {
@@ -423,7 +443,7 @@
       align-items: center;
       gap: 7px;
       margin-bottom: 7px;
-      color: var(--red);
+      color: var(--gray-strong);
       font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
       letter-spacing: .09em;
       text-transform: uppercase;
@@ -433,20 +453,20 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--red);
+      background: var(--green);
       content: "";
     }
 
     .release-copy b { display: block; margin-bottom: 4px; font-size: 15px; }
-    .release-copy p { margin: 0; color: #76525b; font-size: 12px; line-height: 1.5; }
+    .release-copy p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 
     .arm {
       width: 100%;
       height: 50px;
-      border: 1px solid #e1bdc6;
+      border: 1px solid var(--line-strong);
       border-radius: 11px;
-      background: #ead8dc;
-      color: #98737c;
+      background: #dfe3e0;
+      color: #7c837f;
       cursor: not-allowed;
       font-weight: 800;
     }
@@ -471,6 +491,8 @@
 
     @media (max-width: 540px) {
       .shell { width: min(100% - 20px, 1060px); padding-top: 20px; }
+      .brand-lockup { grid-template-columns: 58px minmax(0, 1fr); gap: 12px; }
+      .flower-mark { width: 58px; height: 82px; }
       .step { grid-template-columns: 42px minmax(0, 1fr); }
       .step-no { padding-top: 20px; }
       .step-body { padding: 18px 14px 20px; }
@@ -485,10 +507,22 @@
 <body>
   <main class="shell">
     <header>
-      <div>
-        <p class="eyebrow">di-omics / Hamilton STAR / dry v0.1</p>
-        <h1>bench plan<span>.</span></h1>
-        <p class="lede">Enter the sample count, map the one validated dry column, and walk the deck position by position. Nothing on this page can start an instrument.</p>
+      <div class="brand-lockup">
+        <svg class="flower-mark" viewBox="0 0 150 215" role="img" aria-label="di-omics flower mark">
+          <path d="M75 70V207"/>
+          <path d="M75 58C52 46 53 20 69 8C79 27 84 44 75 58Z"/>
+          <path d="M75 58C98 46 97 20 81 8C71 27 66 44 75 58Z"/>
+          <path d="M74 67C53 48 28 55 22 72C38 76 48 88 42 105C60 100 71 85 74 67Z"/>
+          <path d="M76 67C97 48 122 55 128 72C112 76 102 88 108 105C90 100 79 85 76 67Z"/>
+          <path d="M75 53C58 72 58 99 75 110C92 99 92 72 75 53Z"/>
+          <path d="M75 171C56 161 41 141 35 117C57 127 71 147 75 171Z"/>
+          <path d="M75 188C97 170 108 142 113 117C91 134 80 159 75 188Z"/>
+        </svg>
+        <div>
+          <p class="eyebrow">di-omics / Hamilton STAR / dry v0.1</p>
+          <h1>bench plan<span>.</span></h1>
+          <p class="lede">Enter the sample count, map the one validated dry column, and walk the deck position by position. Nothing on this page can start an instrument.</p>
+        </div>
       </div>
       <div class="mode-badge">planning only</div>
     </header>

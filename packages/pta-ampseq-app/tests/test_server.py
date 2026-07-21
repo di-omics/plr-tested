@@ -178,6 +178,9 @@ class PlanningServerTests(unittest.TestCase):
         self.assertIn("not the team's targeted AmpSeq SOP", html)
         self.assertIn("Wet mode is locked", html)
         self.assertIn("adds no NTC or control wells", html)
+        self.assertIn('class="flower-mark"', html)
+        for removed_color in ("--violet", "--amber", "--red", "#eeeafb", "#fff7e5", "#fff0f3"):
+            self.assertNotIn(removed_color, html)
         self.assertIn('id="arm"', html)
         self.assertIn("disabled", html)
 
