@@ -52,10 +52,17 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
 
 ```
 rail48 pos0 = p10 tips            rail48 pos1 = p50 tips        rail48 pos2 = p300 tips
-rail35 pos0 = work plate (moves)  rail35 pos1 = reagent source (swap between reagent legs)
+rail35 pos0 = Cor 360 uL work plate (moves)
+rail35 pos1 = CellTreat 350 uL reagent source (swap between reagent legs)
 rail35 pos2 = magnet              rail35 pos3 = 12-well reservoir
 rail20 pos1 = ODTC nest (empty, open to receive the plate)
 ```
+
+Exact PLR resources: the single moving work plate is `Cor_96_wellplate_360ul_Fb` in
+reagent-add, cleanup, and every iSWAP leg. The stationary source is
+`CellTreat_96_wellplate_350ul_Fb`; the reservoir is
+`CellTreat_12_troughplate_15000ul_Vb`. Do not substitute the moving plate for the dry
+rehearsal: the confirmed iSWAP coordinates are tied to the Cor 360 uL model.
 
 Reservoir map (rail35 pos3): A1 beads, A2 ethanol wash 1, A3 ethanol wash 2, A4 elution
 buffer, A12 waste.

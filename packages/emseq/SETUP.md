@@ -29,6 +29,13 @@ validity.
 
 With the operator physically present, stage the empty deck and run:
 
+- rail48 pos0/1/2: p10/p50/p300 filter tips
+- rail35 pos0: empty `Cor_96_wellplate_360ul_Fb` sacrificial work plate
+- rail35 pos1: empty `CellTreat_96_wellplate_350ul_Fb` reagent-source plate
+- rail35 pos2: empty, seated magnetic rack/nest
+- rail35 pos3: empty/dry `CellTreat_12_troughplate_15000ul_Vb`
+- rail20 pos1: empty, open, clear ODTC nest
+
 ```bash
 ./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py --deck
 ./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py \
@@ -40,3 +47,7 @@ scoped leg exits in deck mode without pipetting or iSWAP transfer. The second co
 performs real STAR/iSWAP motion with empty labware, returns tips, and does not run ODTC
 heating. Thermal steps are printed as operator notes. Keep a human at the E-stop for the
 entire rehearsal and reconcile the physical plate before resuming after any failure.
+
+Do not substitute the moving work plate. The ODTC and magnet iSWAP coordinates were
+confirmed using the `Cor_96_wellplate_360ul_Fb` model. This dry rehearsal does not
+validate the inherited liquid-handling offsets for that plate; wet runs remain blocked.
