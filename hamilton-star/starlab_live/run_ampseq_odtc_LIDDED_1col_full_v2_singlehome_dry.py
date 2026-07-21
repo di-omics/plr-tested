@@ -20,24 +20,22 @@
 #         and get away with it because each leg builds its own resource tree. The
 #         liquid legs model it CellTreat_96_wellplate_350ul_Fb; every iSWAP leg
 #         models it Cor_96_wellplate_360ul_Fb. Single-home forces one answer.
-#         MEASURED, not assumed: the two plates differ by only 0.10 mm in height
-#         (Cor 14.20 / CellTreat 14.30), so the tuned iSWAP grip offsets survive
-#         either choice. But they differ by 1.25 mm at the WELL BOTTOM, because
+#         The two plates differ by 1.25 mm at the WELL BOTTOM, because
 #         material_z_thickness is 0.50 (Cor) vs 1.75 (CellTreat). Unifying on Cor
 #         would silently shift the dispense from the tuned 1.5 mm to an effective
 #         0.25 mm -- BELOW the 0.5 mm that was already crushing tips into the well
 #         (see 87b6e52). Chatterbox cannot catch that; it shows up as crushed tips
 #         on hardware. So the work plate STAYS CellTreat and the pipetting geometry
-#         is carried over byte-for-byte. Do not "simplify" this to one plate class.
+#         is carried over byte-for-byte. Motion uses the explicit Cor-equivalent
+#         compensation added below. Do not "simplify" this to one plate class.
 #
 #     (2) THE LID. CellTreat_96_wellplate_350ul_Fb cannot model a lid at all in PLR
 #         0.2.1 (with_lid=True raises TypeError), so the lid cannot live on the work
 #         plate. It parks at rail35 pos4 on a Cor_96_wellplate_360ul_Fb(with_lid=True),
 #         exactly as the confirmed lid mover models it, and moves cross-model onto the
-#         CellTreat work plate. Cross-model move_lid was VERIFIED on chatterbox before
-#         this file was written (lid re-parents; real C0PP/C0PR emitted). The lid-on
-#         drop lands relative to the dest plate top, so the 0.10 mm model delta is
-#         inside the ~2 mm grip window and the confirmed lid offsets carry over.
+#         CellTreat work plate. Cross-model move_lid re-parents correctly, but the
+#         destination plate model changes the emitted pickup/drop Z. The motion-only
+#         compensation below restores the exact proven Corning command.
 #
 #   2026-07-16  Dispense geometry carried forward from the mastermix legs (01_/03_):
 #               dispense height 1.5 mm, firmware in-well Mix 3x 10 uL @ 50 uL/s with the
@@ -46,6 +44,21 @@
 #               depth (proven on hardware, test_mix_position_sign_SAFE.py), so 2.0 against
 #               liquid_height 1.5 drove the tips to well_bottom - 0.5 mm. 1.0 puts the mix
 #               at well_bottom + 0.5 mm. See the PATCH note above MIX_CYCLES.
+#   2026-07-21  RELEASE BLOCKER FIX. Directly carrying the CellTreat model through
+#               iSWAP did NOT preserve the proven component commands. PLR 0.2.1 gives
+#               CellTreat a carrier-local z -4.05 anchor versus Corning z -3.03 and
+#               different x/y centers and grip width. The uncorrected one-session trace
+#               shifted critical commands x/y by 0.1 mm, z by 0.9 mm, and grip width by
+#               0.2 mm. This is material because lid-off has only about 2 mm between the
+#               known-bad plate-grab z5 and the proven lid-grab z7. Added model locks and
+#               motion-only x0.075/y0.120/z0.920 compensation plus the proven Corning
+#               grip width. The resulting 20 C0PP/C0PR commands are byte-identical,
+#               after command-id normalization, to the hardware-proven standalone legs.
+#   2026-07-21  Guarded physical release: exact intent/deck/labware tokens, PLR/model/
+#               geometry locks before backend creation, connection-free deck mode,
+#               resource-parent and pristine-site assertions at every handoff, no iSWAP
+#               auto-park after failure, and no automatic tip disposition after a failed
+#               liquid command.
 #
 # The 13 legs, in order (identical to the LIDDED subprocess orchestrator):
 #   1  PCR1 master mix add        (p50, tip col1)      rail35 pos0 work plate
@@ -76,44 +89,47 @@
 # address the same object wherever it currently sits (pos0 for PCR1/PCR2, pos2 for
 # cleanup, rail20 pos1 for the ODTC trips).
 #
-# Precisely what the plate-type choice does and does not move (measured, PLR 0.2.1):
-#   iSWAP grip:  Cor 14.20 vs CellTreat 14.30 tall -> 0.10 mm. Inside the ~2 mm grip
-#                window, so every tuned iSWAP offset VALUE carries over unchanged.
-#   Well bottom: 1.25 mm apart (material_z_thickness 0.50 vs 1.75). This one is NOT
-#                negligible and is why the liquid geometry may only be paired with the
-#                CellTreat model it was tuned against. See the PATCH LOG above.
+# Precisely what the plate-type choice moves (measured, PLR 0.2.1):
+#   iSWAP command: CellTreat versus Cor shifts x/y center, top Z, and grip width. The
+#                  motion-only compensation below restores exact Cor command parity.
+#   Well bottom:   1.25 mm apart (material_z_thickness 0.50 vs 1.75). Liquid geometry
+#                  therefore remains paired with the truthful CellTreat model.
 #
 # Per-leg teach-point mutations are applied immediately before each move and
 # restored to pristine afterward, so there is no cross-leg coordinate bleed across
 # the shared deck (the single-session hazard the standalone legs never hit because
 # each ran in its own process).
 #
-# SAFETY / RUN ORDER: run  --mode chatterbox  (no hardware) FIRST to rehearse the
-# whole sequence, THEN  --mode deck  (assign + print geometry, NO motion) to eyeball
-# the teach points, and ONLY THEN  --mode run --confirm RUN_AMPSEQ_ODTC_LIDDED_V2 on
-# the instrument. Confirm deck staging and E-stop reachability before any hardware
-# run: the arm makes 13 transfers including two ODTC round trips WITH lid on/off and
-# one magnet round trip. Only ONE driver may hold the STAR at a time.
+# SAFETY / RUN ORDER: run --mode chatterbox (no hardware) FIRST to rehearse the
+# whole sequence, THEN --mode deck (assign + print geometry, NO motion) to eyeball
+# the teach points, and ONLY THEN use --mode star with all three exact release tokens.
+# Confirm deck staging and E-stop reachability before any hardware run: the arm makes
+# 13 protocol legs including two ODTC round trips WITH lid on/off and one magnet round
+# trip. Only ONE driver may hold the STAR at a time.
 #
 # DECK STAGING (all of it, before a hardware run):
-#   rail48 pos1 p50 tips / pos2 p300 tips
+#   rail48 pos0 p10 tips (unused) / pos1 p50 tips / pos2 p300 tips
 #   rail35 pos0 work plate (CellTreat, sacrificial) / pos1 mm source / pos2 magnet
 #          pos3 reservoir-waste trough / pos4 LID parked on a Cor plate
 #   rail20 pos1 ODTC nest, EMPTY and open
 # The magnet MUST be physically at rail35 pos2, the lid on pos4, and the ODTC nest
 # empty, or an iSWAP releases into open space.
 #
-# NOT YET RUN ON HARDWARE. Chatterbox-validated only.
+# The equivalent 13-leg subprocess choreography passed on hardware on 2026-07-16,
+# including both ODTC lid cycles and the magnet round trip. This ONE-session composition
+# is Chatterbox-validated but has not yet been run on hardware. It does not connect to,
+# heat, initialize, or move the ODTC; the ODTC is only a physical landing nest here.
 #
 # ASCII only.
 
 import argparse
 import asyncio
 import importlib
+from importlib.metadata import PackageNotFoundError, version
+from types import SimpleNamespace
 from typing import Dict
 
 from pylabrobot.liquid_handling import LiquidHandler
-from pylabrobot.liquid_handling.backends import STARBackend
 from pylabrobot.resources.hamilton import STARDeck, TIP_CAR_480_A00
 from pylabrobot.resources import (
     PLT_CAR_L5AC_A00,
@@ -127,9 +143,12 @@ from pylabrobot.liquid_handling.standard import Mix
 
 
 # ---------------------------------------------------------------------------
-# Confirm gate
+# Release gates
 # ---------------------------------------------------------------------------
-CONFIRM_TOKEN = "RUN_AMPSEQ_ODTC_LIDDED_V2"
+CONFIRM_TOKEN = "RUN_AMPSEQ_ODTC_LIDDED_SINGLEHOME_DRY"
+DECK_ACK = "R48_P10_P50_P300_R35_WORK_SOURCE_MAGNET_TROUGH_LID_R20_ODTC_EMPTY_OPEN"
+LABWARE_ACK = "CELLTREAT_229195_WORK_SOURCE_CORNING_3603_LID"
+EXPECTED_PLR_VERSION = "0.2.1"
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +348,155 @@ LID_OFF_DROP_DZ = 4.0
 
 
 # ---------------------------------------------------------------------------
+# Release invariants
+# ---------------------------------------------------------------------------
+CONFIRMED_MOVEMENT_GEOMETRY = (
+    # ODTC forward, ODTC return.
+    (5.0, 2.0, 36.5, 12.0),
+    (2.0, 36.5, 0.0, 8.5),
+    # Magnet forward, magnet return.
+    (8.5, 0.0, 0.0, 18.0),
+    (14.0, 0.0, 0.0, 8.5),
+    # Lid on, lid off.
+    (0.0, 0.0, 9.0, 2.0, 36.5, 12.0),
+    (2.0, 36.5, 7.0, 0.0, 0.0, 4.0),
+)
+
+# The physically proven component movers represented the real CellTreat work plate
+# with a Corning motion stand-in. PLR 0.2.1 centers and anchors those models
+# differently, so using the truthful CellTreat model without compensation shifts the
+# firmware commands by x 0.1 mm, y 0.1 mm, and z 0.9 mm and changes grip width by
+# 0.2 mm. The lid-off z window is only about 2 mm. These motion-only values make the
+# shared CellTreat resource emit the exact hardware-proven Corning commands while its
+# wells keep the truthful CellTreat pipetting geometry.
+COR_MOTION_OFFSET = Coordinate(0.075, 0.120, 0.920)
+COR_MOTION_PLATE_WIDTH = 127.76
+COR_MOTION_OPEN_GRIP = 130.76
+CELLTREAT_LID_Z_COMPENSATION = 0.920
+
+CONFIRMED_MOTION_MODEL = (
+    127.61, 85.24, 14.30, -4.05,  # CellTreat size xyz and carrier-local z.
+    127.76, 85.48, 14.20, -3.03,  # Corning size xyz and carrier-local z.
+    0.075, 0.120, 0.920, 0.920,   # center x/y, plate-top z, and lid-seat z deltas.
+)
+
+
+def movement_geometry():
+    return (
+        (ODTC_FWD_PICKUP_DZ, ODTC_FWD_DROP_DX, ODTC_FWD_DROP_DY, ODTC_FWD_DROP_DZ),
+        (ODTC_RET_PICKUP_DX, ODTC_RET_PICKUP_DY, ODTC_RET_PICKUP_DZ, ODTC_RET_DROP_DZ),
+        (MAG_FWD_PICKUP_DZ, MAG_FWD_DROP_DX, MAG_FWD_DROP_DY, MAG_FWD_DROP_DZ),
+        (MAG_RET_PICKUP_DZ, MAG_RET_DROP_DX, MAG_RET_DROP_DY, MAG_RET_DROP_DZ),
+        (
+            LID_ON_PICKUP_DX,
+            LID_ON_PICKUP_DY,
+            LID_ON_PICKUP_DZ,
+            LID_ON_DROP_DX,
+            LID_ON_DROP_DY,
+            LID_ON_DROP_DZ,
+        ),
+        (
+            LID_OFF_PICKUP_DX,
+            LID_OFF_PICKUP_DY,
+            LID_OFF_PICKUP_DZ,
+            LID_OFF_DROP_DX,
+            LID_OFF_DROP_DY,
+            LID_OFF_DROP_DZ,
+        ),
+    )
+
+
+def validate_geometry_lock():
+    actual = movement_geometry()
+    if actual != CONFIRMED_MOVEMENT_GEOMETRY:
+        raise RuntimeError(
+            "AmpSeq movement geometry lock failed; refusing to build or run the deck: "
+            "{} != {}".format(actual, CONFIRMED_MOVEMENT_GEOMETRY)
+        )
+
+
+def motion_model_snapshot():
+    cell_carrier = PLT_CAR_L5AC_A00(name="motion_lock_cell_carrier")
+    cor_carrier = PLT_CAR_L5AC_A00(name="motion_lock_cor_carrier")
+    cell = CellTreat_96_wellplate_350ul_Fb(name="motion_lock_cell")
+    cor = Cor_96_wellplate_360ul_Fb(name="motion_lock_cor", with_lid=True)
+    cell_carrier[0] = cell
+    cor_carrier[0] = cor
+    lid = cor.lid
+    if lid is None:
+        raise RuntimeError("Motion-model lock could not create the Corning lid")
+
+    center_dx = cor.center().x - cell.center().x
+    center_dy = cor.center().y - cell.center().y
+    plate_top_dz = (
+        cor.location.z + cor.get_size_z() - cell.location.z - cell.get_size_z()
+    )
+    lid_seat_dz = (
+        cor.location.z
+        + cor.get_lid_location(lid).z
+        - cell.location.z
+        - cell.get_lid_location(lid).z
+    )
+    return tuple(
+        round(value, 3)
+        for value in (
+            cell.get_size_x(),
+            cell.get_size_y(),
+            cell.get_size_z(),
+            cell.location.z,
+            cor.get_size_x(),
+            cor.get_size_y(),
+            cor.get_size_z(),
+            cor.location.z,
+            center_dx,
+            center_dy,
+            plate_top_dz,
+            lid_seat_dz,
+        )
+    )
+
+
+def validate_motion_model_lock():
+    actual = motion_model_snapshot()
+    if actual != CONFIRMED_MOTION_MODEL:
+        raise RuntimeError(
+            "AmpSeq CellTreat/Corning motion-model lock failed: {} != {}".format(
+                actual, CONFIRMED_MOTION_MODEL
+            )
+        )
+    compensation = (
+        round(COR_MOTION_OFFSET.x, 3),
+        round(COR_MOTION_OFFSET.y, 3),
+        round(COR_MOTION_OFFSET.z, 3),
+        round(CELLTREAT_LID_Z_COMPENSATION, 3),
+    )
+    if compensation != CONFIRMED_MOTION_MODEL[-4:]:
+        raise RuntimeError(
+            "AmpSeq motion compensation drifted: {} != {}".format(
+                compensation, CONFIRMED_MOTION_MODEL[-4:]
+            )
+        )
+    if (
+        round(COR_MOTION_PLATE_WIDTH, 2),
+        round(COR_MOTION_OPEN_GRIP, 2),
+    ) != (127.76, 130.76):
+        raise RuntimeError("AmpSeq Corning grip-width lock failed")
+
+
+def validate_plr_version():
+    try:
+        installed = version("pylabrobot")
+    except PackageNotFoundError as exc:
+        raise RuntimeError("PyLabRobot is not installed; refusing to build an AmpSeq run") from exc
+    if installed != EXPECTED_PLR_VERSION:
+        raise RuntimeError(
+            "PyLabRobot version lock failed: this runner is tested against {}, found {}".format(
+                EXPECTED_PLR_VERSION, installed
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
 # Resource helpers (from the leg specs)
 # ---------------------------------------------------------------------------
 def make_resource(label, name, candidates):
@@ -390,6 +558,10 @@ def assign_unified_deck(lh: LiquidHandler) -> Dict[str, object]:
     rail20  PLT_CAR_L5AC_A00
         pos1  ODTC nest (EMPTY; receives the plate for thermocycling)
     """
+    validate_geometry_lock()
+    validate_plr_version()
+    validate_motion_model_lock()
+
     tip_carrier = TIP_CAR_480_A00(name="tip_car_rail48")
     lh.deck.assign_child_resource(tip_carrier, rails=TIP_RAIL)
 
@@ -419,6 +591,9 @@ def assign_unified_deck(lh: LiquidHandler) -> Dict[str, object]:
     # cross-model onto the CellTreat work plate; verified on chatterbox.
     lid_park = Cor_96_wellplate_360ul_Fb(name="rail35_pos4_ampseq_lid_park", with_lid=True)
     labware_carrier[LID_POS] = lid_park
+    lid = lid_park.lid
+    if lid is None:
+        raise RuntimeError("Expected the Corning park plate to carry a lid")
 
     # rail35 pos2 (magnet) and rail20 pos1 (ODTC nest) are intentionally left EMPTY:
     # the single work plate is delivered to each by the iSWAP mid-choreography.
@@ -434,7 +609,60 @@ def assign_unified_deck(lh: LiquidHandler) -> Dict[str, object]:
         "source_96wp": source_96wp,
         "trough": trough,
         "lid_park": lid_park,
+        "lid": lid,
+        "work_site": labware_carrier[WORK_POS],
+        "source_site": labware_carrier[SOURCE_96WP_POS],
+        "mag_site": labware_carrier[MAG_POS],
+        "trough_site": labware_carrier[TROUGH_POS],
+        "lid_site": labware_carrier[LID_POS],
+        "odtc_site": odtc_carrier[ODTC_POSITION],
     }
+
+
+def coordinate_tuple(coord):
+    return (coord.x, coord.y, coord.z)
+
+
+def site_snapshot(r):
+    return {
+        name: coordinate_tuple(r[name].location)
+        for name in (
+            "work_site",
+            "source_site",
+            "mag_site",
+            "trough_site",
+            "lid_site",
+            "odtc_site",
+        )
+    }
+
+
+def assert_sites_pristine(r, expected, label):
+    actual = site_snapshot(r)
+    if actual != expected:
+        raise RuntimeError(
+            "Persistent site-coordinate bleed after {}: {} != {}".format(label, actual, expected)
+        )
+
+
+def assert_modeled_state(r, *, plate_site, lid_parent, label):
+    checks = (
+        (r["work_plate"].parent, plate_site, "work plate"),
+        (r["lid"].parent, lid_parent, "lid"),
+        (r["source_96wp"].parent, r["source_site"], "source plate"),
+        (r["trough"].parent, r["trough_site"], "trough"),
+        (r["lid_park"].parent, r["lid_site"], "lid park plate"),
+        (r["p10_tips"].parent, r["tip_carrier"][P10_TIP_POS], "p10 tips"),
+        (r["p50_tips"].parent, r["tip_carrier"][P50_TIP_POS], "p50 tips"),
+        (r["p300_tips"].parent, r["tip_carrier"][P300_TIP_POS], "p300 tips"),
+    )
+    for actual, expected, resource_name in checks:
+        if actual is not expected:
+            raise RuntimeError(
+                "Modeled deck state mismatch {}: {} is not at its expected parent".format(
+                    label, resource_name
+                )
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -447,12 +675,23 @@ async def finish_tips(lh, discard_tips):
         await lh.return_tips()
 
 
+async def finish_tips_after_success(lh, discard_tips, operation_succeeded, label):
+    if not operation_succeeded:
+        print(
+            "SAFETY HOLD: {} did not complete; automatic tip return/discard skipped. "
+            "Tip and channel state are UNKNOWN.".format(label)
+        )
+        return
+    await finish_tips(lh, discard_tips)
+
+
 # ---------------------------------------------------------------------------
 # Leg bodies: PCR1 / PCR2 master mix (single 8-channel col1 -> col1 transfer)
 # ---------------------------------------------------------------------------
 async def transfer_mastermix(lh, r, volume_ul, discard_tips=False, tip_col=1):
     vols = [volume_ul] * 8
     await lh.pick_up_tips(r["p50_tips"]["A{c}:H{c}".format(c=tip_col)])
+    operation_succeeded = False
     try:
         await lh.aspirate(
             wells_for_column(r["source_96wp"], SOURCE_COL),
@@ -479,8 +718,11 @@ async def transfer_mastermix(lh, r, volume_ul, discard_tips=False, tip_col=1):
             mix_position_from_liquid_surface=MIX_POSITION_FROM_SURFACE,
         )
         await asyncio.sleep(POST_DISPENSE_SETTLE_SECONDS)
+        operation_succeeded = True
     finally:
-        await finish_tips(lh, discard_tips)
+        await finish_tips_after_success(
+            lh, discard_tips, operation_succeeded, "master-mix transfer"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -489,6 +731,7 @@ async def transfer_mastermix(lh, r, volume_ul, discard_tips=False, tip_col=1):
 async def p50_add_from_trough_low(lh, r, source_well_name, volume_ul, discard_tips, tip_col):
     vols = [volume_ul] * 8
     await lh.pick_up_tips(r["p50_tips"]["A{c}:H{c}".format(c=tip_col)])
+    operation_succeeded = False
     try:
         await lh.aspirate(
             [r["trough"][source_well_name][0]] * 8,
@@ -504,13 +747,17 @@ async def p50_add_from_trough_low(lh, r, source_well_name, volume_ul, discard_ti
             offsets=P50_LOW_MAG_DSP_OFFSETS,
             blow_out_air_volume=[P50_LOW_ADD_BLOWOUT_AIR_VOLUME] * 8,
         )
+        operation_succeeded = True
     finally:
-        await finish_tips(lh, discard_tips)
+        await finish_tips_after_success(
+            lh, discard_tips, operation_succeeded, "p50 trough add"
+        )
 
 
 async def p300_add_from_trough(lh, r, source_well_name, volume_ul, discard_tips, tip_col):
     vols = [volume_ul] * 8
     await lh.pick_up_tips(r["p300_tips"]["A{c}:H{c}".format(c=tip_col)])
+    operation_succeeded = False
     try:
         await lh.aspirate(
             [r["trough"][source_well_name][0]] * 8,
@@ -526,13 +773,17 @@ async def p300_add_from_trough(lh, r, source_well_name, volume_ul, discard_tips,
             offsets=P300_MAG_DSP_OFFSETS,
             blow_out_air_volume=[P300_ADD_BLOWOUT_AIR_VOLUME] * 8,
         )
+        operation_succeeded = True
     finally:
-        await finish_tips(lh, discard_tips)
+        await finish_tips_after_success(
+            lh, discard_tips, operation_succeeded, "p300 trough add"
+        )
 
 
 async def p300_remove_to_waste(lh, r, volume_ul, discard_tips, tip_col):
     vols = [volume_ul] * 8
     await lh.pick_up_tips(r["p300_tips"]["A{c}:H{c}".format(c=tip_col)])
+    operation_succeeded = False
     try:
         await lh.aspirate(
             wells_for_column(r["mag_plate"], DEST_COL),
@@ -548,13 +799,17 @@ async def p300_remove_to_waste(lh, r, volume_ul, discard_tips, tip_col):
             offsets=P300_WASTE_DSP_OFFSETS,
             blow_out_air_volume=[P300_REMOVE_BLOWOUT_AIR_VOLUME] * 8,
         )
+        operation_succeeded = True
     finally:
-        await finish_tips(lh, discard_tips)
+        await finish_tips_after_success(
+            lh, discard_tips, operation_succeeded, "p300 waste removal"
+        )
 
 
 async def p50_remove_residual_ethanol_to_waste(lh, r, volume_ul, discard_tips, tip_col):
     vols = [volume_ul] * 8
     await lh.pick_up_tips(r["p50_tips"]["A{c}:H{c}".format(c=tip_col)])
+    operation_succeeded = False
     try:
         await lh.aspirate(
             wells_for_column(r["mag_plate"], DEST_COL),
@@ -570,8 +825,11 @@ async def p50_remove_residual_ethanol_to_waste(lh, r, volume_ul, discard_tips, t
             offsets=P50_WASTE_DSP_OFFSETS,
             blow_out_air_volume=[P50_RESIDUAL_BLOWOUT_AIR_VOLUME] * 8,
         )
+        operation_succeeded = True
     finally:
-        await finish_tips(lh, discard_tips)
+        await finish_tips_after_success(
+            lh, discard_tips, operation_succeeded, "p50 residual removal"
+        )
 
 
 async def cleanup_all_dry(lh, r, discard_tips=False):
@@ -631,7 +889,11 @@ async def iswap_leg(
     the plate's per-leg location are reset by PyLabRobot on the next leg; only the
     persistent carrier-site shifts are restored here.
     """
-    pickup_slot = plate.parent
+    if pickup_target not in ("plate", "slot"):
+        raise ValueError("Unknown plate pickup target: {}".format(pickup_target))
+
+    original_parent = plate.parent
+    pickup_slot = original_parent
     plate_base = plate.location
     pickup_slot_base = pickup_slot.location if pickup_slot is not None else None
     drop_base = drop_site.location
@@ -642,10 +904,19 @@ async def iswap_leg(
             plate.location = shifted(plate_base, dx=pickup_dx, dy=pickup_dy, dz=pickup_dz)
         drop_site.location = shifted(drop_base, dx=drop_dx, dy=drop_dy, dz=drop_dz)
         async with lh.backend.slow_iswap():
-            await lh.move_resource(plate, drop_site)
+            await lh.move_resource(
+                plate,
+                drop_site,
+                pickup_offset=COR_MOTION_OFFSET,
+                destination_offset=COR_MOTION_OFFSET,
+                plate_width=COR_MOTION_PLATE_WIDTH,
+                open_gripper_position=COR_MOTION_OPEN_GRIP,
+            )
     finally:
         if pickup_target == "slot" and pickup_slot is not None and pickup_slot_base is not None:
             pickup_slot.location = pickup_slot_base
+        if pickup_target == "plate" and plate.parent is original_parent:
+            plate.location = plate_base
         drop_site.location = drop_base
 
 
@@ -664,6 +935,8 @@ async def lid_leg(
     drop_dx=0.0,
     drop_dy=0.0,
     drop_dz=0.0,
+    pickup_model_dz=0.0,
+    drop_model_dz=0.0,
 ):
     """Move `lid` onto `dst_plate`, applying the tuned teach-point offsets to the SOURCE
     and DEST SITES immediately before the move and restoring them immediately after.
@@ -683,7 +956,12 @@ async def lid_leg(
         src_site.location = shifted(src_base, dx=pickup_dx, dy=pickup_dy, dz=pickup_dz)
         dst_site.location = shifted(dst_base, dx=drop_dx, dy=drop_dy, dz=drop_dz)
         async with lh.backend.slow_iswap():
-            await lh.move_lid(lid, dst_plate)
+            await lh.move_lid(
+                lid,
+                dst_plate,
+                pickup_offset=Coordinate(0.0, 0.0, pickup_model_dz),
+                destination_offset=Coordinate(0.0, 0.0, drop_model_dz),
+            )
     finally:
         src_site.location = src_base
         dst_site.location = dst_base
@@ -700,8 +978,16 @@ def _banner(label):
 
 
 async def run_choreography(lh, r):
-    _lid_site = r["labware_carrier"][LID_POS]
-    _nest_site = r["odtc_carrier"][ODTC_POSITION]
+    _work_site = r["work_site"]
+    _mag_site = r["mag_site"]
+    _lid_site = r["lid_site"]
+    _nest_site = r["odtc_site"]
+    pristine_sites = site_snapshot(r)
+
+    assert_sites_pristine(r, pristine_sites, "initial deck")
+    assert_modeled_state(
+        r, plate_site=_work_site, lid_parent=r["lid_park"], label="initial deck"
+    )
 
     # LEG 1: PCR1 master mix add (p50 col1) -> rail35 pos0 work plate
     _banner("LEG 1/13  PCR1 master mix add (p50 tip col1) -> rail35 pos0 work plate")
@@ -712,6 +998,9 @@ async def run_choreography(lh, r):
         discard_tips=False,
         tip_col=1,
     )
+    assert_modeled_state(
+        r, plate_site=_work_site, lid_parent=r["lid_park"], label="PCR1 transfer"
+    )
 
     # LEG 2: iSWAP rail35 pos0 -> rail20 pos1 ODTC nest (PCR1 handoff)
     _banner("LEG 2/13  iSWAP rail35 pos0 -> rail20 pos1 ODTC nest (PCR1 handoff)")
@@ -721,14 +1010,23 @@ async def run_choreography(lh, r):
         drop_dx=ODTC_FWD_DROP_DX, drop_dy=ODTC_FWD_DROP_DY, drop_dz=ODTC_FWD_DROP_DZ,
         pickup_target="plate",
     )
+    assert_sites_pristine(r, pristine_sites, "PCR1 ODTC forward")
+    assert_modeled_state(
+        r, plate_site=_nest_site, lid_parent=r["lid_park"], label="PCR1 ODTC forward"
+    )
 
     # LEG 2b: LID ON rail35 pos4 -> the plate now in the ODTC nest (seal for PCR1)
     _banner("LEG 2b/13  LID ON  rail35 pos4 -> plate in ODTC nest (seal for PCR1)")
     await lid_leg(
-        lh, r["lid_park"].lid, r["work_plate"],
+        lh, r["lid"], r["work_plate"],
         src_site=_lid_site, dst_site=_nest_site,
         pickup_dx=LID_ON_PICKUP_DX, pickup_dy=LID_ON_PICKUP_DY, pickup_dz=LID_ON_PICKUP_DZ,
         drop_dx=LID_ON_DROP_DX, drop_dy=LID_ON_DROP_DY, drop_dz=LID_ON_DROP_DZ,
+        drop_model_dz=CELLTREAT_LID_Z_COMPENSATION,
+    )
+    assert_sites_pristine(r, pristine_sites, "PCR1 lid on")
+    assert_modeled_state(
+        r, plate_site=_nest_site, lid_parent=r["work_plate"], label="PCR1 lid on"
     )
 
     # In a REAL run the ODTC PCR1 thermal program executes HERE, lid sealed.
@@ -737,10 +1035,15 @@ async def run_choreography(lh, r):
     # LEG 2c: LID OFF ODTC nest -> rail35 pos4 (unseal before lifting the plate out)
     _banner("LEG 2c/13  LID OFF ODTC nest -> rail35 pos4 (unseal; pickup z7 grabs lid not plate)")
     await lid_leg(
-        lh, r["work_plate"].lid, r["lid_park"],
+        lh, r["lid"], r["lid_park"],
         src_site=_nest_site, dst_site=_lid_site,
         pickup_dx=LID_OFF_PICKUP_DX, pickup_dy=LID_OFF_PICKUP_DY, pickup_dz=LID_OFF_PICKUP_DZ,
         drop_dx=LID_OFF_DROP_DX, drop_dy=LID_OFF_DROP_DY, drop_dz=LID_OFF_DROP_DZ,
+        pickup_model_dz=CELLTREAT_LID_Z_COMPENSATION,
+    )
+    assert_sites_pristine(r, pristine_sites, "PCR1 lid off")
+    assert_modeled_state(
+        r, plate_site=_nest_site, lid_parent=r["lid_park"], label="PCR1 lid off"
     )
 
     # LEG 3: iSWAP rail20 pos1 ODTC nest -> rail35 pos0 (return, pickup z0 / drop z8.5)
@@ -751,6 +1054,10 @@ async def run_choreography(lh, r):
         drop_dz=ODTC_RET_DROP_DZ,
         pickup_target="slot",
     )
+    assert_sites_pristine(r, pristine_sites, "PCR1 ODTC return")
+    assert_modeled_state(
+        r, plate_site=_work_site, lid_parent=r["lid_park"], label="PCR1 ODTC return"
+    )
 
     # LEG 4: iSWAP rail35 pos0 -> rail35 pos2 magnet (bead-clean handoff)
     _banner("LEG 4/13  iSWAP rail35 pos0 -> rail35 pos2 magnet (bead-clean handoff)")
@@ -759,6 +1066,10 @@ async def run_choreography(lh, r):
         pickup_dz=MAG_FWD_PICKUP_DZ,
         drop_dx=MAG_FWD_DROP_DX, drop_dy=MAG_FWD_DROP_DY, drop_dz=MAG_FWD_DROP_DZ,
         pickup_target="plate",
+    )
+    assert_sites_pristine(r, pristine_sites, "magnet forward")
+    assert_modeled_state(
+        r, plate_site=_mag_site, lid_parent=r["lid_park"], label="magnet forward"
     )
 
     # LEG 5: PCR1 cleanup all-dry on magnet (beads, 2x EtOH, elute)
@@ -769,6 +1080,9 @@ async def run_choreography(lh, r):
          "mag_plate": r["work_plate"], "trough": r["trough"]},
         discard_tips=False,
     )
+    assert_modeled_state(
+        r, plate_site=_mag_site, lid_parent=r["lid_park"], label="cleanup"
+    )
 
     # LEG 6: iSWAP rail35 pos2 magnet -> rail35 pos0 (return, pickup z14 / drop z8.5)
     _banner("LEG 6/13  iSWAP rail35 pos2 magnet -> rail35 pos0 (return, pickup z14 / drop z8.5)")
@@ -777,6 +1091,10 @@ async def run_choreography(lh, r):
         pickup_dz=MAG_RET_PICKUP_DZ,
         drop_dx=MAG_RET_DROP_DX, drop_dy=MAG_RET_DROP_DY, drop_dz=MAG_RET_DROP_DZ,
         pickup_target="plate",
+    )
+    assert_sites_pristine(r, pristine_sites, "magnet return")
+    assert_modeled_state(
+        r, plate_site=_work_site, lid_parent=r["lid_park"], label="magnet return"
     )
 
     # LEG 7: PCR2 master mix add (p50 col2) -> rail35 pos0 work plate
@@ -788,6 +1106,9 @@ async def run_choreography(lh, r):
         discard_tips=False,
         tip_col=2,
     )
+    assert_modeled_state(
+        r, plate_site=_work_site, lid_parent=r["lid_park"], label="PCR2 transfer"
+    )
 
     # LEG 8: iSWAP rail35 pos0 -> rail20 pos1 ODTC nest (PCR2 handoff; byte-identical to LEG 2)
     _banner("LEG 8/13  iSWAP rail35 pos0 -> rail20 pos1 ODTC nest (PCR2 handoff)")
@@ -797,14 +1118,23 @@ async def run_choreography(lh, r):
         drop_dx=ODTC_FWD_DROP_DX, drop_dy=ODTC_FWD_DROP_DY, drop_dz=ODTC_FWD_DROP_DZ,
         pickup_target="plate",
     )
+    assert_sites_pristine(r, pristine_sites, "PCR2 ODTC forward")
+    assert_modeled_state(
+        r, plate_site=_nest_site, lid_parent=r["lid_park"], label="PCR2 ODTC forward"
+    )
 
     # LEG 8b: LID ON rail35 pos4 -> plate in ODTC nest (byte-identical to LEG 2b)
     _banner("LEG 8b/13  LID ON  rail35 pos4 -> plate in ODTC nest (seal for PCR2)")
     await lid_leg(
-        lh, r["lid_park"].lid, r["work_plate"],
+        lh, r["lid"], r["work_plate"],
         src_site=_lid_site, dst_site=_nest_site,
         pickup_dx=LID_ON_PICKUP_DX, pickup_dy=LID_ON_PICKUP_DY, pickup_dz=LID_ON_PICKUP_DZ,
         drop_dx=LID_ON_DROP_DX, drop_dy=LID_ON_DROP_DY, drop_dz=LID_ON_DROP_DZ,
+        drop_model_dz=CELLTREAT_LID_Z_COMPENSATION,
+    )
+    assert_sites_pristine(r, pristine_sites, "PCR2 lid on")
+    assert_modeled_state(
+        r, plate_site=_nest_site, lid_parent=r["work_plate"], label="PCR2 lid on"
     )
 
     # In a REAL run the ODTC PCR2 thermal program executes HERE, lid sealed.
@@ -813,10 +1143,15 @@ async def run_choreography(lh, r):
     # LEG 8c: LID OFF ODTC nest -> rail35 pos4 (byte-identical to LEG 2c)
     _banner("LEG 8c/13  LID OFF ODTC nest -> rail35 pos4 (unseal; pickup z7 grabs lid not plate)")
     await lid_leg(
-        lh, r["work_plate"].lid, r["lid_park"],
+        lh, r["lid"], r["lid_park"],
         src_site=_nest_site, dst_site=_lid_site,
         pickup_dx=LID_OFF_PICKUP_DX, pickup_dy=LID_OFF_PICKUP_DY, pickup_dz=LID_OFF_PICKUP_DZ,
         drop_dx=LID_OFF_DROP_DX, drop_dy=LID_OFF_DROP_DY, drop_dz=LID_OFF_DROP_DZ,
+        pickup_model_dz=CELLTREAT_LID_Z_COMPENSATION,
+    )
+    assert_sites_pristine(r, pristine_sites, "PCR2 lid off")
+    assert_modeled_state(
+        r, plate_site=_nest_site, lid_parent=r["lid_park"], label="PCR2 lid off"
     )
 
     # LEG 9: iSWAP rail20 pos1 ODTC nest -> rail35 pos0 (return; byte-identical to LEG 3)
@@ -826,6 +1161,10 @@ async def run_choreography(lh, r):
         pickup_dx=ODTC_RET_PICKUP_DX, pickup_dy=ODTC_RET_PICKUP_DY, pickup_dz=ODTC_RET_PICKUP_DZ,
         drop_dz=ODTC_RET_DROP_DZ,
         pickup_target="slot",
+    )
+    assert_sites_pristine(r, pristine_sites, "PCR2 ODTC return")
+    assert_modeled_state(
+        r, plate_site=_work_site, lid_parent=r["lid_park"], label="final deck"
     )
 
 
@@ -848,7 +1187,7 @@ def print_deck_and_geometry(r):
     print("    pos3  reservoir/waste  '{}'".format(r["trough"].name))
     print("    pos4  LID park         '{}'  (Cor plate carrying the lid; rides to the nest and back)".format(
         r["lid_park"].name))
-    print("          lid              '{}'".format(r["lid_park"].lid.name))
+    print("          lid              '{}'".format(r["lid"].name))
     print("rail20  PLT_CAR_L5AC_A00 'odtc_carrier_rail20'")
     print("    pos1  ODTC nest        (EMPTY; receives the plate for thermocycling)")
     print("")
@@ -856,6 +1195,10 @@ def print_deck_and_geometry(r):
     print("    work plate = CellTreat  -> keeps the tuned liquid geometry exact")
     print("    lid park   = Cor        -> CellTreat cannot model a lid (with_lid raises)")
     print("    the 1.25 mm well-bottom gap between the two models is why they are NOT unified")
+    print("    motion-only CellTreat compensation = x{} y{} z{}; Cor grip width {}".format(
+        COR_MOTION_OFFSET.x, COR_MOTION_OFFSET.y, COR_MOTION_OFFSET.z,
+        COR_MOTION_PLATE_WIDTH))
+    print("    this locks iSWAP/lid firmware commands to the hardware-proven Cor stand-in")
     print("")
     print("LID LEGS  on  pickup z{} / drop x{} y{} z{}   off  pickup x{} y{} z{} / drop z{}".format(
         LID_ON_PICKUP_DZ, LID_ON_DROP_DX, LID_ON_DROP_DY, LID_ON_DROP_DZ,
@@ -884,10 +1227,10 @@ def print_deck_and_geometry(r):
     print("-" * 88)
     print("PCR1 mm  {} uL  p50 col1  src A1:H1 (h {} off {}) -> work A1:H1 (h {} off {} blow {})".format(
         VOL_PCR1_MASTER_MIX, P50_SOURCE_ASP_HEIGHT[0], _c(P50_SOURCE_ASP_OFFSETS[0]),
-        P50_WORK_DSP_HEIGHT[0], _c(P50_WORK_DSP_OFFSETS[0]), P50_BLOWOUT_AIR_VOLUME))
+        P50_WORK_DSP_HEIGHT[0], _c(P50_WORK_DSP_OFFSETS[0]), P50_MIX_BLOWOUT_AIR_VOLUME))
     print("PCR2 mm  {} uL  p50 col2  src A1:H1 (h {} off {}) -> work A1:H1 (h {} off {} blow {})".format(
         VOL_PCR2_MASTER_MIX, P50_SOURCE_ASP_HEIGHT[0], _c(P50_SOURCE_ASP_OFFSETS[0]),
-        P50_WORK_DSP_HEIGHT[0], _c(P50_WORK_DSP_OFFSETS[0]), P50_BLOWOUT_AIR_VOLUME))
+        P50_WORK_DSP_HEIGHT[0], _c(P50_WORK_DSP_OFFSETS[0]), P50_MIX_BLOWOUT_AIR_VOLUME))
     print("cleanup beads    {} uL  p50-low  trough A1 (h {} off {}) -> mag (h {} off {} blow {})".format(
         VOL_BEADS, P50_LOW_TROUGH_ASP_HEIGHT[0], _c(P50_LOW_TROUGH_ASP_OFFSETS[0]),
         P50_LOW_MAG_DSP_HEIGHT[0], _c(P50_LOW_MAG_DSP_OFFSETS[0]), P50_LOW_ADD_BLOWOUT_AIR_VOLUME))
@@ -908,6 +1251,7 @@ def print_deck_and_geometry(r):
         P50_LOW_MAG_DSP_HEIGHT[0], _c(P50_LOW_MAG_DSP_OFFSETS[0]), P50_LOW_ADD_BLOWOUT_AIR_VOLUME))
     print("")
     print("Tips RETURNED (dry) throughout. No motion performed in deck mode.")
+    print("No ODTC connection, initialization, door command, or heating is present in this runner.")
 
 
 def _c(coord):
@@ -938,86 +1282,182 @@ def load_star_chatterbox_backend():
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Guarded lifecycle and entry point
 # ---------------------------------------------------------------------------
-def parse_args():
-    p = argparse.ArgumentParser(
-        description=(
-            "Single-home V2 LIDDED ampseq column-1 + ODTC choreography (dry, tips returned). "
-            "One home, one deck, THIRTEEN legs, one stop. Replaces the 13-subprocess wrapper."
-        )
-    )
-    p.add_argument(
-        "--mode",
-        choices=["deck", "chatterbox", "run"],
-        default="deck",
-        help=(
-            "deck = assign the unified deck and print geometry, NO motion (default). "
-            "chatterbox = run all 13 legs on STARChatterboxBackend, no hardware. "
-            "run = run all 13 legs on the real STAR (requires --confirm %s)." % CONFIRM_TOKEN
-        ),
-    )
-    p.add_argument(
-        "--confirm",
-        default="",
-        help="Required for --mode run: --confirm %s" % CONFIRM_TOKEN,
-    )
-    return p.parse_args()
+def create_backend(name):
+    if name == "chatterbox":
+        return load_star_chatterbox_backend()
+    if name == "star":
+        from pylabrobot.liquid_handling.backends import STARBackend
+
+        return STARBackend()
+    raise ValueError("Unknown backend: {}".format(name))
 
 
-async def main():
-    args = parse_args()
+def make_handler(backend_name):
+    return LiquidHandler(backend=create_backend(backend_name), deck=STARDeck())
 
-    print("")
-    print("#" * 88)
-    print("# SINGLE-HOME V2  LIDDED ampseq col1 + ODTC  (dry, tips returned)")
-    print("# mode = {}".format(args.mode))
-    print("# 13 legs: PCR1 -> ODTC fwd / lid on / lid off / ret -> MAG fwd -> cleanup -> MAG ret")
-    print("#          -> PCR2 -> ODTC fwd / lid on / lid off / ret ; ONE home / ONE deck / ONE stop")
-    print("# WARNING: confirm deck staging + E-stop reach before any hardware run.")
-    print("#" * 88)
 
-    # --- Backend selection -------------------------------------------------
-    if args.mode == "chatterbox":
-        backend = load_star_chatterbox_backend()
-    else:
-        backend = STARBackend()
-
-    lh = LiquidHandler(backend=backend, deck=STARDeck())
-
-    # --- deck mode: assign + print geometry, NO motion (no setup/home, no stop)
-    if args.mode == "deck":
-        r = assign_unified_deck(lh)
-        print_deck_and_geometry(r)
-        print("\ndeck mode complete: unified deck assigned, geometry printed, no motion.")
-        return
-
-    # --- run mode gate -----------------------------------------------------
-    if args.mode == "run" and args.confirm != CONFIRM_TOKEN:
-        print("")
-        print("Refusing to move the STAR.")
-        print("This runs 13 iSWAP/liquid-handling legs including two ODTC round trips WITH lid on/off")
-        print("and one magnet round trip on real hardware.")
-        print("Rehearse first:  --mode chatterbox   then   --mode deck")
-        print("Then to run:     --mode run --confirm %s" % CONFIRM_TOKEN)
-        return
-
-    # --- chatterbox / run: HOME ONCE, assign ONCE, run 9 legs, STOP ONCE ---
-    await lh.setup(skip_autoload=True)  # single home for the whole choreography
-    try:
-        r = assign_unified_deck(lh)
-        await run_choreography(lh, r)
-        print("")
-        print("SUCCESS: full LIDDED ampseq + ODTC column-1 choreography completed in one STAR")
-        print("session (single home). Plate back on rail35 pos0, lid back on pos4.")
-    finally:
+async def stop_handler(
+    lh,
+    *,
+    park_iswap,
+    suppress_errors,
+    setup_complete,
+):
+    """Disconnect, but issue a park movement only after complete choreography success."""
+    cleanup_error = None
+    if park_iswap:
         try:
             await lh.backend.park_iswap()
-        except Exception as e:  # noqa: BLE001 - park is best-effort, never abort the stop
-            print("park_iswap warning: {!r}".format(e))
-        await lh.stop()
-        print("Done.")
+        except Exception as exc:
+            cleanup_error = exc
+            print("park_iswap failure: {!r}".format(exc))
+    else:
+        print(
+            "SAFETY HOLD: choreography did not complete; iSWAP auto-park skipped. "
+            "Plate, lid, tip, and gripper state are UNKNOWN and must be reconciled."
+        )
+    try:
+        if setup_complete:
+            await lh.stop()
+        else:
+            await lh.backend.stop()
+    except Exception as exc:
+        print("backend stop failure: {!r}".format(exc))
+        if cleanup_error is None:
+            cleanup_error = exc
+    if cleanup_error is not None and not suppress_errors:
+        raise cleanup_error
+
+
+async def run_full(backend_name):
+    lh = make_handler(backend_name)
+    setup_complete = False
+    choreography_succeeded = False
+    try:
+        await lh.setup(skip_autoload=True)
+        setup_complete = True
+        r = assign_unified_deck(lh)
+        print(
+            "MOTION LOCK: CellTreat liquid model plus Cor-equivalent iSWAP offset "
+            "x{} y{} z{}, grip width {}; exact component-command parity required.".format(
+                COR_MOTION_OFFSET.x,
+                COR_MOTION_OFFSET.y,
+                COR_MOTION_OFFSET.z,
+                COR_MOTION_PLATE_WIDTH,
+            )
+        )
+        print("DRY ONLY: empty sacrificial labware, no samples/reagents, tips returned.")
+        print("ODTC is not contacted, initialized, heated, cycled, or commanded.")
+        await run_choreography(lh, r)
+        choreography_succeeded = True
+    finally:
+        await stop_handler(
+            lh,
+            park_iswap=choreography_succeeded,
+            suppress_errors=not choreography_succeeded,
+            setup_complete=setup_complete,
+        )
+    print("")
+    print("SUCCESS: full LIDDED AmpSeq column-1 dry choreography completed in one STAR")
+    print("session. Plate r35p0; lid r35p4; magnet and ODTC landing sites empty.")
+
+
+def run_deck():
+    shell = SimpleNamespace(deck=STARDeck())
+    r = assign_unified_deck(shell)
+    pristine = site_snapshot(r)
+    assert_sites_pristine(r, pristine, "deck preview")
+    assert_modeled_state(
+        r, plate_site=r["work_site"], lid_parent=r["lid_park"], label="deck preview"
+    )
+    print_deck_and_geometry(r)
+    print("")
+    print("Deck mode complete: no backend, connection, setup/home, ODTC call, or motion.")
+
+
+def validate_release(args):
+    validate_geometry_lock()
+    validate_motion_model_lock()
+    validate_plr_version()
+    if args.mode not in ("star", "run"):
+        return
+    if args.confirm != CONFIRM_TOKEN:
+        raise RuntimeError(
+            "Refusing physical AmpSeq run. Add: --confirm {}".format(CONFIRM_TOKEN)
+        )
+    if args.acknowledge != DECK_ACK:
+        raise RuntimeError(
+            "Refusing physical AmpSeq run until the exact full deck is confirmed. Add: "
+            "--acknowledge {}".format(DECK_ACK)
+        )
+    if args.labware_ack != LABWARE_ACK:
+        raise RuntimeError(
+            "Refusing physical AmpSeq run until the CellTreat/Corning combination is "
+            "confirmed. Add: --labware-ack {}".format(LABWARE_ACK)
+        )
+
+
+def print_plan():
+    validate_geometry_lock()
+    print("SINGLE-HOME LIDDED AMPSEQ COLUMN-1 DRY PLAN")
+    print("One setup/home, one unified deck, 13 protocol legs, one success-only park/stop.")
+    print("PCR1 -> ODTC plate/lid round trip -> magnet cleanup round trip -> PCR2")
+    print("-> second ODTC plate/lid round trip -> final r35p0 return.")
+    print("No operator pause occurs after physical STAR release.")
+    print("Dry only: empty sacrificial labware, no samples/reagents, tips returned.")
+    print("No ODTC connection, initialization, door command, thermocycling, or heating.")
+    print("The 10 slow-iSWAP moves are golden-locked to hardware-proven component commands.")
+    print("STAR confirm: --confirm {}".format(CONFIRM_TOKEN))
+    print("Deck acknowledgement: --acknowledge {}".format(DECK_ACK))
+    print("Labware acknowledgement: --labware-ack {}".format(LABWARE_ACK))
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Single-home LIDDED AmpSeq column-1 + ODTC landing choreography "
+            "(dry, tips returned, no thermocycling)."
+        )
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("plan", "deck", "chatterbox", "star", "run"),
+        default="plan",
+        help=(
+            "plan/deck are inert; chatterbox simulates; star runs all 13 legs. "
+            "run is retained as a star alias."
+        ),
+    )
+    parser.add_argument("--confirm", default="")
+    parser.add_argument("--acknowledge", default="")
+    parser.add_argument("--labware-ack", default="")
+    return parser
+
+
+async def main_async(args):
+    if args.mode == "plan":
+        print_plan()
+        return
+    if args.mode == "deck":
+        print("DECK MODEL ONLY: no backend, connection, setup/home, ODTC call, or motion.")
+        run_deck()
+        return
+
+    validate_release(args)
+    if args.mode in ("star", "run"):
+        print("PHYSICAL STAR CONTINUOUS MODE: no pause after release.")
+        print("Attended dry run only; one driver; hand at E-stop for the entire sequence.")
+    else:
+        print("CHATTERBOX MODE: no hardware connection, ODTC call, or motion.")
+    await run_full("star" if args.mode in ("star", "run") else "chatterbox")
+
+
+def main():
+    args = build_parser().parse_args()
+    asyncio.run(main_async(args))
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

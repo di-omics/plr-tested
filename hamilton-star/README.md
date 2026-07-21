@@ -63,6 +63,19 @@ rail35 pos3 = trough/reservoir
 
 ## Current targeted PCR entrypoints
 
+- `starlab_live/run_ampseq_odtc_LIDDED_1col_full_v2_singlehome_dry.py`
+  - Continuous one-column dry composition: PCR1 master mix, complete lidded
+    ODTC round trip, magnet cleanup round trip, PCR2 master mix, and a second
+    lidded ODTC round trip in one setup/deck/session.
+  - Does not contact, initialize, heat, thermocycle, or move the ODTC door.
+  - Keeps CellTreat liquid geometry while a PLR 0.2.1 model-frame lock makes
+    the 20 iSWAP pickup/release commands exactly match the hardware-proven
+    Corning stand-in component commands.
+  - The equivalent 13-subprocess choreography passed physically on 2026-07-16.
+    The single-session composition is pending its first attended STAR dry run.
+  - Exact intent, full-deck, and labware tokens are required. See the Targeted PCR
+    single-home dry run card before any physical command.
+
 - `protocols/bio_validation0/ampseq/01_ampseq_pcr1_mastermix_col1.py`
   - Validated dry.
   - p50 transfer: 22.5 uL x8 complete PCR1 master mix.

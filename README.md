@@ -67,7 +67,7 @@ Inheco ODTC:
 | ODTC Reset + Initialize with a plate and lid seated in the nest | benign, proven on the instrument |
 | The two thermal programs run **inside** the choreography (`--thermocycle`) | written, reached STEP 2t clean, stopped in pre-warm on purpose; not yet run to completion |
 | A the kit user guide program run at real temperatures; ODTC door move | written, not yet run |
-| STAR iSWAP handoff into the ODTC | plate-move legs drafted, geometry not yet tuned on hardware |
+| STAR iSWAP handoff into the ODTC | forward and return geometry tuned on hardware; passed in the full lidded choreography |
 
 Tecan Infinite 200 PRO (first contact 2026-07-11 read-only; stage first moved 2026-07-16
 from `starpi2`, the second Pi, which is where the reader now lives):
