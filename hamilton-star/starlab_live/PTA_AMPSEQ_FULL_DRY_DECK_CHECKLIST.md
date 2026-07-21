@@ -6,21 +6,29 @@ labware. It is not a wet whole-genome sequencing run.
 
 ## Put these items on the deck
 
-Set the deck exactly as listed before starting either phase. `pos` is the
-zero-based carrier position used by the validated PyLabRobot deck model.
+Set the deck exactly as listed before starting either phase. Rail numbers match
+the printed labels on the Hamilton STAR deck. Carrier position codes are
+zero-based: `p0` is the first slot, `p1` is the second, `p2` is the third,
+`p3` is the fourth, and `p4` is the fifth. Thus `r35p0` means labeled rail 35,
+software position 0, the first carrier slot.
 
-| Rail | Pos | Put this here | Exact condition before release |
-| ---: | ---: | --- | --- |
-| 48 | 0 | Hamilton p10 filter tip rack | Columns 1 and 2 fully populated and undamaged |
-| 48 | 1 | Hamilton p50 filter tip rack | Columns 1 and 2 fully populated and undamaged |
-| 48 | 2 | Hamilton p300 filter tip rack | Column 1 fully populated and undamaged |
-| 35 | 0 | CellTreat 229195/229196 96-well work plate | Bare, empty, square in the site, and sacrificial |
-| 35 | 1 | CellTreat 229195/229196 96-well source plate | Empty for dry work; whole-genome amplification addresses columns 1 and 3 and Targeted PCR addresses column 1 |
-| 35 | 2 | Verified magnetic plate/block | Installed correctly; landing site empty |
-| 35 | 3 | CellTreat 12-well trough | Empty for dry work; modeled wells are A1, A2, A3, A4, and A12 |
-| 35 | 4 | Corning 3603 park plate with the correct lid | Park plate square; lid seated completely flat |
-| 27 | 2 | HHS nest | Installed, empty, open, and idle; no heat or shake program |
-| 20 | 1 | ODTC nest | Empty, open, cool, and idle; no ODTC connection or program |
+Position codes do not encode left/right/front/back. Follow the approved deck
+map and the app's complete location label; never infer physical orientation
+from the number. HHS and ODTC rows identify validated modeled targets rather
+than removable carrier slots.
+
+| Labeled rail | App location label | Put this here | Exact condition before release |
+| ---: | --- | --- | --- |
+| 48 | Rail 48 · p0 (first slot) | Hamilton 10 µL filter-tip rack (P10) | Tip-rack columns 1 and 2 (A1:H1 and A2:H2) fully populated and undamaged |
+| 48 | Rail 48 · p1 (second slot) | Hamilton 50 µL filter-tip rack (P50) | Tip-rack columns 1 and 2 (A1:H1 and A2:H2) fully populated and undamaged |
+| 48 | Rail 48 · p2 (third slot) | Hamilton 300 µL filter-tip rack (P300) | Tip-rack column 1 (A1:H1) fully populated and undamaged |
+| 35 | Rail 35 · p0 (first slot) | CellTreat 229195/229196 96-well work plate | Bare, empty, square in the site, and sacrificial |
+| 35 | Rail 35 · p1 (second slot) | CellTreat 229195/229196 96-well source plate | Empty for dry work; whole-genome amplification addresses columns 1 and 3 and Targeted PCR addresses column 1 |
+| 35 | Rail 35 · p2 (third slot) | Verified magnetic plate/block | Magnet stays installed and aligned; its plate landing area contains no plate or lid |
+| 35 | Rail 35 · p3 (fourth slot) | CellTreat 12-well trough | Empty for dry work; modeled wells are A1, A2, A3, A4, and A12 |
+| 35 | Rail 35 · p4 (fifth slot) | Corning 3603 park plate with the correct lid | Park plate is the lid support; seat it square with the lid completely flat |
+| 27 | Rail 27 · p2 (HHS modeled target) | HHS nest | HHS stays installed; landing nest contains no plate or lid, is open and idle; no heat or shake program |
+| 20 | Rail 20 · p1 (ODTC modeled target) | ODTC nest | ODTC stays installed; landing nest contains no plate or lid, is open, cool and idle; no ODTC connection or program |
 
 Then confirm all of the following:
 
@@ -29,8 +37,10 @@ Then confirm all of the following:
       Python driver is running.
 - [ ] The work plate is CellTreat and the park plate/lid is Corning 3603. The
       model combination is deliberate and geometry-locked.
-- [ ] HHS uses the current real-plate target x12.0, y45.5, z17.0. Do not use
-      the older y54.5 engineering value.
+- [ ] HHS uses the locked runner offsets x12.0, y45.5, z17.0. These are
+      software reference values, not manual placement measurements; do not
+      adjust hardware or infer orientation from them. Do not use the older
+      y54.5 engineering value.
 - [ ] A trained operator will watch the entire run with the E-stop immediately
       reachable. Nobody will leave the deck.
 - [ ] The physical command will run inside a durable Pi-local `tmux` session.
@@ -40,7 +50,7 @@ Then confirm all of the following:
 ## What one-column means
 
 The current release candidate supports a requested sample count of 1 through 8,
-but the 8-channel head still actuates the complete A1:H1 column. Any positions
+but the 8-channel head still actuates the complete A1:H1 column. Any wells
 not assigned to a sample are explicit dry blanks. A count above 8 has no
 released build and must be refused until a multi-column runner passes offline,
 Chatterbox, and attended physical validation.

@@ -3,7 +3,7 @@
 A local, planning-only wizard for the combined Hamilton STAR whole-genome amplification + HHS and
 Targeted PCR + ODTC dry workflow.
 
-The operator enters a sample count. Planner v0.2 lays out 1 through 96
+The operator enters a sample count. Planner v0.2.1 lays out 1 through 96
 biological samples column-major across as many as 12 eight-channel columns,
 identifies sample and blank wells, and presents the corresponding planning
 information. Sample count means biological samples only. The app does not add
@@ -21,7 +21,7 @@ combined physical-validation manifest. Adding such a manifest in the future
 will make the release visible, but this planning-only package will still need a
 separately reviewed execution layer before it can move metal.
 
-## Planner v0.2 capacity
+## Planner v0.2.1 capacity
 
 - Accepted planning input: 1 through 96 biological samples.
 - NTC/control allocation: none.
@@ -54,6 +54,21 @@ SHA sign-off lines. Browser print can send it to paper or save it as a PDF.
 
 For plans of 9 through 96 samples, the printable validated checklist remains
 locked because no combined multi-column hardware release exists yet.
+
+### Deck terminology built into the app
+
+- **Rail 35** means the Hamilton STAR deck rail with the printed label `35`.
+- Carrier positions are zero-based: `p0` = first slot, `p1` = second,
+  `p2` = third, `p3` = fourth, and `p4` = fifth.
+- **Rail 35 · p2 (third slot)** therefore means the carrier on labeled rail 35,
+  software position 2, which is its third slot.
+- HHS and ODTC rows say **modeled target** instead of carrier slot because those
+  devices remain installed.
+- Position codes do not encode left/right/front/back. Follow the validated deck
+  map and the full location label shown on each row.
+
+The shareable package also includes the standalone
+[one-column full dry setup guide](../../hamilton-star/starlab_live/PTA_AMPSEQ_FULL_DRY_DECK_CHECKLIST.md).
 
 ## Run locally
 

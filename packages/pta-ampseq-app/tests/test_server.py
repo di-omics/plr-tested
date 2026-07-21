@@ -74,6 +74,14 @@ class PlanningServerTests(unittest.TestCase):
         self.assertEqual(
             payload["constraints"]["current_runner_column_count_max"], 1
         )
+        deck_locations = {
+            item["key"]: item["location_label"] for item in payload["deck"]["items"]
+        }
+        self.assertEqual(deck_locations["r48p0_p10"], "Rail 48 · p0 (first slot)")
+        self.assertEqual(
+            deck_locations["r27p2_hhs"],
+            "Rail 27 · p2 (HHS modeled target)",
+        )
         self.assertFalse(payload["release"]["available"])
         self.assertEqual(headers["X-Frame-Options"], "DENY")
         self.assertIn("default-src 'self'", headers["Content-Security-Policy"])
@@ -218,6 +226,12 @@ class PlanningServerTests(unittest.TestCase):
         self.assertIn('max="96"', html)
         self.assertIn('aria-label="96-well plate plan"', html)
         self.assertIn('id="runner-boundary"', html)
+        self.assertIn('id="setup-key"', html)
+        self.assertIn("Rails use the printed deck labels", html)
+        self.assertIn("p0 = first carrier slot", html)
+        self.assertIn("p1 = second", html)
+        self.assertIn("position codes do not encode physical direction", html)
+        self.assertIn("item.location_label", html)
         self.assertIn('class="flower-mark"', html)
         self.assertIn("stroke-width: 1.55", html)
         self.assertIn("Print / save setup sheet", html)

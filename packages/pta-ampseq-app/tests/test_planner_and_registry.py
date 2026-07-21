@@ -173,6 +173,37 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(positions, expected)
         self.assertEqual(len(positions), len(deck.items))
         self.assertEqual(len(keys), len(deck.items))
+        positions_by_rail = {}
+        for item in deck.items:
+            positions_by_rail.setdefault(item.rail, []).append(item.position)
+        self.assertEqual(
+            positions_by_rail,
+            {48: [0, 1, 2], 35: [0, 1, 2, 3, 4], 27: [2], 20: [1]},
+        )
+
+    def test_deck_location_labels_translate_zero_based_positions(self):
+        deck = combined_dry_deck()
+        expected = {
+            "r48p0_p10": "Rail 48 · p0 (first slot)",
+            "r48p1_p50": "Rail 48 · p1 (second slot)",
+            "r48p2_p300": "Rail 48 · p2 (third slot)",
+            "r35p0_work": "Rail 35 · p0 (first slot)",
+            "r35p1_source": "Rail 35 · p1 (second slot)",
+            "r35p2_magnet": "Rail 35 · p2 (third slot)",
+            "r35p3_trough": "Rail 35 · p3 (fourth slot)",
+            "r35p4_lid": "Rail 35 · p4 (fifth slot)",
+            "r27p2_hhs": "Rail 27 · p2 (HHS modeled target)",
+            "r20p1_odtc": "Rail 20 · p1 (ODTC modeled target)",
+        }
+
+        self.assertEqual(
+            {item.key: item.location_label for item in deck.items},
+            expected,
+        )
+        self.assertEqual(
+            {item["key"]: item["location_label"] for item in deck.to_dict()["items"]},
+            expected,
+        )
 
     def test_deck_calls_out_park_plate_hhs_and_odtc(self):
         deck = combined_dry_deck()
@@ -183,6 +214,8 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("idle", by_key["r27p2_hhs"].instruction.lower())
         self.assertIn("empty", by_key["r20p1_odtc"].instruction.lower())
         self.assertIn("idle", by_key["r20p1_odtc"].instruction.lower())
+        self.assertIn("keep the hhs installed", by_key["r27p2_hhs"].instruction.lower())
+        self.assertIn("keep the odtc installed", by_key["r20p1_odtc"].instruction.lower())
 
     def test_no_validated_release_manifest_means_locked(self):
         release = release_summary()

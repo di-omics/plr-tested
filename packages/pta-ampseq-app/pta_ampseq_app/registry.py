@@ -29,6 +29,7 @@ class DeckItem:
     key: str
     rail: int
     position: int
+    location_label: str
     role: str
     instruction: str
     why: str
@@ -38,6 +39,7 @@ class DeckItem:
             "key": self.key,
             "rail": self.rail,
             "position": self.position,
+            "location_label": self.location_label,
             "role": self.role,
             "instruction": self.instruction,
             "why": self.why,
@@ -126,12 +128,15 @@ def combined_dry_deck() -> DeckDefinition:
         key = entry.get("key")
         rail = entry.get("rail")
         position = entry.get("position")
+        location_label = entry.get("location_label")
         if not isinstance(key, str) or not key:
             raise RegistryError("each deck item needs a non-empty key")
         if isinstance(rail, bool) or not isinstance(rail, int):
             raise RegistryError(f"deck item {key!r} has an invalid rail")
         if isinstance(position, bool) or not isinstance(position, int):
             raise RegistryError(f"deck item {key!r} has an invalid position")
+        if not isinstance(location_label, str) or not location_label.strip():
+            raise RegistryError(f"deck item {key!r} has an invalid location label")
         if key in seen_keys:
             raise RegistryError(f"duplicate deck key {key!r}")
         coordinate = (rail, position)
@@ -144,6 +149,7 @@ def combined_dry_deck() -> DeckDefinition:
                 key=key,
                 rail=rail,
                 position=position,
+                location_label=location_label,
                 role=str(entry["role"]),
                 instruction=str(entry["instruction"]),
                 why=str(entry["why"]),
