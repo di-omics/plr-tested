@@ -25,3 +25,17 @@ The safe first checks are the existing `--mode deck`, `--dry`, `--sim-lh`, and O
 `--dry` modes. They do not establish liquid, geometry, lid, heating, or biological
 validity.
 
+## Same-day STAR dry rehearsal
+
+With the operator physically present, stage the empty deck and run:
+
+```bash
+./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py --deck
+./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py \
+  --confirm RUN_EMSEQ_ODTC_FULL
+```
+
+The second command performs real STAR/iSWAP motion with empty labware, returns tips, and
+does not run ODTC heating. Thermal steps are printed as operator notes. Keep a human at
+the E-stop for the entire rehearsal and reconcile the physical plate before resuming
+after any failure.

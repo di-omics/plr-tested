@@ -29,6 +29,8 @@ from pathlib import Path
 #
 # Modes:
 #   --print              print the ordered plan and exit. No execution. Review this first.
+#   --deck               initialize the STAR for each distinct deck/geometry view and print
+#                        all assignments. No arm, channel, iSWAP, or liquid movement.
 #   --sim-lh             run the liquid-handling legs on the chatterbox backend (--dry);
 #                        iSWAP and ODTC legs become printed notes. Fully local, no hardware.
 #   --confirm RUN_EMSEQ_ODTC_FULL
@@ -176,6 +178,42 @@ def build_plan(sim_lh: bool):
     return plan
 
 
+def build_deck_preflight():
+    """Each distinct deck assignment the 36-leg rehearsal depends on, motion-free.
+
+    The scoped scripts remain the source of geometry truth. Running each once in deck
+    mode catches missing resources/imports on the Pi and prints the exact coordinates
+    the following dry rehearsal will use without issuing a pipetting or iSWAP command.
+    """
+    return [
+        ("note", "physical deck checklist",
+         "Stage the complete dry deck before continuing:\n"
+         "  rail48 pos0 = p10 filter tips\n"
+         "  rail48 pos1 = p50 filter tips\n"
+         "  rail48 pos2 = p300 filter tips\n"
+         "  rail35 pos0 = EMPTY sacrificial 96-well work plate\n"
+         "  rail35 pos1 = EMPTY reagent-source 96-well plate/strip\n"
+         "  rail35 pos2 = magnetic rack/nest, empty and seated\n"
+         "  rail35 pos3 = EMPTY/DRY 12-well reservoir\n"
+         "  rail20 pos1 = ODTC nest, empty, open, and clear\n"
+         "Do not load samples, reagents, beads, ethanol, or formamide."),
+        ("run", "reagent-add deck assignment",
+         [str(REAGENTS), "--mode", "deck"]),
+        ("run", "SPRI cleanup deck assignment",
+         [str(CLEANUP), "--cleanup", "post-ligation", "--mode", "deck"]),
+        ("run", "ODTC forward iSWAP coordinate print",
+         [str(ODTC_FWD), "--mode", "deck"] + ODTC_RAIL),
+        ("run", "ODTC return iSWAP coordinate print",
+         [str(ODTC_RET), "--mode", "deck"] + ODTC_RAIL
+         + ["--odtc-pickup-z-offset-mm", "0"]),
+        ("run", "magnet forward iSWAP coordinate print",
+         [str(MAG_FWD), "--mode", "deck"]),
+        ("run", "magnet return iSWAP coordinate print",
+         [str(MAG_RET), "--mode", "deck", "--pickup-z-offset-mm", "14.0",
+          "--drop-z-offset-mm", "8.5"]),
+    ]
+
+
 def print_plan(plan):
     print("")
     print("EM-seq v2 (UltraShear-coupled) full column-1 choreography plan")
@@ -211,10 +249,13 @@ def main():
     parser = argparse.ArgumentParser(
         description="EM-seq v2 (UltraShear-coupled) column-1 full choreography with ODTC and SPRI handoffs, dry."
     )
-    parser.add_argument("--print", dest="print_only", action="store_true",
-                        help="Print the ordered plan and exit. No execution.")
-    parser.add_argument("--sim-lh", action="store_true",
-                        help="Run liquid-handling legs on the chatterbox backend; iSWAP/ODTC legs become notes. Local, no hardware.")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--print", dest="print_only", action="store_true",
+                       help="Print the ordered plan and exit. No execution.")
+    modes.add_argument("--deck", action="store_true",
+                       help="Run every distinct deck assignment/coordinate print on the STAR. No movement.")
+    modes.add_argument("--sim-lh", action="store_true",
+                       help="Run liquid-handling legs on the chatterbox backend; iSWAP/ODTC legs become notes. Local, no hardware.")
     parser.add_argument("--confirm", default="",
                         help=f"Required to run the dry rehearsal on hardware: --confirm {CONFIRM_PHRASE}")
     args = parser.parse_args()
@@ -223,6 +264,18 @@ def main():
 
     if args.print_only:
         print_plan(plan)
+        return
+
+    if args.deck:
+        print("")
+        print("EM-seq v2 FULL-DECK PREFLIGHT (REAL STAR BACKEND, NO MOVEMENT)")
+        print("Each scoped script initializes the STAR, assigns its resources, prints coordinates,")
+        print("and exits in --mode deck. Watch the console for any resource or geometry mismatch.")
+        for kind, label, payload in build_deck_preflight():
+            run_step(kind, label, payload)
+        print("")
+        print("SUCCESS: all EM-seq dry-run deck/coordinate views initialized without movement.")
+        print(f"Next, with the staged dry deck and a human at the E-stop: --confirm {CONFIRM_PHRASE}")
         return
 
     print("")
