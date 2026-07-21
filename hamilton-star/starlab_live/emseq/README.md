@@ -40,8 +40,9 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
 - `emseq_cleanup.py` - the three SPRI cleanups. `--cleanup {post-ligation,post-tet2,post-pcr}`
   selects the bead ratio and elution volume; `--mode all` runs the motion sequence.
 - `run_emseq_odtc_1col_full_dry.py` - the full choreography (36 executed legs + ODTC notes).
-  `--print` shows the plan, `--sim-lh` runs the liquid-handling legs on the chatterbox,
-  `--confirm RUN_EMSEQ_ODTC_FULL` runs the dry rehearsal on hardware.
+  `--print` shows the plan, `--deck` initializes and prints every distinct real-STAR deck
+  assignment without movement, `--sim-lh` runs the liquid-handling legs on the chatterbox,
+  and `--confirm RUN_EMSEQ_ODTC_FULL` runs the dry rehearsal on hardware.
 - ODTC thermal programs live in `instrument-integrations/odtc/odtc_protocols.py`
   (`emseq-shear`, `emseq-endprep`, `emseq-ligation`, `emseq-tet2`, `emseq-tet2-stop`,
   `emseq-denature`, `emseq-deaminate`, `emseq-pcr`) and run via `05_odtc_run_protocol.py`.
@@ -172,12 +173,15 @@ Scripts execute on the Pi wired to the instruments, via each tree's `run_on_pi.s
 # review first
 python run_emseq_odtc_1col_full_dry.py --print
 
+# on the Pi: initialize every deck/geometry view, no movement
+./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py --deck
+
 # exercise the liquid-handling legs locally, no hardware
 python run_emseq_odtc_1col_full_dry.py --sim-lh
 
-# on the Pi: deck check every leg (assignment only, no motion)
-./hamilton-star/run_on_pi.sh starlab_live/emseq/emseq_reagent_adds.py --mode deck
-./hamilton-star/run_on_pi.sh starlab_live/emseq/emseq_cleanup.py --cleanup post-pcr --mode deck
+# motion-only dry rehearsal on the real STAR; human present at the E-stop
+./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py \
+  --confirm RUN_EMSEQ_ODTC_FULL
 
 # an ODTC program (this heats; human at the E-stop)
 ./instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-shear --dry
@@ -189,7 +193,7 @@ The reagent PCR cycle count is input-dependent (E8015: 200 ng 4-5, 50 ng 5-6, 10
 ## Safety
 
 Same rules as the rest of this repo. Assume a script drives real hardware unless it names
-an exception (`--mode deck`, `--dry`, `--sim-lh`, `--print`). Never run unattended, a
+an exception (`--mode deck`, `--deck`, `--dry`, `--sim-lh`, `--print`). Never run unattended, a
 person watches with a hand near the E-stop. Run `--mode deck` first. The full choreography
 moves the arm through 8 ODTC round trips and 3 magnet round trips and is gated behind
 `--confirm RUN_EMSEQ_ODTC_FULL`. The ODTC block reaches 98 C on the PCR (1 C under the
