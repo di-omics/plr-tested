@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "decks": {
+    "pta_ampseq_combined_dry_v1": {
+      "label": "Combined PTA + HHS and AmpSeq + ODTC one-column dry deck",
+      "mode": "dry_planning_only",
+      "items": [
+        {
+          "key": "r48p0_p10",
+          "rail": 48,
+          "position": 0,
+          "role": "p10 filter-tip rack",
+          "instruction": "Seat the p10 filter-tip rack; columns 1 and 2 must be intact.",
+          "why": "The PTA dry lysis and reaction motions use these two tip columns and return them."
+        },
+        {
+          "key": "r48p1_p50",
+          "rail": 48,
+          "position": 1,
+          "role": "p50 filter-tip rack",
+          "instruction": "Seat the p50 filter-tip rack; columns 1 and 2 must be intact.",
+          "why": "The AmpSeq PCR1 and PCR2 dry master-mix motions use these positions."
+        },
+        {
+          "key": "r48p2_p300",
+          "rail": 48,
+          "position": 2,
+          "role": "p300 filter-tip rack",
+          "instruction": "Seat the p300 filter-tip rack; column 1 must be intact.",
+          "why": "The dry cleanup rehearsal uses this rack and returns tips."
+        },
+        {
+          "key": "r35p0_work",
+          "rail": 35,
+          "position": 0,
+          "role": "CellTreat 229195 work plate",
+          "instruction": "Seat one bare, empty sacrificial work plate squarely in the site.",
+          "why": "This is the single plate moved through the HHS, magnet, and ODTC landing sites."
+        },
+        {
+          "key": "r35p1_source",
+          "rail": 35,
+          "position": 1,
+          "role": "CellTreat 229195 dry source plate",
+          "instruction": "Seat the empty source plate; PTA source columns 1 and 3 must be clear.",
+          "why": "The dry runner models PTA and AmpSeq source geometry here. No reagent is loaded."
+        },
+        {
+          "key": "r35p2_magnet",
+          "rail": 35,
+          "position": 2,
+          "role": "aligned magnet block",
+          "instruction": "Install and align the correct magnet block; leave its plate landing site empty.",
+          "why": "The work plate is delivered here for the AmpSeq cleanup rehearsal."
+        },
+        {
+          "key": "r35p3_trough",
+          "rail": 35,
+          "position": 3,
+          "role": "CellTreat 12-well trough",
+          "instruction": "Seat the empty trough; A1, A2, A3, A4, and A12 must be empty and clear.",
+          "why": "The dry cleanup models beads, ethanol, elution, and waste at these wells."
+        },
+        {
+          "key": "r35p4_lid",
+          "rail": 35,
+          "position": 4,
+          "role": "Corning 3603 park plate and lid",
+          "instruction": "Seat the park plate squarely with the correct lid flat, centered, and unable to rock.",
+          "why": "The iSWAP carries this lid to the HHS and ODTC plate, then returns it here."
+        },
+        {
+          "key": "r27p2_hhs",
+          "rail": 27,
+          "position": 2,
+          "role": "HHS landing nest",
+          "instruction": "Confirm the HHS nest is empty, open, idle, and clear through the iSWAP path.",
+          "why": "The PTA plate and lid land here. The dry sequence does not heat or shake the HHS."
+        },
+        {
+          "key": "r20p1_odtc",
+          "rail": 20,
+          "position": 1,
+          "role": "ODTC landing nest",
+          "instruction": "Confirm the ODTC nest is empty, open, cool, idle, and clear through the iSWAP path.",
+          "why": "The AmpSeq plate and lid land here twice. The dry sequence does not contact or heat the ODTC."
+        }
+      ],
+      "global_checks": [
+        {
+          "key": "channels_clear",
+          "instruction": "Confirm every pipetting channel is untipped.",
+          "why": "The modeled starting state assumes clear channels."
+        },
+        {
+          "key": "iswap_clear",
+          "instruction": "Confirm the iSWAP holds nothing and every transfer path is clear.",
+          "why": "A stale plate, lid, or obstruction makes the modeled deck state false."
+        },
+        {
+          "key": "carriers_locked",
+          "instruction": "Confirm all carriers are locked at rails 48, 35, 27, and 20.",
+          "why": "The validated geometry is tied to these exact carrier rails and positions."
+        },
+        {
+          "key": "dry_only",
+          "instruction": "Confirm there are no samples, reagents, ethanol, or water on the deck.",
+          "why": "This release envelope is an empty-labware dry rehearsal only."
+        },
+        {
+          "key": "operator_present",
+          "instruction": "A trained operator remains at the deck with immediate E-stop access.",
+          "why": "No software interface replaces continuous physical observation."
+        }
+      ]
+    }
+  }
+}
