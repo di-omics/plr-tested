@@ -25,6 +25,10 @@ Physical component evidence recorded 2026-07-21:
 
 The continuous composition must pass Chatterbox before STAR release. STAR mode
 requires exact intent, deck-state, and labware tokens.
+
+Continuous physical evidence recorded 2026-07-21: all six operations passed in
+one setup/deck/session with exit 0 and operator-confirmed final state (work
+plate r35p0, lid r35p4, HHS empty, tips returned, iSWAP parked).
 """
 
 from __future__ import annotations

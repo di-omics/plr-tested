@@ -1,7 +1,7 @@
 # whole-genome amplification + HHS lidded single-home dry run card
 
-Status: continuous composition passed full `STARChatterboxBackend` rehearsal on
-2026-07-21. Not yet run continuously on the physical STAR. Research use only.
+Status: continuous composition passed full `STARChatterboxBackend` rehearsal
+and an attended physical STAR dry run on 2026-07-21. Research use only.
 
 The component stages were run individually on the physical STAR on 2026-07-21:
 
@@ -9,7 +9,11 @@ The component stages were run individually on the physical STAR on 2026-07-21:
 - lid-on: first attempt returned `Plate not found` because the lid was not seated
   flat on its park plate; no code changed; reseated retry exited 0 and was visually confirmed
 - delid x12/y45.5/z16 to park drop z4: exit 0 and visually confirmed
-- plate return x12/y45.5/z10 to r35p0 drop z8.5: exit 0
+- plate return x12/y45.5/z10 to r35p0 drop z8.5: exit 0 and visually confirmed
+
+The subsequent continuous single-home run completed all six operations with
+exit 0. The operator confirmed work plate square at r35p0, lid flat at r35p4,
+HHS empty, tips returned, iSWAP parked, and no unexpected movement.
 
 The continuous runner changes session composition only. Its normalized eight
 iSWAP `C0PP`/`C0PR` Chatterbox commands exactly match the four individually run
@@ -99,6 +103,5 @@ state is reconciled.
 - iSWAP parked
 
 Record the commit SHA, operator, date/time, terminal exit, observed result of
-each mechanical leg, and any intervention. A successful continuous dry run is
-the release evidence needed before merging this choreography into the future
-whole-genome amplification + Targeted PCR team product.
+each mechanical leg, and any intervention. This successful continuous dry run
+is the whole-genome amplification release evidence for the future whole-genome amplification + Targeted PCR team product.
