@@ -191,7 +191,7 @@ The reagent PCR cycle count is input-dependent (E8015: 200 ng 4-5, 50 ng 5-6, 10
 Same rules as the rest of this repo. Assume a script drives real hardware unless it names
 an exception (`--mode deck`, `--dry`, `--sim-lh`, `--print`). Never run unattended, a
 person watches with a hand near the E-stop. Run `--mode deck` first. The full choreography
-moves the arm through 7 ODTC round trips and 3 magnet round trips and is gated behind
+moves the arm through 8 ODTC round trips and 3 magnet round trips and is gated behind
 `--confirm RUN_EMSEQ_ODTC_FULL`. The ODTC block reaches 98 C on the PCR (1 C under the
 99 C ceiling, expect "out of specification" warnings, not faults) and stays hot after a
 program ends. Only one process may drive an instrument at a time.
