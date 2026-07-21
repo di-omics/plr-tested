@@ -37,10 +37,13 @@ from pathlib import Path
 #   --confirm RUN_EMSEQ_ODTC_FULL
 #                        run the dry rehearsal on hardware: real iSWAP motion, LH legs with
 #                        tips returned and no reagents, ODTC thermal as operator notes.
+#   --labware-ack CELLTREAT_229195_WORK_SOURCE
+#                        required with --confirm so the earlier Cor/CellTreat mismatch
+#                        cannot silently reach hardware.
 #
 # FULL DECK required before a hardware run (all at once):
 #   rail48 pos0 = p10 tips        rail48 pos1 = p50 tips        rail48 pos2 = p300 tips
-#   rail35 pos0 = Cor_96_wellplate_360ul_Fb work plate (moves throughout the run)
+#   rail35 pos0 = CellTreat_96_wellplate_350ul_Fb work plate (moves throughout the run)
 #   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb reagent source (swap between legs)
 #   rail35 pos2 = magnet block (iSWAP target for the three cleanups)
 #   rail35 pos3 = 12-well reservoir (beads, 2x ethanol, elution buffer, waste)
@@ -69,6 +72,7 @@ MAG_RET = STARLAB / "test_iswap_plate_rail35pos2_mag_to_rail35pos0_variable.py"
 ODTC_RAIL = ["--odtc-rail", "20", "--odtc-position", "1"]
 
 CONFIRM_PHRASE = "RUN_EMSEQ_ODTC_FULL"
+LABWARE_ACK = "CELLTREAT_229195_WORK_SOURCE"
 
 
 def odtc_command(program: str) -> str:
@@ -190,14 +194,14 @@ def build_deck_preflight():
     return [
         ("note", "physical deck checklist",
          "Stage the complete dry deck before continuing:\n"
-         "  rail48 pos0 = p10 filter tips\n"
-         "  rail48 pos1 = p50 filter tips\n"
-         "  rail48 pos2 = p300 filter tips\n"
-         "  rail35 pos0 = EMPTY Cor_96_wellplate_360ul_Fb sacrificial work plate\n"
-         "  rail35 pos1 = EMPTY CellTreat_96_wellplate_350ul_Fb reagent-source plate\n"
-         "  rail35 pos2 = magnetic rack/nest, empty and seated\n"
-         "  rail35 pos3 = EMPTY/DRY 12-well reservoir\n"
-         "  rail20 pos1 = ODTC nest, empty, open, and clear\n"
+         "  rail48 p0 (first slot) = p10 filter tips\n"
+         "  rail48 p1 (second slot) = p50 filter tips\n"
+         "  rail48 p2 (third slot) = p300 filter tips\n"
+         "  rail35 p0 (first slot) = EMPTY CellTreat_96_wellplate_350ul_Fb sacrificial work plate\n"
+         "  rail35 p1 (second slot) = EMPTY CellTreat_96_wellplate_350ul_Fb reagent-source plate\n"
+         "  rail35 p2 (third slot) = magnetic rack/nest, empty and seated\n"
+         "  rail35 p3 (fourth slot) = EMPTY/DRY 12-well reservoir\n"
+         "  rail20 p1 (ODTC modeled target) = ODTC nest, empty, open, and clear\n"
          "Do not load samples, reagents, beads, ethanol, or formamide."),
         ("run", "reagent-add deck assignment",
          [str(REAGENTS), "--mode", "deck"]),
@@ -260,6 +264,11 @@ def main():
                        help="Run liquid-handling legs on the chatterbox backend; iSWAP/ODTC legs become notes. Local, no hardware.")
     parser.add_argument("--confirm", default="",
                         help=f"Required to run the dry rehearsal on hardware: --confirm {CONFIRM_PHRASE}")
+    parser.add_argument(
+        "--labware-ack",
+        default="",
+        help=f"Required hardware labware acknowledgement: --labware-ack {LABWARE_ACK}",
+    )
     args = parser.parse_args()
 
     plan = build_plan(sim_lh=args.sim_lh)
@@ -290,11 +299,12 @@ def main():
     if args.sim_lh:
         print("\n--sim-lh: liquid-handling legs run on the chatterbox (no hardware); iSWAP and ODTC")
         print("legs are printed as notes only.")
-    elif args.confirm != CONFIRM_PHRASE:
+    elif args.confirm != CONFIRM_PHRASE or args.labware_ack != LABWARE_ACK:
         print("")
         print("Refusing to run on hardware. This moves the arm through many transfers, eight ODTC")
         print("round trips, and three magnet round trips. Review the plan first with --print, run")
-        print(f"each leg's --mode deck, stage the full deck, then add: --confirm {CONFIRM_PHRASE}")
+        print("each leg's --mode deck, stage both physical CellTreat 229195/229196 plates, then add:")
+        print(f"  --confirm {CONFIRM_PHRASE} --labware-ack {LABWARE_ACK}")
         print("Or exercise the liquid-handling legs locally with --sim-lh.")
         return
 

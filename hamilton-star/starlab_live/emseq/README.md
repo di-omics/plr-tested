@@ -43,7 +43,8 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
   `--print` shows the plan, `--deck` initializes and prints every distinct real-STAR deck
   assignment (normal setup/homing, no protocol transfer), `--sim-lh` runs the
   liquid-handling legs on the chatterbox,
-  and `--confirm RUN_EMSEQ_ODTC_FULL` runs the dry rehearsal on hardware.
+  and `--confirm RUN_EMSEQ_ODTC_FULL --labware-ack CELLTREAT_229195_WORK_SOURCE`
+  runs the dry rehearsal on hardware.
 - ODTC thermal programs live in `instrument-integrations/odtc/odtc_protocols.py`
   (`emseq-shear`, `emseq-endprep`, `emseq-ligation`, `emseq-tet2`, `emseq-tet2-stop`,
   `emseq-denature`, `emseq-deaminate`, `emseq-pcr`) and run via `05_odtc_run_protocol.py`.
@@ -51,18 +52,19 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
 ## Deck (current 35/48 deck)
 
 ```
-rail48 pos0 = p10 tips            rail48 pos1 = p50 tips        rail48 pos2 = p300 tips
-rail35 pos0 = Cor 360 uL work plate (moves)
-rail35 pos1 = CellTreat 350 uL reagent source (swap between reagent legs)
-rail35 pos2 = magnet              rail35 pos3 = 12-well reservoir
-rail20 pos1 = ODTC nest (empty, open to receive the plate)
+rail48 p0 (first slot) = p10 tips     p1 (second) = p50     p2 (third) = p300
+rail35 p0 (first slot) = CellTreat 350 uL work plate (moves)
+rail35 p1 (second slot) = CellTreat 350 uL reagent source (swap between legs)
+rail35 p2 (third slot) = magnet       p3 (fourth slot) = 12-well reservoir
+rail20 p1 (ODTC modeled target) = ODTC nest (empty, open to receive the plate)
 ```
 
-Exact PLR resources: the single moving work plate is `Cor_96_wellplate_360ul_Fb` in
-reagent-add, cleanup, and every iSWAP leg. The stationary source is
-`CellTreat_96_wellplate_350ul_Fb`; the reservoir is
-`CellTreat_12_troughplate_15000ul_Vb`. Do not substitute the moving plate for the dry
-rehearsal: the confirmed iSWAP coordinates are tied to the Cor 360 uL model.
+Exact physical liquid-handling resources: both the moving work plate and stationary
+source are `CellTreat_96_wellplate_350ul_Fb`; the reservoir is
+`CellTreat_12_troughplate_15000ul_Vb`. This matches the current working AmpSeq
+playbook. Its subprocess iSWAP legs intentionally use the Cor 360 resource as a motion
+command stand-in for the physical CellTreat plate; EM-seq reuses those exact legs. Do
+not put a Cor plate at rail35 p0, and do not substitute either CellTreat plate.
 
 Reservoir map (rail35 pos3): A1 beads, A2 ethanol wash 1, A3 ethanol wash 2, A4 elution
 buffer, A12 waste.
@@ -128,11 +130,12 @@ STAR liquid handling (`hamilton-star/starlab_live/emseq`):
 
 Known gaps that MUST be closed on hardware before trusting a real run:
 
-- Dispense geometry is reused verbatim from the ampseq/PTA-WGA column-1 adds, which were
-  tuned for adding into a small (2.5-3 uL) starting volume. Several EM-seq adds go into a
-  much fuller well (pcr-mm 45 uL into 40 uL; ligation-mm 31 uL into 51.5 uL). The
-  near-bottom dispense height (0.5 mm) needs tuning for high-volume adds, one step at a
-  time, before a wet run.
+- Source and destination plate models and heights now follow the working AmpSeq logic.
+  The p50 path is source 0.0 mm / destination 1.5 mm; AmpSeq raised the destination from
+  0.5 mm after the lower value crushed tips. The proven p10 path remains source 0.0 mm /
+  destination 0.5 mm. Several EM-seq adds enter a much fuller well (pcr-mm 45 uL into
+  45 uL; ligation-mm 31 uL into 51.5 uL), so submergence, splash, and withdrawal still
+  need stepwise dye/gravimetric tuning before a wet run.
 - No on-deck mixing. The manual asks for 10x pipette mixing at most steps; these scripts
   add and blow out only. Mixing is an operator step until tuned.
 - SPRI cleanup does not model the final "transfer clear eluate off the beads to a fresh
@@ -189,7 +192,8 @@ python run_emseq_odtc_1col_full_dry.py --sim-lh
 
 # motion-only dry rehearsal on the real STAR; human present at the E-stop
 ./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py \
-  --confirm RUN_EMSEQ_ODTC_FULL
+  --confirm RUN_EMSEQ_ODTC_FULL \
+  --labware-ack CELLTREAT_229195_WORK_SOURCE
 
 # an ODTC program (this heats; human at the E-stop)
 ./instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-shear --dry
