@@ -35,7 +35,8 @@ With the operator physically present, stage the empty deck and run:
   --confirm RUN_EMSEQ_ODTC_FULL
 ```
 
-The second command performs real STAR/iSWAP motion with empty labware, returns tips, and
-does not run ODTC heating. Thermal steps are printed as operator notes. Keep a human at
-the E-stop for the entire rehearsal and reconcile the physical plate before resuming
-after any failure.
+The first command uses the real STAR backend. Normal setup/homing can occur, but every
+scoped leg exits in deck mode without pipetting or iSWAP transfer. The second command
+performs real STAR/iSWAP motion with empty labware, returns tips, and does not run ODTC
+heating. Thermal steps are printed as operator notes. Keep a human at the E-stop for the
+entire rehearsal and reconcile the physical plate before resuming after any failure.
