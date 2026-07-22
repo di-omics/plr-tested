@@ -17,7 +17,8 @@ import pylabrobot.resources as plr_resources
 
 # EM-seq v2 (UltraShear-coupled) - SPRI bead cleanup, column 1 only, on the magnet.
 #
-# STATUS: written, simulation-first. NOT yet run on hardware. See emseq/README.md.
+# STATUS: all three presets completed as empty dry motion in the physical full choreography
+# on 2026-07-21. No liquid was present; wet cleanup remains unvalidated. See emseq/qc/.
 #
 # What this is
 # ------------

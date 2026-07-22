@@ -6,7 +6,8 @@ from pathlib import Path
 # EM-seq v2 (UltraShear-coupled) column-1 full choreography, with the ODTC thermocycler
 # and SPRI cleanup handoffs in order. Single column, dry.
 #
-# STATUS: written, simulation-first. NOT yet run on hardware. See emseq/README.md.
+# STATUS: full empty-deck dry choreography passed on the physical STAR on 2026-07-21.
+# No liquid or ODTC heat was run; wet execution remains blocked. See emseq/qc/README.md.
 #
 # What this is
 # ------------
@@ -294,7 +295,7 @@ def main():
     print("EM-seq v2 FULL CHOREOGRAPHY, COLUMN 1, DRY")
     print("Reagent adds -> ODTC out/back (x8 programs) -> 3x magnet + SPRI cleanup out/back.")
     print("Every leg runs its own scoped script; geometry is not re-derived here.")
-    print("STATUS: written, simulation-first, NOT yet run on hardware. Tune each leg before trusting it.")
+    print("STATUS: physical empty-deck dry choreography passed 2026-07-21; wet/heat remain unvalidated.")
 
     if args.sim_lh:
         print("\n--sim-lh: liquid-handling legs run on the chatterbox (no hardware); iSWAP and ODTC")

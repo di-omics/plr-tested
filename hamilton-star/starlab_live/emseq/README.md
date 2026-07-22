@@ -3,11 +3,13 @@
 End-to-end liquid handling and thermocycling for NEBNext Enzymatic Methyl-seq v2 with
 UltraShear enzymatic fragmentation upstream, single column, on the current 35/48 deck.
 
-Status: written and simulation-first. Nothing here has run on the instrument yet. Every
-script runs on the STAR chatterbox backend (`--dry`) and every ODTC program runs on the
-thermocycler chatterbox backend (`--dry`), but no leg has been tuned or confirmed on
-hardware. See the status table below. This directory follows the repo rule: work that has
-not met the instrument says so, and stays marked that way until a run says otherwise.
+Status: **full physical empty-deck dry choreography passed on the Hamilton STAR on
+2026-07-21**: 36 of 36 legs, all 11 reagent-add modes, all three cleanup presets, eight
+ODTC round trips, and three magnet round trips. The plate self-returned to rail35 p0 and
+the log had no command or USB fault. See [`qc/`](qc/) for the raw instrument log and
+judgment record. No liquid or ODTC heat ran, so wet, thermal, and biological execution
+remain unvalidated and blocked. The chatterbox simulations remain the compute-level
+checks described below.
 
 ## What this automates
 
@@ -106,9 +108,9 @@ programs cite the kit user guide.
 
 ## What "tested" means here (status)
 
-Nothing below is validated. "sim" = ran on a device-free chatterbox backend on this
-machine, which proves the stage/step and command structure only, not geometry, not the
-lid, not heat, not liquid classes.
+"sim" means a device-free chatterbox run and proves command structure only. "physical
+dry" means the empty-deck motion ran on the real STAR with an operator present; it proves
+the recorded motion path completed, not wet accuracy, heat, timing, or chemistry.
 
 ODTC thermal programs (`instrument-integrations/odtc`):
 
@@ -125,8 +127,10 @@ STAR liquid handling (`hamilton-star/starlab_live/emseq`):
 | All 11 reagent-add modes, `--mode deck` and `--dry` | passed, sim |
 | All 3 SPRI cleanups, `--mode all --dry` | passed, sim |
 | Full choreography liquid-handling legs, `--sim-lh` (14 legs, exit 0) | passed, sim |
-| Any reagent add or cleanup on the instrument | written, not yet run |
-| iSWAP handoff into the ODTC nest for the EM-seq plate | reuses ampseq-confirmed legs, not re-run for this flow |
+| Full 36-leg choreography: 11 adds, 3 cleanups, 8 ODTC round trips, 3 magnet round trips | **passed, physical dry, 2026-07-21** ([raw evidence and boundaries](qc/)) |
+| All 11 reagent adds and all 3 cleanup presets on the instrument | passed, physical dry inside the full choreography; no liquid present |
+| iSWAP handoff into the ODTC nest for the EM-seq plate | passed across 8 physical dry round trips using the Targeted PCR geometry |
+| Any wet reagent add or cleanup on the instrument | written, not yet run |
 
 Known gaps that MUST be closed on hardware before trusting a real run:
 
@@ -140,9 +144,10 @@ Known gaps that MUST be closed on hardware before trusting a real run:
   add and blow out only. Mixing is an operator step until tuned.
 - SPRI cleanup does not model the final "transfer clear eluate off the beads to a fresh
   column" step, or the RT bead incubation and air-dry timings. Those are operator/off-deck.
-- The ODTC child-location coordinate is still a placeholder in the repo
-  (`ODTC_CHILD_LOCATION_IS_MEASURED = False`); the iSWAP-into-ODTC geometry is inherited
-  from the targeted PCR choreography and has not been re-confirmed for this workflow.
+- The inherited iSWAP-into-ODTC geometry completed eight dry round trips in this workflow,
+  but the ODTC child-location model still says `ODTC_CHILD_LOCATION_IS_MEASURED = False`.
+  No EM-seq thermal program or heated-lid behavior ran during the dry rehearsal; the
+  modeled coordinate, heat, hold, and cool-down still require separate qualification.
 
 ## Controls and acceptance criteria
 

@@ -34,7 +34,8 @@ says otherwise.
     gene edits.
   - [`emseq/`](packages/emseq) - QC-gated NEBNext EM-seq v2 with UltraShear: sparse
     manifest to a sourced 24-step plan, deterministic simulation, conversion-control
-    gates, dossier, and an explicitly blocked live run until hardware qualification.
+    gates, dossier, a passed physical empty-deck STAR choreography, and an explicitly
+    blocked live-sample run until wet and thermal qualification.
   - [`iswap-move/`](packages/iswap-move) - STAR iSWAP plate-lid moves.
 
 ## What "tested" means here
@@ -56,6 +57,7 @@ Validated on the instrument:
 | iSWAP return, HHS rail27 pos2 to rail35 pos0, pickup x12.0 / y54.5 / z9.0, drop z8.5 | passed |
 | whole-genome sequencing full plate, dry: lysis and reaction, source col1 to dest cols 1-12, then iSWAP to HHS | passed |
 | Repeatability: 3 consecutive single-column round trips, 6 of 6 iSWAP transfers clean, pickup landed at z 0.950 every time | passed |
+| EM-seq v2 + UltraShear column 1, physical dry: 36/36 legs; 11 reagent adds, 3 cleanup presets, 8 ODTC round trips, 3 magnet round trips; plate self-returned | passed on the instrument 2026-07-21; no liquid or ODTC heat ([evidence](hamilton-star/starlab_live/emseq/qc/)) |
 | whole-genome sequencing wet single addition, discard tips | written, not yet run |
 
 Inheco ODTC:

@@ -1,0 +1,1231 @@
+
+EM-seq v2 FULL CHOREOGRAPHY, COLUMN 1, DRY
+Reagent adds -> ODTC out/back (x8 programs) -> 3x magnet + SPRI cleanup out/back.
+Every leg runs its own scoped script; geometry is not re-derived here.
+STATUS: written, simulation-first, NOT yet run on hardware. Tune each leg before trusting it.
+
+========================================================================================
+start
+========================================================================================
+work plate at rail35 pos0 col 1 holds 26 uL combined gDNA + control DNA (off-deck prep; water for a dry rehearsal).
+
+========================================================================================
+reagent add: shear-mm (tip col 1)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode shear-mm --tip-col 1 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=1
+
+=== SHEAR-MM: UltraShear fragmentation master mix ===
+PREP: Work col 1 A-H should already hold 26 uL of combined gDNA + control DNA (0.1-200 ng sample + lambda + pUC19, made up to 26 uL with 1X TE; off-deck, M7634 Section 3.1.1). Load source col 1 with UltraShear master mix (14 uL Reaction Buffer + 4 uL UltraShear per reaction). Recommended source load: 24-28 uL per well for margin.
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 18.0 uL x8; tip p50 column 1; discard_tips=False
+Aspirating 18.0 uL x8 from source col 1...
+Dispensing 18.0 uL x8 to work col 1 with blowout 6.0 uL...
+Returning tips to rack...
+
+SUCCESS: UltraShear fragmentation master mix addition completed.
+NEXT: Seal/spin, then run ODTC emseq-shear (37 C default 30 min, 65 C 15 min, 4 C hold, lid 75 C) via instrument-integrations/odtc.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (shear)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-shear
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-shear --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (shear return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: endprep-mm (tip col 1)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode endprep-mm --tip-col 1 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=1
+
+=== ENDPREP-MM: Coupled End Prep master mix ===
+PREP: Work col 1 holds 44 uL fragmented DNA. Load source col 1 with End Prep master mix: 2 uL 500 mM DTT (the green DTT from M7634, NOT the yellow EM-seq DTT) + 3 uL Ultra II End Prep Enzyme Mix. The EM-seq End Prep Reaction Buffer is NOT used in the coupled protocol (M7634 Section 3.2.1).
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 5.0 uL x8; tip p10 column 1; discard_tips=False
+Aspirating 5.0 uL x8 from source col 1...
+Dispensing 5.0 uL x8 to work col 1 with blowout 7.0 uL...
+Returning tips to rack...
+
+SUCCESS: Coupled End Prep master mix addition completed.
+NEXT: Seal/spin, then run ODTC emseq-endprep (20 C 15 min, 65 C 15 min, 4 C hold, lid 75 C).
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (end prep)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-endprep
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-endprep --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (end prep return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: adaptor (tip col 2)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode adaptor --tip-col 2 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=2
+
+=== ADAPTOR: EM-seq adaptor (added before ligation mix) ===
+PREP: Work col 1 holds 49 uL End Prep reaction. Load source col 1 with NEBNext EM-seq Adaptor. Add the adaptor to the sample FIRST; do NOT premix adaptor with the Ligation Enhancer/Master Mix (M7634 Section 3.3.1).
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 2.5 uL x8; tip p10 column 2; discard_tips=False
+Aspirating 2.5 uL x8 from source col 1...
+Dispensing 2.5 uL x8 to work col 1 with blowout 7.0 uL...
+Returning tips to rack...
+
+SUCCESS: EM-seq adaptor (added before ligation mix) addition completed.
+NEXT: No thermocycling yet. Proceed to mode ligation-mm.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: ligation-mm (tip col 2)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode ligation-mm --tip-col 2 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=2
+
+=== LIGATION-MM: Ligation enhancer + master mix ===
+PREP: Work col 1 holds 51.5 uL (End Prep + adaptor). Load source col 1 with the ligation mix: 1 uL Ligation Enhancer + 30 uL Ultra II Ligation Master Mix per reaction (may be premixed; stable ~8 h at 4 C). Caution: the Ligation Master Mix is viscous.
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 31.0 uL x8; tip p50 column 2; discard_tips=False
+Aspirating 31.0 uL x8 from source col 1...
+Dispensing 31.0 uL x8 to work col 1 with blowout 6.0 uL...
+Returning tips to rack...
+
+SUCCESS: Ligation enhancer + master mix addition completed.
+NEXT: Seal/spin, then run ODTC emseq-ligation (20 C 15 min, 4 C hold; manual specifies lid OFF, run at lid 50 C, see odtc_protocols.py note). Then SPRI cleanup at 1.1X: emseq_cleanup.py --cleanup post-ligation.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (ligation)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-ligation
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-ligation --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (ligation return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> magnet rail35 pos2
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_rail35pos2_mag_variable.py --mode move --confirm RUN_ISWAP_MAG_MOVE_TEST
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning rail35 carrier with pickup pos0 and mag drop pos2...
+
+Deck map:
+  pickup plate: rail35 pos0
+  drop site:    rail35 pos2 / magnetic rack
+  pickup Z offset: +8.5 mm
+  drop X offset:   +0.0 mm
+  drop Y offset:   +0.0 mm
+  drop Z offset:   +18.0 mm
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 005.470)
+  drop base location:      Coordinate(004.000, 200.500, 086.150)
+  drop shifted location:   Coordinate(004.000, 200.500, 104.150)
+  drop_site type:          <class 'pylabrobot.resources.carrier.PlateHolder'>
+
+MOVING PLATE with iSWAP: rail35 pos0 -> rail35 pos2 magnetic rack/nest
+Use EMPTY sacrificial plate. Destination mag rack/nest must be physically empty. Hand near E-stop.
+SUCCESS: iSWAP moved plate from rail35 pos0 to rail35 pos2.
+Parking / stopping...
+Done.
+
+========================================================================================
+SPRI cleanup: post-ligation
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_cleanup.py --cleanup post-ligation --mode all --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Tip behavior: discard_tips=False (production discards; --return-tips is dry-observe only).
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq post-ligation cleanup deck (1.1X): mag pos2 + trough pos3...
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+Using p300 filter tips resource factory: hamilton_96_tiprack_300uL_filter
+
+Deck:
+  rail48 pos1 = p50 tips (elution add, residual ethanol removal)
+  rail48 pos2 = p300 tips (beads add, supernatant/ethanol removal)
+  rail35 pos2 = magnet + CellTreat_96_wellplate_350ul_Fb work plate, column 1
+  rail35 pos3 = 12-well reservoir/trough
+
+Reservoir map:
+  A1 = NEBNext Sample Purification Beads
+  A2 = 80% ethanol wash 1
+  A3 = 80% ethanol wash 2
+  A4 = Elution Buffer
+  A12 = waste
+
+post-ligation volumes (NEB #M7634 Section 3.4):
+  beads add = 93.0 uL x8 (1.1X), p300
+  supernatant remove = 180.0 uL x8, p300
+  ethanol add/remove = 200.0/200.0 uL x8, p300 (x2 washes)
+  residual ethanol remove = 20.0 uL x8, p50
+  elution add = 29.0 uL x8, p50-low; keep 28.0 uL (off-deck transfer)
+
+=== EM-seq post-ligation cleanup (1.1X) - all motions ===
+Between beads-add and supernatant-remove: incubate 5 min RT, then let beads pellet on
+the magnet (operator/timed; not modeled here). Same before elution.
+
+P300 ADD: beads add: reservoir A1 -> mag col 1; 93.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: supernatant remove: mag col 1 -> waste A12; 180.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 ADD: ethanol wash 1 add: reservoir A2 -> mag col 1; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: ethanol wash 1 remove: mag col 1 -> waste A12; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 ADD: ethanol wash 2 add: reservoir A3 -> mag col 1; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: ethanol wash 2 remove: mag col 1 -> waste A12; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P50 RESIDUAL REMOVE: mag col 1 -> waste A12; 20.0 uL x8 (tip col 1)
+Returning p50 tips...
+
+Air-dry the beads 30 s - 2 min (operator/timed; do not over-dry). Then elute:
+
+P50 LOW ADD: elution add: reservoir A4 -> mag col 1; 29.0 uL x8 (tip col 1)
+Returning p50 tips...
+
+SUCCESS: post-ligation cleanup motions completed. Eluate (29.0 uL) is on the
+beads; transfer the clear 28.0 uL off the magnet to a fresh column (off-deck).
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: magnet rail35 pos2 -> work rail35 pos0
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos2_mag_to_rail35pos0_variable.py --mode move --pickup-z-offset-mm 14.0 --drop-z-offset-mm 8.5 --confirm RUN_ISWAP_MAG_RETURN_TEST
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning rail35 carrier with mag pickup pos2 and drop pos0...
+
+Deck map:
+  pickup plate: rail35 pos2 / magnetic rack
+  drop site:    rail35 pos0
+  pickup Z offset: +14.0 mm
+  drop X offset:   +0.0 mm
+  drop Y offset:   +0.0 mm
+  drop Z offset:   +8.5 mm
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 010.970)
+  drop base location:      Coordinate(004.000, 008.500, 086.150)
+  drop shifted location:   Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE with iSWAP: rail35 pos2 magnetic rack/nest -> rail35 pos0
+Use EMPTY sacrificial plate. Destination pos0 must be empty. Hand near E-stop.
+SUCCESS: iSWAP moved plate from rail35 pos2 to rail35 pos0.
+Parking / stopping...
+Done.
+
+========================================================================================
+reagent add: tet2-mm (tip col 3)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode tet2-mm --tip-col 3 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=3
+
+=== TET2-MM: TET2 protection master mix ===
+PREP: Work col 1 holds 28 uL adaptor-ligated, cleaned DNA (elution option A, > 10 ng input). Load source col 1 with TET2 master mix: 10 uL TET2 Reaction Buffer (Supplement already reconstituted) + 1 uL UDP-Glucose + 1 uL DTT (yellow) + 1 uL T4-BGT (undiluted for > 10 ng; 1:10 diluted for <= 10 ng) + 4 uL TET2 (E8015 Section 1.5.3).
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 17.0 uL x8; tip p50 column 3; discard_tips=False
+Aspirating 17.0 uL x8 from source col 1...
+Dispensing 17.0 uL x8 to work col 1 with blowout 6.0 uL...
+Returning tips to rack...
+
+SUCCESS: TET2 protection master mix addition completed.
+NEXT: No thermocycling yet; oxidation is initiated by Fe(II) in the next mode. Proceed to mode feii.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: feii (tip col 3)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode feii --tip-col 3 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=3
+
+=== FEII: Diluted Fe(II) solution ===
+PREP: Work col 1 holds 45 uL TET2 reaction. Prepare diluted Fe(II) FRESH off-deck (1 uL of 500 mM Fe(II) into 1249 uL water) and load source col 1. Use immediately; do not store (E8015 Section 1.5.4).
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 5.0 uL x8; tip p10 column 3; discard_tips=False
+Aspirating 5.0 uL x8 from source col 1...
+Dispensing 5.0 uL x8 to work col 1 with blowout 7.0 uL...
+Returning tips to rack...
+
+SUCCESS: Diluted Fe(II) solution addition completed.
+NEXT: Seal/spin, then run ODTC emseq-tet2 (37 C 1 h, 4 C hold, lid 45 C).
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (TET2 oxidation)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-tet2
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-tet2 --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (TET2 oxidation return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: stop (tip col 4)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode stop --tip-col 4 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=4
+
+=== STOP: Stop reagent ===
+PREP: Work col 1 holds 50 uL. Load source col 1 with Stop Reagent (yellow) (E8015 Section 1.5.6).
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 1.0 uL x8; tip p10 column 4; discard_tips=False
+Aspirating 1.0 uL x8 from source col 1...
+Dispensing 1.0 uL x8 to work col 1 with blowout 7.0 uL...
+Returning tips to rack...
+
+SUCCESS: Stop reagent addition completed.
+NEXT: Seal/spin, then run ODTC emseq-tet2-stop (37 C 30 min, 4 C hold, lid 45 C). Then SPRI cleanup at 1X: emseq_cleanup.py --cleanup post-tet2.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (stop incubation)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-tet2-stop
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-tet2-stop --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (stop incubation return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> magnet rail35 pos2
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_rail35pos2_mag_variable.py --mode move --confirm RUN_ISWAP_MAG_MOVE_TEST
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning rail35 carrier with pickup pos0 and mag drop pos2...
+
+Deck map:
+  pickup plate: rail35 pos0
+  drop site:    rail35 pos2 / magnetic rack
+  pickup Z offset: +8.5 mm
+  drop X offset:   +0.0 mm
+  drop Y offset:   +0.0 mm
+  drop Z offset:   +18.0 mm
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 005.470)
+  drop base location:      Coordinate(004.000, 200.500, 086.150)
+  drop shifted location:   Coordinate(004.000, 200.500, 104.150)
+  drop_site type:          <class 'pylabrobot.resources.carrier.PlateHolder'>
+
+MOVING PLATE with iSWAP: rail35 pos0 -> rail35 pos2 magnetic rack/nest
+Use EMPTY sacrificial plate. Destination mag rack/nest must be physically empty. Hand near E-stop.
+SUCCESS: iSWAP moved plate from rail35 pos0 to rail35 pos2.
+Parking / stopping...
+Done.
+
+========================================================================================
+SPRI cleanup: post-tet2
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_cleanup.py --cleanup post-tet2 --mode all --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Tip behavior: discard_tips=False (production discards; --return-tips is dry-observe only).
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq post-tet2 cleanup deck (1.0X): mag pos2 + trough pos3...
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+Using p300 filter tips resource factory: hamilton_96_tiprack_300uL_filter
+
+Deck:
+  rail48 pos1 = p50 tips (elution add, residual ethanol removal)
+  rail48 pos2 = p300 tips (beads add, supernatant/ethanol removal)
+  rail35 pos2 = magnet + CellTreat_96_wellplate_350ul_Fb work plate, column 1
+  rail35 pos3 = 12-well reservoir/trough
+
+Reservoir map:
+  A1 = NEBNext Sample Purification Beads
+  A2 = 80% ethanol wash 1
+  A3 = 80% ethanol wash 2
+  A4 = Elution Buffer
+  A12 = waste
+
+post-tet2 volumes (NEB #E8015 Section 1.6):
+  beads add = 50.0 uL x8 (1.0X), p300
+  supernatant remove = 105.0 uL x8, p300
+  ethanol add/remove = 200.0/200.0 uL x8, p300 (x2 washes)
+  residual ethanol remove = 20.0 uL x8, p50
+  elution add = 17.0 uL x8, p50-low; keep 16.0 uL (off-deck transfer)
+
+=== EM-seq post-tet2 cleanup (1.0X) - all motions ===
+Between beads-add and supernatant-remove: incubate 5 min RT, then let beads pellet on
+the magnet (operator/timed; not modeled here). Same before elution.
+
+P300 ADD: beads add: reservoir A1 -> mag col 1; 50.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: supernatant remove: mag col 1 -> waste A12; 105.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 ADD: ethanol wash 1 add: reservoir A2 -> mag col 1; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: ethanol wash 1 remove: mag col 1 -> waste A12; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 ADD: ethanol wash 2 add: reservoir A3 -> mag col 1; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: ethanol wash 2 remove: mag col 1 -> waste A12; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P50 RESIDUAL REMOVE: mag col 1 -> waste A12; 20.0 uL x8 (tip col 1)
+Returning p50 tips...
+
+Air-dry the beads 30 s - 2 min (operator/timed; do not over-dry). Then elute:
+
+P50 LOW ADD: elution add: reservoir A4 -> mag col 1; 17.0 uL x8 (tip col 1)
+Returning p50 tips...
+
+SUCCESS: post-tet2 cleanup motions completed. Eluate (17.0 uL) is on the
+beads; transfer the clear 16.0 uL off the magnet to a fresh column (off-deck).
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: magnet rail35 pos2 -> work rail35 pos0
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos2_mag_to_rail35pos0_variable.py --mode move --pickup-z-offset-mm 14.0 --drop-z-offset-mm 8.5 --confirm RUN_ISWAP_MAG_RETURN_TEST
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning rail35 carrier with mag pickup pos2 and drop pos0...
+
+Deck map:
+  pickup plate: rail35 pos2 / magnetic rack
+  drop site:    rail35 pos0
+  pickup Z offset: +14.0 mm
+  drop X offset:   +0.0 mm
+  drop Y offset:   +0.0 mm
+  drop Z offset:   +8.5 mm
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 010.970)
+  drop base location:      Coordinate(004.000, 008.500, 086.150)
+  drop shifted location:   Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE with iSWAP: rail35 pos2 magnetic rack/nest -> rail35 pos0
+Use EMPTY sacrificial plate. Destination pos0 must be empty. Hand near E-stop.
+SUCCESS: iSWAP moved plate from rail35 pos2 to rail35 pos0.
+Parking / stopping...
+Done.
+
+========================================================================================
+reagent add: formamide (tip col 5)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode formamide --tip-col 5 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=5
+
+=== FORMAMIDE: Formamide denaturant ===
+PREP: Work col 1 holds 16 uL protected, cleaned DNA. Load source col 1 with Formamide (recommended denaturant; 0.05 N NaOH is the alternative, E8015 Section 1.7). Pre-heat the ODTC to 85 C / lid 105 C before this step.
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 4.0 uL x8; tip p10 column 5; discard_tips=False
+Aspirating 4.0 uL x8 from source col 1...
+Dispensing 4.0 uL x8 to work col 1 with blowout 7.0 uL...
+Returning tips to rack...
+
+SUCCESS: Formamide denaturant addition completed.
+NEXT: Seal/spin, then run ODTC emseq-denature (85 C 10 min, 4 C hold, lid 105 C). The manual cools on ice off-instrument; here the block holds 4 C (see odtc_protocols.py note).
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (denaturation)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-denature
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-denature --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (denaturation return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: deaminate-mm (tip col 4)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode deaminate-mm --tip-col 4 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=4
+
+=== DEAMINATE-MM: APOBEC deamination master mix ===
+PREP: Work col 1 holds 20 uL denatured DNA. Load source col 1 with deamination master mix: 14 uL nuclease-free water + 4 uL Deamination Reaction Buffer + 1 uL Recombinant Albumin + 1 uL APOBEC (E8015 Section 1.8.1).
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 20.0 uL x8; tip p50 column 4; discard_tips=False
+Aspirating 20.0 uL x8 from source col 1...
+Dispensing 20.0 uL x8 to work col 1 with blowout 6.0 uL...
+Returning tips to rack...
+
+SUCCESS: APOBEC deamination master mix addition completed.
+NEXT: Seal/spin, then run ODTC emseq-deaminate (37 C 3 h, 4 C hold, lid 45 C). Samples go directly to PCR with no cleanup.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (deamination)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-deaminate
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-deaminate --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (deamination return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: pcr-primer (tip col 6)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode pcr-primer --tip-col 6 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=6
+
+=== PCR-PRIMER: UDI index primer pair ===
+PREP: Work col 1 holds 40 uL deaminated DNA. Load source col 1 with the NEBNext LV Unique Dual Index primer pairs, one index per well A-H (purchased separately; E8015 Section 1.9.1). Each well gets its own index.
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 5.0 uL x8; tip p10 column 6; discard_tips=False
+Aspirating 5.0 uL x8 from source col 1...
+Dispensing 5.0 uL x8 to work col 1 with blowout 7.0 uL...
+Returning tips to rack...
+
+SUCCESS: UDI index primer pair addition completed.
+NEXT: No thermocycling yet. Proceed to mode pcr-mm.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+reagent add: pcr-mm (tip col 5)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_reagent_adds.py --mode pcr-mm --tip-col 5 --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq reagent-add deck: current 35/48 swap-source column-1 layout...
+Using p10 filter tips resource factory: hamilton_96_tiprack_10uL_filter
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+
+Deck:
+  rail48 pos0 = p10 tips
+  rail48 pos1 = p50 tips
+  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
+                  (swap reagent between modes)
+
+Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+  P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
+  P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
+Production tip behavior: discard_tips=False; tip column=5
+
+=== PCR-MM: Q5U PCR master mix ===
+PREP: Work col 1 holds 45 uL (deaminated DNA + index primer). Load source col 1 with NEBNext Q5U Master Mix (E8015 Section 1.9.1).
+Source rail35 pos1 col 1 -> destination rail35 pos0 col 1
+Volume: 45.0 uL x8; tip p50 column 5; discard_tips=False
+Aspirating 45.0 uL x8 from source col 1...
+Dispensing 45.0 uL x8 to work col 1 with blowout 6.0 uL...
+Returning tips to rack...
+
+SUCCESS: Q5U PCR master mix addition completed.
+NEXT: Seal/spin, then run ODTC emseq-pcr (98 C 30 s; N x [98 C 10 s / 62 C 30 s / 65 C 60 s]; 65 C 5 min; 4 C hold; lid 105 C). N is input-dependent (default 8 = 10 ng; see the E8015 table). Then SPRI cleanup at 0.8X: emseq_cleanup.py --cleanup post-pcr. Note: 45 uL is the largest p50 add; its accuracy and any splash into the 40 uL already in the well need a dye/gravimetric check on hardware.
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> ODTC nest (library PCR)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_odtc_variable.py --mode move --odtc-rail 20 --odtc-position 1 --confirm RUN_ODTC_ISWAP_FWD
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning pickup carrier rail35 and ODTC carrier rail20...
+
+Deck map:
+  pickup plate: rail35 pos0
+  ODTC nest:    rail20 pos1
+  pickup Z offset: +5.0 mm
+  drop X offset:   +2.0 mm  (confirmed rail20 pos1)
+  drop Y offset:   +36.5 mm  (confirmed rail20 pos1)
+  drop Z offset:   +12.0 mm  (confirmed rail20 pos1)
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 001.970)
+  drop base location:      Coordinate(004.000, 104.500, 086.150)
+  drop shifted location:   Coordinate(006.000, 141.000, 098.150)
+
+MOVING PLATE with iSWAP: rail35 pos0 -> ODTC nest...
+Use EMPTY sacrificial plate. ODTC nest must be empty and clear. Hand near E-stop.
+SUCCESS: iSWAP forward move rail35 pos0 -> ODTC nest completed.
+Parking iSWAP / stopping...
+Done.
+
+========================================================================================
+ODTC thermal: emseq-pcr
+========================================================================================
+run this detached on the Pi, wait for completion, then continue:
+      instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-pcr --ip $ODTC_IP --confirm i-am-watching
+
+========================================================================================
+iSWAP move: ODTC nest -> work rail35 pos0 (library PCR return)
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_odtc_to_rail35pos0_return.py --mode move --odtc-rail 20 --odtc-position 1 --odtc-pickup-z-offset-mm 0 --confirm RUN_ODTC_ISWAP_RET
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning ODTC pickup carrier rail20 and return carrier rail35...
+
+iSWAP RETURN LEG: ODTC nest -> rail35 pos0
+Physical requirements:
+  plate is currently on the ODTC nest (rail20 pos1)
+  rail35 pos0 is empty
+  hand near E-stop
+
+  ODTC pickup base:     Coordinate(004.000, 104.500, 086.150)
+  ODTC pickup shifted:  Coordinate(006.000, 141.000, 086.150)   (slot frame, same as forward drop)
+  return drop base:     Coordinate(004.000, 008.500, 086.150)
+  return drop shifted:  Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE: ODTC nest -> rail35 pos0...
+SUCCESS: iSWAP returned plate from ODTC nest to rail35 pos0.
+Parking iSWAP / stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: work rail35 pos0 -> magnet rail35 pos2
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos0_to_rail35pos2_mag_variable.py --mode move --confirm RUN_ISWAP_MAG_MOVE_TEST
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning rail35 carrier with pickup pos0 and mag drop pos2...
+
+Deck map:
+  pickup plate: rail35 pos0
+  drop site:    rail35 pos2 / magnetic rack
+  pickup Z offset: +8.5 mm
+  drop X offset:   +0.0 mm
+  drop Y offset:   +0.0 mm
+  drop Z offset:   +18.0 mm
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 005.470)
+  drop base location:      Coordinate(004.000, 200.500, 086.150)
+  drop shifted location:   Coordinate(004.000, 200.500, 104.150)
+  drop_site type:          <class 'pylabrobot.resources.carrier.PlateHolder'>
+
+MOVING PLATE with iSWAP: rail35 pos0 -> rail35 pos2 magnetic rack/nest
+Use EMPTY sacrificial plate. Destination mag rack/nest must be physically empty. Hand near E-stop.
+SUCCESS: iSWAP moved plate from rail35 pos0 to rail35 pos2.
+Parking / stopping...
+Done.
+
+========================================================================================
+SPRI cleanup: post-pcr
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/emseq/emseq_cleanup.py --cleanup post-pcr --mode all --return-tips
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Tip behavior: discard_tips=False (production discards; --return-tips is dry-observe only).
+Backend: STARBackend (REAL hardware - human-gated).
+Assigning EM-seq post-pcr cleanup deck (0.8X): mag pos2 + trough pos3...
+Using p50 filter tips resource factory: hamilton_96_tiprack_50uL_filter
+Using p300 filter tips resource factory: hamilton_96_tiprack_300uL_filter
+
+Deck:
+  rail48 pos1 = p50 tips (elution add, residual ethanol removal)
+  rail48 pos2 = p300 tips (beads add, supernatant/ethanol removal)
+  rail35 pos2 = magnet + CellTreat_96_wellplate_350ul_Fb work plate, column 1
+  rail35 pos3 = 12-well reservoir/trough
+
+Reservoir map:
+  A1 = NEBNext Sample Purification Beads
+  A2 = 80% ethanol wash 1
+  A3 = 80% ethanol wash 2
+  A4 = Elution Buffer
+  A12 = waste
+
+post-pcr volumes (NEB #E8015 Section 1.10):
+  beads add = 72.0 uL x8 (0.8X), p300
+  supernatant remove = 165.0 uL x8, p300
+  ethanol add/remove = 200.0/200.0 uL x8, p300 (x2 washes)
+  residual ethanol remove = 20.0 uL x8, p50
+  elution add = 21.0 uL x8, p50-low; keep 20.0 uL (off-deck transfer)
+
+=== EM-seq post-pcr cleanup (0.8X) - all motions ===
+Between beads-add and supernatant-remove: incubate 5 min RT, then let beads pellet on
+the magnet (operator/timed; not modeled here). Same before elution.
+
+P300 ADD: beads add: reservoir A1 -> mag col 1; 72.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: supernatant remove: mag col 1 -> waste A12; 165.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 ADD: ethanol wash 1 add: reservoir A2 -> mag col 1; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: ethanol wash 1 remove: mag col 1 -> waste A12; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 ADD: ethanol wash 2 add: reservoir A3 -> mag col 1; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P300 REMOVE: ethanol wash 2 remove: mag col 1 -> waste A12; 200.0 uL x8 (tip col 1)
+Returning p300 tips...
+
+P50 RESIDUAL REMOVE: mag col 1 -> waste A12; 20.0 uL x8 (tip col 1)
+Returning p50 tips...
+
+Air-dry the beads 30 s - 2 min (operator/timed; do not over-dry). Then elute:
+
+P50 LOW ADD: elution add: reservoir A4 -> mag col 1; 21.0 uL x8 (tip col 1)
+Returning p50 tips...
+
+SUCCESS: post-pcr cleanup motions completed. Eluate (21.0 uL) is on the
+beads; transfer the clear 20.0 uL off the magnet to a fresh column (off-deck).
+Stopping STAR backend...
+Done.
+
+========================================================================================
+iSWAP move: magnet rail35 pos2 -> work rail35 pos0
+========================================================================================
+/home/lab/star-lab/env/bin/python /home/lab/plr-tested-run/starlab_live/test_iswap_plate_rail35pos2_mag_to_rail35pos0_variable.py --mode move --pickup-z-offset-mm 14.0 --drop-z-offset-mm 8.5 --confirm RUN_ISWAP_MAG_RETURN_TEST
+Closing connection to USB device.
+Initializing STAR with skip_autoload=True...
+Assigning rail35 carrier with mag pickup pos2 and drop pos0...
+
+Deck map:
+  pickup plate: rail35 pos2 / magnetic rack
+  drop site:    rail35 pos0
+  pickup Z offset: +14.0 mm
+  drop X offset:   +0.0 mm
+  drop Y offset:   +0.0 mm
+  drop Z offset:   +8.5 mm
+
+  pickup base location:    Coordinate(000.000, 000.000, -03.030)
+  pickup shifted location: Coordinate(000.000, 000.000, 010.970)
+  drop base location:      Coordinate(004.000, 008.500, 086.150)
+  drop shifted location:   Coordinate(004.000, 008.500, 094.650)
+
+MOVING PLATE with iSWAP: rail35 pos2 magnetic rack/nest -> rail35 pos0
+Use EMPTY sacrificial plate. Destination pos0 must be empty. Hand near E-stop.
+SUCCESS: iSWAP moved plate from rail35 pos2 to rail35 pos0.
+Parking / stopping...
+Done.
+
+SUCCESS: full EM-seq column-1 choreography completed. Plate back on rail35 pos0.
+Final library eluate (20 uL, post-pcr cleanup) is on the beads; transfer off the magnet.

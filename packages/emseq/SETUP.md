@@ -49,6 +49,11 @@ performs real STAR/iSWAP motion with empty labware, returns tips, and does not r
 heating. Thermal steps are printed as operator notes. Keep a human at the E-stop for the
 entire rehearsal and reconcile the physical plate before resuming after any failure.
 
+This exact rehearsal passed on the physical STAR on 2026-07-21: all 36 legs completed,
+the plate returned to rail35 p0, and the error scan was empty. The raw log, checksum,
+operator record, and precise dry-versus-wet boundary are in
+[`../../hamilton-star/starlab_live/emseq/qc/`](../../hamilton-star/starlab_live/emseq/qc/).
+
 Do not substitute the moving work plate: the physical work and source plates are both
 CellTreat 350 uL, matching the working Targeted PCR liquid-height logic. The reused iSWAP
 subprocesses intentionally retain the Cor 360 motion-command stand-in used by the

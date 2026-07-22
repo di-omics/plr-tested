@@ -9,10 +9,12 @@ sparse manifest, resolves the exact low- or high-input chemistry route, produces
 sourced 24-step run card, simulates the complete flow, applies library/conversion QC
 gates, and writes an auditable dossier plus sequencing handoff.
 
-Status: **complete in deterministic simulation; blocked for live sample execution.**
-The underlying EM-seq scripts are written/simulation-first and have not run on the
-physical instruments. The package keeps that distinction mechanical: `mode: hardware`
-writes a blocked run card and cannot move or heat anything.
+Status: **complete in deterministic simulation; physical empty-deck STAR dry motion
+passed; blocked for live sample execution.** The full 36-leg choreography ran on the
+physical STAR on 2026-07-21 with no liquid and no ODTC heat; the evidence and scope are
+in [`../../hamilton-star/starlab_live/emseq/qc/`](../../hamilton-star/starlab_live/emseq/qc/).
+The package keeps the wet/thermal distinction mechanical: `mode: hardware` still writes
+a blocked run card and cannot move or heat anything.
 
 ## What was already on GitHub
 
@@ -99,6 +101,10 @@ and process-blank criteria. The latter are marked `TUNABLE`, not presented as NE
 
 ## Why live execution is blocked
 
+The physical dry pass proves the complete STAR/iSWAP motion path and the AmpSeq-matched
+plate geometry can complete with empty labware. It does not close the measured wet and
+thermal qualifications below.
+
 The hardware doctor enumerates the current gaps:
 
 ```bash
@@ -113,12 +119,11 @@ emseq-run doctor --hardware
 - For low input, implement the 1 uL carrier-DNA addition.
 
 The current choreography also requires operator reagent swaps, sealing/spinning, and
-instrument-state reconciliation. It is end-to-end as a sourced plan and simulation, but
-it is not yet walkaway or hardware-validated.
+instrument-state reconciliation. It is end-to-end as a sourced plan, simulation, and
+physical dry motion pass, but it is not yet walkaway or wet/thermal validated.
 
 ## Research use only
 
 Automates public NEB kit instructions. Not validated for diagnostic use. Never run the
 instruments unattended; use the repo's deck-check and E-stop rules for every hardware
 qualification leg.
-
