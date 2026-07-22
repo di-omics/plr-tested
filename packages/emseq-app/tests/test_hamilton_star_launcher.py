@@ -28,6 +28,18 @@ class HamiltonStarLauncherTests(unittest.TestCase):
         self.assertIn("Planning-only local EM-seq", result.stdout)
         self.assertIn("--port", result.stdout)
 
+    def test_legacy_visual_previews_point_to_planner_without_runtime_scaling(self):
+        for filename in ("emseq-run-app.html", "emseq-run-app-desktop.html"):
+            with self.subTest(filename=filename):
+                html = (REPOSITORY_ROOT / "hamilton-star" / filename).read_text(
+                    encoding="utf-8"
+                )
+                self.assertIn("legacy visual preview", html)
+                self.assertIn("http://127.0.0.1:8767/", html)
+                self.assertIn("runtime not estimated", html)
+                self.assertNotIn("446 +", html)
+                self.assertNotIn("~7h 26m", html)
+
 
 if __name__ == "__main__":
     unittest.main()

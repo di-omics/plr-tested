@@ -220,6 +220,25 @@ class RegistryTests(unittest.TestCase):
         deck = emseq_dry_deck()
         by_key = {item.key: item for item in deck.items}
 
+        self.assertEqual(
+            by_key["r48p0_p10"].labware_id,
+            "hamilton_96_tiprack_10uL_filter",
+        )
+        self.assertEqual(
+            by_key["r35p0_work"].labware_id,
+            "CellTreat_96_wellplate_350ul_Fb",
+        )
+        self.assertEqual(by_key["r35p0_work"].dry_run_state, "empty / dry")
+        self.assertEqual(by_key["r35p2_magnet"].labware_id, "aligned magnet block")
+        self.assertEqual(
+            by_key["r35p2_magnet"].dry_run_state,
+            "installed; nest empty",
+        )
+        self.assertEqual(by_key["r20p1_odtc"].labware_id, "Inheco ODTC nest")
+        self.assertEqual(
+            by_key["r20p1_odtc"].dry_run_state,
+            "empty / open / unheated",
+        )
         self.assertIn("celltreat", by_key["r35p0_work"].instruction.lower())
         self.assertIn("celltreat", by_key["r35p1_source"].instruction.lower())
         self.assertIn("empty", by_key["r35p2_magnet"].instruction.lower())

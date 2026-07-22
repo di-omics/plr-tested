@@ -1,4 +1,5 @@
 import http.client
+from html.parser import HTMLParser
 import json
 import threading
 import unittest
@@ -80,10 +81,24 @@ class PlanningServerTests(unittest.TestCase):
         deck_locations = {
             item["key"]: item["location_label"] for item in payload["deck"]["items"]
         }
+        deck_items = {item["key"]: item for item in payload["deck"]["items"]}
         self.assertEqual(deck_locations["r48p0_p10"], "Rail 48 · p0 (first slot)")
         self.assertEqual(
             deck_locations["r20p1_odtc"],
             "Rail 20 · p1 (ODTC modeled target)",
+        )
+        self.assertEqual(
+            deck_items["r48p0_p10"]["labware_id"],
+            "hamilton_96_tiprack_10uL_filter",
+        )
+        self.assertEqual(
+            deck_items["r35p0_work"]["labware_id"],
+            "CellTreat_96_wellplate_350ul_Fb",
+        )
+        self.assertEqual(deck_items["r35p0_work"]["dry_run_state"], "empty / dry")
+        self.assertEqual(
+            deck_items["r20p1_odtc"]["dry_run_state"],
+            "empty / open / unheated",
         )
         self.assertNotIn("r27p2_hhs", deck_locations)
         self.assertTrue(payload["release"]["available"])
@@ -117,6 +132,15 @@ class PlanningServerTests(unittest.TestCase):
         )
         self.assertEqual(len(payload["plan"]["plate_layout"]), 96)
         self.assertFalse(payload["plan"]["current_runner"]["eligible"])
+
+        for sample_count, column_count in ((24, 3), (48, 6)):
+            with self.subTest(sample_count=sample_count):
+                status, payload, _headers = self.post_json(
+                    "/api/plan", {"sample_count": sample_count}
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(payload["plan"]["column_count"], column_count)
+                self.assertFalse(payload["plan"]["current_runner"]["eligible"])
 
         status, payload, _headers = self.post_json("/api/plan", {"sample_count": 96})
         self.assertEqual(status, 200)
@@ -249,6 +273,63 @@ class PlanningServerTests(unittest.TestCase):
         self.assertIn('id="arm"', html)
         self.assertIn("disabled", html)
         self.assertIn("Instrument start unavailable", html)
+
+    def test_themed_playbook_keeps_fact_checked_release_boundaries(self):
+        status, raw, _headers = self.request("GET", "/")
+        html = raw.decode("utf-8")
+
+        self.assertEqual(status, 200)
+        self.assertIn("di-omics / plr-tested / Hamilton STAR + Inheco ODTC", html)
+        self.assertIn("EM-seq UltraShear v2 <span>deck planner</span>", html)
+        self.assertEqual(html.count("data-sample-count="), 4)
+        for count in ("8", "24", "48", "96"):
+            self.assertIn(f'data-sample-count="{count}"', html)
+        self.assertIn('id="run-summary"', html)
+        self.assertIn('id="deck-table-body"', html)
+        self.assertIn('id="odtc-programs"', html)
+        self.assertIn("11 stages / 8 thermal programs", html)
+        self.assertIn("low-input ≤10 ng path", html)
+        self.assertIn('"200": { cycles: "4–5 PCR cycles"', html)
+        self.assertIn('"50": { cycles: "5–6 PCR cycles"', html)
+        self.assertIn("--confirm RUN_EMSEQ_ODTC_FULL", html)
+        self.assertIn("--labware-ack CELLTREAT_229195_WORK_SOURCE", html)
+        self.assertIn("run_emseq_odtc_1col_full_dry.py --deck", html)
+        self.assertIn("physical empty-deck dry passed", html)
+        self.assertIn("Multi-column run time", html)
+        self.assertIn("not estimated", html)
+        self.assertNotIn("446 +", html)
+        self.assertNotIn("standard >10 ng path</small>", html)
+        self.assertNotIn("Everything above is modeled", html)
+        self.assertNotIn("water / empty", html)
+
+    def test_index_ids_are_unique(self):
+        class IdCollector(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.ids = []
+
+            def handle_starttag(self, _tag, attrs):
+                attributes = dict(attrs)
+                if "id" in attributes:
+                    self.ids.append(attributes["id"])
+
+        status, raw, _headers = self.request("GET", "/")
+        parser = IdCollector()
+        parser.feed(raw.decode("utf-8"))
+
+        self.assertEqual(status, 200)
+        self.assertEqual(len(parser.ids), len(set(parser.ids)))
+        for required in (
+            "sample-form",
+            "sample-count",
+            "wells",
+            "deck-table-body",
+            "deck-list",
+            "odtc-programs",
+            "cycle-summary",
+            "arm",
+        ):
+            self.assertIn(required, parser.ids)
 
     def test_cors_preflight_is_not_supported(self):
         status, payload, _headers = self.request("OPTIONS", "/api/plan")

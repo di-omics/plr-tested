@@ -4,18 +4,21 @@ A local, planning-only browser wizard for NEBNext EM-seq v2 with UltraShear on t
 Hamilton STAR. It ships beside the protocol package and uses the same plain-language
 deck terminology as the whole-genome amplification + Targeted PCR bench planner.
 
-The operator enters 1 through 96 library positions. Planner v0.1.0 fills one 96-well
+The operator enters 1 through 96 library positions. The planner fills one 96-well
 plate column-major: A1:H1, then A2:H2, through A12:H12. The final partial column is
 explicitly blank-padded so the eight-channel actuation footprint is visible.
 
 ## What the app includes
 
 - Interactive 1-96 sample plate map.
+- Quick 8 / 24 / 48 / 96 position presets plus an exact 1-96 entry.
 - Planned eight-channel column and blank-well counts.
 - Runtime context: the observed one-column physical dry rehearsal took about 1 h 7 min;
   the default programmed thermal holds total about 6 h 29 min before ramps, swaps,
   cleanup waits, seal/spin, and QC.
 - Plain-language Hamilton STAR deck checklist with `p0 = first slot` terminology.
+- Compact deck table, reservoir map, 11-stage workflow, eight ODTC program profiles,
+  input-mass PCR-cycle guidance, and reviewed run-posture commands.
 - Print / save setup sheet for the physically dry-validated one-column envelope.
 - A release-evidence panel tied to source commit `c375117` and the 2026-07-21 dry-run
   record.

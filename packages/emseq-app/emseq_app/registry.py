@@ -31,7 +31,9 @@ class DeckItem:
     rail: int
     position: int
     location_label: str
+    labware_id: str
     role: str
+    dry_run_state: str
     instruction: str
     why: str
 
@@ -41,7 +43,9 @@ class DeckItem:
             "rail": self.rail,
             "position": self.position,
             "location_label": self.location_label,
+            "labware_id": self.labware_id,
             "role": self.role,
+            "dry_run_state": self.dry_run_state,
             "instruction": self.instruction,
             "why": self.why,
         }
@@ -151,7 +155,9 @@ def emseq_dry_deck() -> DeckDefinition:
                 rail=rail,
                 position=position,
                 location_label=location_label,
+                labware_id=str(entry["labware_id"]),
                 role=str(entry["role"]),
+                dry_run_state=str(entry["dry_run_state"]),
                 instruction=str(entry["instruction"]),
                 why=str(entry["why"]),
             )

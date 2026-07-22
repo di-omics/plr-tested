@@ -617,13 +617,283 @@
       font-size: 11px;
     }
 
+    .status-stack {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 7px;
+    }
+
+    .mode-badge.passed { border-color: #bcd78f; background: #e5f1d4; }
+    .mode-badge.gated {
+      border-color: var(--line-strong);
+      background: var(--gray-wash);
+      color: var(--gray-strong);
+    }
+    .mode-badge.gated::before { background: var(--gray-strong); }
+
+    .quick-counts,
+    .mass-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 13px;
+    }
+
+    .quick-count,
+    .mass-picker button {
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--gray-strong);
+      cursor: pointer;
+      font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .quick-count:hover,
+    .mass-picker button:hover { border-color: var(--green); }
+
+    .quick-count.active,
+    .mass-picker button.active {
+      border-color: var(--green-deep);
+      background: var(--green-wash);
+      color: var(--green-deep);
+    }
+
+    .quick-count:focus-visible,
+    .mass-picker button:focus-visible {
+      outline: 3px solid rgba(137, 189, 49, .4);
+      outline-offset: 2px;
+    }
+
+    .sample-input-wrap {
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      height: 52px;
+      border: 1.5px solid var(--line-strong);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .sample-input-wrap:focus-within {
+      border-color: var(--green);
+      box-shadow: 0 0 0 4px rgba(137, 189, 49, .15);
+    }
+
+    .sample-input-wrap input[type="number"] {
+      height: 100%;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .sample-input-wrap > span {
+      padding-right: 14px;
+      color: var(--faint);
+      font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: nowrap;
+    }
+
+    .metric b small { color: var(--faint); font-size: 12px; letter-spacing: 0; }
+
+    .subsection-title {
+      margin: 20px 0 10px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+      letter-spacing: -.01em;
+    }
+
+    .run-summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .run-summary > div {
+      min-height: 105px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--gray-wash);
+    }
+
+    .run-summary span,
+    .cycle-summary span,
+    .posture-grid article > span {
+      display: block;
+      color: var(--muted);
+      font: 800 9px/1.25 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .run-summary b { display: block; margin-top: 9px; font-size: 19px; letter-spacing: -.03em; }
+    .run-summary small { display: block; margin-top: 5px; color: var(--muted); font-size: 9.5px; line-height: 1.35; }
+
+    .deck-table-wrap,
+    .protocol-table-wrap {
+      overflow-x: auto;
+      margin: 4px 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .deck-table,
+    .protocol-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+
+    .deck-table caption {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font: 800 9px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .08em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .deck-table th,
+    .deck-table td,
+    .protocol-table th,
+    .protocol-table td {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .deck-table tr:last-child td,
+    .protocol-table tr:last-child td { border-bottom: 0; }
+
+    .deck-table th,
+    .protocol-table th {
+      background: var(--gray-wash);
+      color: var(--muted);
+      font: 800 9px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .deck-table td:nth-child(1),
+    .deck-table td:nth-child(2),
+    .deck-table td:nth-child(3),
+    .protocol-table td:nth-child(1),
+    .protocol-table td:nth-child(3) {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .reservoir-block {
+      margin: 14px 0;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--gray-wash);
+    }
+
+    .reservoir-block > b { display: block; margin-bottom: 9px; font-size: 12px; }
+    .reservoir-map { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+    .reservoir-map span {
+      min-height: 58px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 9.5px;
+      line-height: 1.3;
+    }
+    .reservoir-map span b { display: block; margin-bottom: 4px; color: var(--green-deep); font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .reservoir-map .empty { color: var(--faint); background: #f8f9f7; }
+
+    .checklist-title { margin-top: 16px; }
+
+    .stage-flow {
+      display: grid;
+      grid-template-columns: repeat(11, minmax(62px, 1fr));
+      gap: 5px;
+      overflow-x: auto;
+      margin: 0 0 14px;
+      padding: 0 0 6px;
+      list-style: none;
+    }
+
+    .stage-flow li {
+      min-height: 62px;
+      padding: 9px 8px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--gray-wash);
+      color: var(--gray-strong);
+      font-size: 10px;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .stage-flow li b { display: block; margin-bottom: 6px; color: var(--green-deep); font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .mass-picker { margin-bottom: 14px; }
+
+    .cycle-summary {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 14px;
+      align-items: center;
+      padding: 15px 16px;
+      border: 1px solid #d3e5b7;
+      border-left: 4px solid var(--green);
+      border-radius: 11px;
+      background: var(--green-wash);
+    }
+
+    .cycle-summary b { color: var(--green-deep); font-size: 20px; }
+    .cycle-summary small { color: var(--gray-strong); font-size: 11px; font-weight: 750; }
+
+    .posture-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .posture-grid article {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .posture-grid article b { display: block; margin: 6px 0 9px; font-size: 14px; }
+    .posture-grid code {
+      display: block;
+      overflow-wrap: anywhere;
+      padding: 9px;
+      border-radius: 8px;
+      background: var(--gray-wash);
+      color: var(--green-deep);
+      font: 700 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .posture-grid p { margin: 9px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+
     @media (max-width: 760px) {
       .notice-grid, .release, .runtime-grid { grid-template-columns: 1fr; }
       .metrics { grid-template-columns: 1fr 1fr; }
+      .run-summary { grid-template-columns: 1fr 1fr; }
+      .reservoir-map { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .posture-grid { grid-template-columns: 1fr; }
+      .cycle-summary { grid-template-columns: 1fr; gap: 6px; }
       .setup-key { grid-template-columns: 1fr; }
       .global-grid { grid-template-columns: 1fr; }
       header { display: block; }
-      .mode-badge { margin-top: 18px; }
+      .status-stack { align-items: flex-start; margin-top: 18px; }
     }
 
     @media (max-width: 540px) {
@@ -635,6 +905,7 @@
       .step-body { padding: 18px 14px 20px; }
       .sample-form { grid-template-columns: 1fr; }
       .step-head { align-items: flex-start; flex-direction: column; gap: 8px; }
+      .run-summary { grid-template-columns: 1fr; }
       .deck-actions { width: 100%; align-items: stretch; }
       .secondary { width: 100%; }
       .check { grid-template-columns: 24px 142px minmax(0, 1fr); padding: 10px 8px; }
@@ -661,6 +932,9 @@
       .mode-badge,
       .notice-grid,
       .sample-step,
+      .workflow-step,
+      .pcr-step,
+      .posture-step,
       .release-step,
       footer,
       .print-action,
@@ -679,6 +953,9 @@
       .deck-step .step-body { padding: 0; }
       .deck-step .step-head { display: block; margin-bottom: 8px; }
       .deck-step .step-head .plain-note { margin-top: 3px; }
+      .deck-table-wrap,
+      .reservoir-block,
+      .checklist-title { display: none !important; }
 
       .print-meta {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -772,12 +1049,16 @@
           <path d="M75 188C97 170 108 142 113 117C91 134 80 159 75 188Z"/>
         </svg>
         <div>
-          <p class="eyebrow">di-omics / Hamilton STAR / EM-seq planner v0.1.0</p>
-          <h1>EM-seq plan<span>.</span></h1>
-          <p class="lede">Map 1–96 library positions across one 96-well plate, column by column. The app separates the physically dry-validated A1:H1 runner from 9–96 sample layout proposals, and nothing here can start an instrument.</p>
+          <p class="eyebrow">di-omics / plr-tested / Hamilton STAR + Inheco ODTC</p>
+          <h1>EM-seq UltraShear v2 <span>deck planner</span></h1>
+          <p class="lede">Pick a sample count, stage the deck, and read the run before you touch the instrument. NEBNext UltraShear enzymatic methyl-seq (kits M7634 and E8015), planned for a Hamilton Microlab STAR with an Inheco ODTC.</p>
         </div>
       </div>
-      <div class="mode-badge">planning only</div>
+      <div class="status-stack" aria-label="Validation status">
+        <span class="mode-badge">simulation-first</span>
+        <span class="mode-badge passed">physical dry passed: A1:H1</span>
+        <span class="mode-badge gated">wet + ODTC heat gated</span>
+      </div>
     </header>
 
     <div class="notice-grid">
@@ -785,7 +1066,7 @@
         <strong>Protocol scope:</strong> NEB #M7634 v3.0 Section 3 couples UltraShear to EM-seq v2; NEB #E8015 supplies protection, cleanup, denaturation, deamination, and library PCR. This planner follows that coupled route.
       </div>
       <div class="notice lock">
-        <strong>Dry motion passed; wet and heat stay locked.</strong> The full 36-leg A1:H1 rehearsal completed without errors on 2026-07-21. The plate layout supports 1–96 positions, but the physical setup sheet remains limited to one eight-channel column (1–8).
+        <strong>One-column motion passed; wet, heat, and 9–96 execution stay locked.</strong> The full 36-leg empty-deck A1:H1 rehearsal completed without errors on 2026-07-21. The plate map supports 1–96 positions, but the physical setup sheet remains limited to one eight-channel column (1–8).
       </div>
     </div>
 
@@ -793,13 +1074,22 @@
       <div class="step-no">01</div>
       <div class="step-body">
         <div class="step-head">
-          <h2 id="samples-title">How many samples?</h2>
+          <h2 id="samples-title">Samples</h2>
           <span class="step-meta">1 to 96 / one full plate</span>
+        </div>
+        <div class="quick-counts" role="group" aria-label="Common sample counts">
+          <button type="button" data-sample-count="8" class="quick-count active">8 samp</button>
+          <button type="button" data-sample-count="24" class="quick-count">24 samp</button>
+          <button type="button" data-sample-count="48" class="quick-count">48 samp</button>
+          <button type="button" data-sample-count="96" class="quick-count">96 samp</button>
         </div>
         <form id="sample-form" class="sample-form">
           <div>
-            <label class="field-label" for="sample-count">Library positions</label>
-            <input id="sample-count" type="number" min="1" max="96" step="1" value="8" inputmode="numeric" required>
+            <label class="field-label" for="sample-count">Planned library positions</label>
+            <div class="sample-input-wrap">
+              <input id="sample-count" type="number" min="1" max="96" step="1" value="8" inputmode="numeric" required>
+              <span>of 96</span>
+            </div>
           </div>
           <button class="primary" type="submit">Build the plate plan</button>
         </form>
@@ -807,12 +1097,32 @@
         <div id="plan-error" class="error" role="alert"></div>
         <div id="plan-result" class="plan-result" aria-live="polite">
           <div class="metrics">
-            <div class="metric"><b id="m-samples">8</b><span>planned library wells</span></div>
-            <div class="metric"><b id="m-columns">1</b><span>planned columns</span></div>
+            <div class="metric"><b><span id="m-samples">8</span><small> / 96</small></b><span>planned samples</span></div>
+            <div class="metric"><b id="m-columns">1</b><span>columns used</span></div>
             <div class="metric"><b id="m-positions">8</b><span>actuated channel wells</span></div>
-            <div class="metric"><b id="m-blanks">0</b><span>explicit blanks</span></div>
+            <div class="metric"><b id="m-blanks">0</b><span>column-pad blanks</span></div>
           </div>
-          <div class="runtime-grid" aria-label="Runtime context">
+          <div class="well-key">
+            <span><i class="sample-dot"></i>sample</span>
+            <span><i class="blank-dot"></i>column pad</span>
+            <span><i class="unused-dot"></i>unused</span>
+          </div>
+          <div class="plate-scroll">
+            <div id="wells" class="wells" role="grid" aria-label="96-well plate plan"></div>
+          </div>
+          <p id="plan-note" class="plain-note">Samples fill A1:H1, then A2:H2, through A12:H12. A final partial eight-channel column stays visible with explicit blanks.</p>
+          <p class="plain-note">This is the only work plate the iSWAP moves. A partial final column is padded so the full eight-channel actuation footprint is visible.</p>
+          <p id="runner-boundary" class="runner-boundary"></p>
+
+          <h3 class="subsection-title">Run summary</h3>
+          <div id="run-summary" class="run-summary" aria-label="Run summary">
+            <div><span>Columns used</span><b id="summary-columns">1</b><small>layout</small></div>
+            <div><span>STAR / iSWAP legs</span><b id="summary-legs">36</b><small id="summary-legs-note">validated one-column runner</small></div>
+            <div><span>ODTC thermal programs</span><b>8</b><small>written; heat unvalidated</small></div>
+            <div><span>SPRI cleanups</span><b>3</b><small>1.1× / 1.0× / 0.8×</small></div>
+            <div><span>Multi-column run time</span><b>not estimated</b><small>9–96 runner not implemented</small></div>
+          </div>
+          <div class="runtime-grid" aria-label="Runtime evidence">
             <div class="runtime-card">
               <span>Observed physical dry</span>
               <b id="m-dry-runtime">about 1 h 7 min</b>
@@ -825,16 +1135,6 @@
             </div>
           </div>
           <p id="runtime-note" class="plain-note">Multi-column runtime is not estimated until the 9–96 sample runner exists.</p>
-          <div class="well-key">
-            <span><i class="sample-dot"></i>sample</span>
-            <span><i class="blank-dot"></i>blank in final column</span>
-            <span><i class="unused-dot"></i>unused plate well</span>
-          </div>
-          <div class="plate-scroll">
-            <div id="wells" class="wells" role="grid" aria-label="96-well plate plan"></div>
-          </div>
-          <p id="plan-note" class="plain-note">Samples fill A1:H1, then A2:H2, through A12:H12. A final partial eight-channel column stays visible with explicit blanks.</p>
-          <p id="runner-boundary" class="runner-boundary"></p>
         </div>
       </div>
     </section>
@@ -844,7 +1144,7 @@
       <div class="step-body">
         <div class="step-head">
           <div>
-            <h2 id="deck-title">Stage the deck</h2>
+            <h2 id="deck-title">Stage this deck</h2>
             <p class="plain-note">Work through the rail groups in the order shown. Match the printed rail number and each row’s slot or modeled-target label; position codes do not encode physical direction.</p>
           </div>
           <div class="deck-actions">
@@ -855,6 +1155,25 @@
             <button id="print-checklist" class="secondary print-action" type="button">Print / save setup sheet</button>
           </div>
         </div>
+        <div class="deck-table-wrap">
+          <table class="deck-table">
+            <caption>One-column physical dry reference · 9–96 layouts do not expand this released setup</caption>
+            <thead><tr><th>Rail</th><th>Pos</th><th>Labware</th><th>Role</th><th>Physical dry state</th></tr></thead>
+            <tbody id="deck-table-body"></tbody>
+          </table>
+        </div>
+        <div class="reservoir-block">
+          <b>Reservoir map · Rail 35 · p3 (fourth slot)</b>
+          <div class="reservoir-map" aria-label="Reservoir map">
+            <span><b>A1</b>Beads / SPRI</span>
+            <span><b>A2</b>80% EtOH wash 1</span>
+            <span><b>A3</b>80% EtOH wash 2</span>
+            <span><b>A4</b>Elution buffer</span>
+            <span class="empty"><b>A5–A11</b>unused</span>
+            <span><b>A12</b>Waste</span>
+          </div>
+        </div>
+        <p class="plain-note"><strong>Source posture:</strong> reagents are not pre-plated. The source plate holds one reagent at a time in column 1 and is swapped by the operator between legs. Do not substitute the work-plate model; the iSWAP coordinates assume the CellTreat plate.</p>
         <p id="deck-boundary" class="deck-boundary"></p>
         <div id="setup-key" class="setup-key" aria-label="Deck setup terminology">
           <div class="setup-term">
@@ -870,6 +1189,7 @@
             <span>Use the carrier on labeled Rail 35, then load its third slot. The code does not mean left/right/front/back; follow the validated deck map.</span>
           </div>
         </div>
+        <h3 class="subsection-title checklist-title">One-column physical dry checklist</h3>
         <div class="print-meta print-only" aria-hidden="true">
           <div><span>Library positions</span><b id="print-samples">8 planned</b></div>
           <div><span>Run envelope</span><b id="print-envelope">Dry / one column / A1:H1</b></div>
@@ -885,8 +1205,80 @@
       </div>
     </section>
 
-    <section class="step release-step" aria-labelledby="release-title">
+    <section class="step workflow-step" aria-labelledby="workflow-title">
       <div class="step-no">03</div>
+      <div class="step-body">
+        <div class="step-head">
+          <h2 id="workflow-title">Workflow</h2>
+          <span class="step-meta">11 stages / 8 thermal programs</span>
+        </div>
+        <ol class="stage-flow" aria-label="EM-seq workflow stages">
+          <li><b>1</b>Shear</li><li><b>2</b>End prep</li><li><b>3</b>Ligation</li>
+          <li><b>4</b>SPRI 1.1×</li><li><b>5</b>TET2</li><li><b>6</b>Stop</li>
+          <li><b>7</b>SPRI 1.0×</li><li><b>8</b>Denature</li><li><b>9</b>Deaminate</li>
+          <li><b>10</b>PCR</li><li><b>11</b>SPRI 0.8×</li>
+        </ol>
+        <div class="protocol-table-wrap">
+          <table id="odtc-programs" class="protocol-table">
+            <thead><tr><th>ODTC program</th><th>Profile</th><th>Lid</th></tr></thead>
+            <tbody>
+              <tr><td>emseq-shear</td><td>37 °C 30 min · 65 °C 15 min · 4 °C hold</td><td>75 °C</td></tr>
+              <tr><td>emseq-endprep</td><td>20 °C 15 min · 65 °C 15 min · 4 °C hold</td><td>75 °C</td></tr>
+              <tr><td>emseq-ligation</td><td>20 °C 15 min · 4 °C hold</td><td>50 °C*</td></tr>
+              <tr><td>emseq-tet2</td><td>37 °C 60 min · 4 °C hold</td><td>45 °C</td></tr>
+              <tr><td>emseq-tet2-stop</td><td>37 °C 30 min · 4 °C hold</td><td>45 °C</td></tr>
+              <tr><td>emseq-denature</td><td>85 °C 10 min · 4 °C hold*</td><td>105 °C</td></tr>
+              <tr><td>emseq-deaminate</td><td>37 °C 180 min · 4 °C hold</td><td>45 °C</td></tr>
+              <tr><td>emseq-pcr</td><td>98 °C 30 s · N × [98 °C 10 s / 62 °C 30 s / 65 °C 60 s] · 65 °C 5 min · 4 °C</td><td>105 °C</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="plain-note">* Thermal execution is not yet qualified. The 50 °C ligation lid is the ODTC substitute for the manual’s lid-off instruction; the denaturation 4 °C step substitutes for immediate cold-block cooling. Both require physical validation.</p>
+      </div>
+    </section>
+
+    <section class="step pcr-step" aria-labelledby="pcr-title">
+      <div class="step-no">04</div>
+      <div class="step-body">
+        <div class="step-head">
+          <h2 id="pcr-title">Input mass sets the PCR-cycle guidance</h2>
+          <span class="step-meta">NEB E8015 table</span>
+        </div>
+        <div class="mass-picker" role="group" aria-label="DNA input mass">
+          <button type="button" data-mass="200">200 ng</button>
+          <button type="button" data-mass="50">50 ng</button>
+          <button type="button" data-mass="10" class="active">10 ng</button>
+          <button type="button" data-mass="1">1 ng</button>
+          <button type="button" data-mass="0.1">0.1 ng</button>
+        </div>
+        <div class="cycle-summary" aria-live="polite">
+          <span id="cycle-input">At 10 ng input</span>
+          <b id="cycle-summary">8 PCR cycles</b>
+          <small id="cycle-route">low-input ≤10 ng path</small>
+        </div>
+        <p class="plain-note"><strong>Low-input branch (≤10 ng):</strong> spike NEBNext Carrier DNA into the cleanup-1 elution and dilute T4-BGT 1:10 in the TET2 mix. Those are off-deck operator preparations. The package default remains the &gt;10 ng route; select and record a low-input route explicitly.</p>
+      </div>
+    </section>
+
+    <section class="step posture-step" aria-labelledby="posture-title">
+      <div class="step-no">05</div>
+      <div class="step-body">
+        <div class="step-head">
+          <h2 id="posture-title">Run posture</h2>
+          <span class="step-meta">review before execution</span>
+        </div>
+        <div class="posture-grid">
+          <article><span>Deck preflight</span><b>Setup / homing only</b><code>run_emseq_odtc_1col_full_dry.py --deck</code><p>Initializes every scoped real-STAR deck view and prints the assignments; no protocol transfer follows.</p></article>
+          <article><span>Local sim</span><b>Liquid-handling chatterbox</b><code>run_emseq_odtc_1col_full_dry.py --sim-lh</code><p>Runs the 14 liquid-handling legs locally. iSWAP and ODTC actions print as notes.</p></article>
+          <article><span>Motion rehearsal</span><b>Physical empty-deck dry</b><code>--confirm RUN_EMSEQ_ODTC_FULL<br>--labware-ack CELLTREAT_229195_WORK_SOURCE</code><p>The 36-leg A1:H1 rehearsal passed on 2026-07-21. Empty dry labware, returned tips, ODTC unheated, human at the E-stop.</p></article>
+          <article><span>Wet run</span><b>Blocked pending qualification</b><code>no released command</code><p>Dispense heights, mixing, SPRI eluate transfer and timing, ODTC heat, and 9–96 execution remain gated.</p></article>
+        </div>
+        <p class="plain-note"><strong>One process per instrument.</strong> Physical execution remains attended, with a trained operator at the deck and immediate E-stop access.</p>
+      </div>
+    </section>
+
+    <section class="step release-step" aria-labelledby="release-title">
+      <div class="step-no">06</div>
       <div class="step-body">
         <div class="step-head">
           <h2 id="release-title">Release gate</h2>
@@ -905,7 +1297,7 @@
     </section>
 
     <footer>
-      <span>Research use only / EM-seq planning envelope</span>
+      <span>di-omics · plr-tested · EM-seq UltraShear v2 · physical empty-deck dry passed · wet/heat and 9–96 execution gated</span>
       <span id="app-version">Localhost app</span>
     </footer>
   </main>
@@ -921,6 +1313,9 @@
       wells: document.getElementById("wells"),
       samples: document.getElementById("m-samples"),
       columns: document.getElementById("m-columns"),
+      summaryColumns: document.getElementById("summary-columns"),
+      summaryLegs: document.getElementById("summary-legs"),
+      summaryLegsNote: document.getElementById("summary-legs-note"),
       positions: document.getElementById("m-positions"),
       blanks: document.getElementById("m-blanks"),
       dryRuntime: document.getElementById("m-dry-runtime"),
@@ -933,7 +1328,9 @@
       printChecklist: document.getElementById("print-checklist"),
       progress: document.querySelector(".check-progress"),
       deckBoundary: document.getElementById("deck-boundary"),
+      deckTable: document.getElementById("deck-table-body"),
       setupKey: document.getElementById("setup-key"),
+      checklistTitle: document.querySelector(".checklist-title"),
       deck: document.getElementById("deck-list"),
       globals: document.getElementById("global-list"),
       fill: document.getElementById("check-fill"),
@@ -941,7 +1338,12 @@
       releaseState: document.getElementById("release-state"),
       releaseTitle: document.getElementById("release-title-copy"),
       releaseMessage: document.getElementById("release-message"),
-      version: document.getElementById("app-version")
+      version: document.getElementById("app-version"),
+      quickCounts: document.querySelectorAll("[data-sample-count]"),
+      massButtons: document.querySelectorAll("[data-mass]"),
+      cycleInput: document.getElementById("cycle-input"),
+      cycleSummary: document.getElementById("cycle-summary"),
+      cycleRoute: document.getElementById("cycle-route")
     };
 
     let checked = new Set();
@@ -1021,8 +1423,20 @@
     function renderDeck(deck) {
       ui.deck.replaceChildren();
       ui.globals.replaceChildren();
+      ui.deckTable.replaceChildren();
       checked = new Set();
       checklistTotal = deck.items.length + deck.global_checks.length;
+
+      deck.items.forEach(function (item) {
+        const row = document.createElement("tr");
+        [item.rail, "p" + item.position, item.labware_id, item.role, item.dry_run_state]
+          .forEach(function (value) {
+            const cell = document.createElement("td");
+            setText(cell, value);
+            row.appendChild(cell);
+          });
+        ui.deckTable.appendChild(row);
+      });
 
       const rails = new Map();
       deck.items.forEach(function (item) {
@@ -1057,12 +1471,25 @@
     function renderPlan(plan) {
       setText(ui.samples, plan.sample_count);
       setText(ui.columns, plan.column_count);
+      setText(ui.summaryColumns, plan.column_count);
+      setText(ui.summaryLegs, plan.current_runner.eligible ? "36" : "—");
+      setText(
+        ui.summaryLegsNote,
+        plan.current_runner.eligible
+          ? "validated one-column runner"
+          : "multi-column runner not implemented"
+      );
       setText(ui.positions, plan.robot_reaction_count);
       setText(ui.blanks, plan.blank_wells.length);
       setText(ui.printSamples, plan.sample_count + " planned");
       setText(ui.dryRuntime, plan.runtime.observed_physical_dry_label);
       setText(ui.thermalRuntime, plan.runtime.default_thermal_hold_label);
       setText(ui.runtimeNote, plan.runtime.note);
+      ui.quickCounts.forEach(function (button) {
+        const active = Number(button.dataset.sampleCount) === plan.sample_count;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
       ui.wells.replaceChildren();
 
       const corner = document.createElement("div");
@@ -1122,6 +1549,7 @@
       ui.globals.hidden = !eligible;
       ui.progress.hidden = !eligible;
       ui.setupKey.hidden = !eligible;
+      ui.checklistTitle.hidden = !eligible;
       ui.printChecklist.disabled = !eligible;
 
       if (eligible) {
@@ -1161,6 +1589,38 @@
         setText(ui.error, error.message);
         ui.error.classList.add("show");
       }
+    });
+
+    ui.quickCounts.forEach(function (button) {
+      button.setAttribute("aria-pressed", button.classList.contains("active") ? "true" : "false");
+      button.addEventListener("click", function () {
+        ui.input.value = button.dataset.sampleCount;
+        ui.form.requestSubmit();
+      });
+    });
+
+    const cycleGuidance = {
+      "200": { cycles: "4–5 PCR cycles", route: "standard >10 ng path · operator choice" },
+      "50": { cycles: "5–6 PCR cycles", route: "standard >10 ng path · operator choice" },
+      "10": { cycles: "8 PCR cycles", route: "low-input ≤10 ng path" },
+      "1": { cycles: "11 PCR cycles", route: "low-input ≤10 ng path" },
+      "0.1": { cycles: "14 PCR cycles", route: "low-input ≤10 ng path" }
+    };
+
+    ui.massButtons.forEach(function (button) {
+      button.setAttribute("aria-pressed", button.classList.contains("active") ? "true" : "false");
+      button.addEventListener("click", function () {
+        const mass = button.dataset.mass;
+        const guidance = cycleGuidance[mass];
+        ui.massButtons.forEach(function (candidate) {
+          const active = candidate === button;
+          candidate.classList.toggle("active", active);
+          candidate.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        setText(ui.cycleInput, "At " + mass + " ng input");
+        setText(ui.cycleSummary, guidance.cycles);
+        setText(ui.cycleRoute, guidance.route);
+      });
     });
 
     ui.printChecklist.addEventListener("click", function () {

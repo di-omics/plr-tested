@@ -164,7 +164,7 @@
         <div class="plate pos-home" id="plate" aria-hidden="true"></div>
       </div>
       <div class="pick">
-        <div class="plabel"><span class="l">samples</span><span class="r" id="pmeta">8 samples &middot; 1 column &middot; ~7h 26m</span></div>
+        <div class="plabel"><span class="l">samples</span><span class="r" id="pmeta">8 samples &middot; 1 column &middot; 1-col evidence only</span></div>
         <div class="chips" id="chips" role="group" aria-label="number of samples"></div>
       </div>
       <button class="run" id="run">run</button>
@@ -190,7 +190,7 @@
   var REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function colLabel(c){ return c===1 ? 'col 1' : 'cols 1-'+c; }
-  function estTime(c){ var m = 446 + (c-1)*5; var h=Math.floor(m/60), r=m%60; return '~'+h+'h '+(r<10?'0':'')+r+'m'; }
+  function estTime(c){ return c===1 ? '1-col evidence only' : 'runtime not estimated'; }
   function legDefs(){
     var cl = colLabel(sel.c);
     return [
