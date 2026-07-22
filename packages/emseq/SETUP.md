@@ -1,5 +1,9 @@
 # Setup
 
+The companion [`../emseq-app/`](../emseq-app/) planner provides the same deck setup as
+an interactive checklist and printable sheet. It accepts 1-96 planned library positions;
+only 1-8 positions in A1:H1 expose the physically dry-validated setup sheet.
+
 ## Compute-only simulation
 
 1. Use Python 3.9 or newer.

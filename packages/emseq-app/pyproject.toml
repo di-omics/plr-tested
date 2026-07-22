@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emseq-bench-app"
+version = "0.1.0"
+description = "Planning-only local bench app for EM-seq v2 with UltraShear on Hamilton STAR"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "di-omics" }]
+dependencies = []
+
+[project.scripts]
+emseq-app = "emseq_app.server:main"
+
+[tool.setuptools]
+packages = ["emseq_app"]
+
+[tool.setuptools.package-data]
+emseq_app = [
+  "data/*.json",
+  "data/releases/*.json",
+  "data/releases/*.txt",
+  "static/*.html",
+]

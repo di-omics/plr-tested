@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "decks": {
+    "emseq_v2_ultrashear_dry_v1": {
+      "label": "EM-seq v2 + UltraShear one-column physical dry deck",
+      "mode": "dry_planning_only",
+      "items": [
+        {
+          "key": "r48p0_p10",
+          "rail": 48,
+          "position": 0,
+          "location_label": "Rail 48 · p0 (first slot)",
+          "role": "10 µL filter-tip rack (P10)",
+          "instruction": "Seat the P10 filter-tip rack; tip-rack columns 1 through 6 (A1:H1 through A6:H6) must be intact.",
+          "why": "The six small-volume EM-seq addition legs use these dry-observation tip columns and return them."
+        },
+        {
+          "key": "r48p1_p50",
+          "rail": 48,
+          "position": 1,
+          "location_label": "Rail 48 · p1 (second slot)",
+          "role": "50 µL filter-tip rack (P50)",
+          "instruction": "Seat the P50 filter-tip rack; tip-rack columns 1 through 5 (A1:H1 through A5:H5) must be intact.",
+          "why": "The five P50 reagent-add modes use these columns; cleanup residual/elution motions reuse column 1 after tips are returned."
+        },
+        {
+          "key": "r48p2_p300",
+          "rail": 48,
+          "position": 2,
+          "location_label": "Rail 48 · p2 (third slot)",
+          "role": "300 µL filter-tip rack (P300)",
+          "instruction": "Seat the P300 filter-tip rack; tip-rack column 1 (A1:H1) must be intact.",
+          "why": "All three empty cleanup rehearsals use this column for beads, supernatant, and ethanol motions and return the tips."
+        },
+        {
+          "key": "r35p0_work",
+          "rail": 35,
+          "position": 0,
+          "location_label": "Rail 35 · p0 (first slot)",
+          "role": "CellTreat 350 µL work plate",
+          "instruction": "Seat one bare, empty CellTreat 229195/229196 work plate squarely in the first site.",
+          "why": "This single plate moves through all eight ODTC and all three magnet round trips, then returns here."
+        },
+        {
+          "key": "r35p1_source",
+          "rail": 35,
+          "position": 1,
+          "location_label": "Rail 35 · p1 (second slot)",
+          "role": "CellTreat 350 µL dry source plate",
+          "instruction": "Seat the second bare, empty CellTreat 229195/229196 plate squarely; source column 1 must be clear.",
+          "why": "Every dry reagent-add mode models its source at column 1 using the working AmpSeq plate-height logic."
+        },
+        {
+          "key": "r35p2_magnet",
+          "rail": 35,
+          "position": 2,
+          "location_label": "Rail 35 · p2 (third slot)",
+          "role": "aligned magnet block",
+          "instruction": "Keep the correct magnet installed and aligned; its plate landing area must be empty with no plate or lid.",
+          "why": "The work plate lands here for each of the three dry SPRI cleanup motion blocks."
+        },
+        {
+          "key": "r35p3_trough",
+          "rail": 35,
+          "position": 3,
+          "location_label": "Rail 35 · p3 (fourth slot)",
+          "role": "CellTreat 12-well dry trough",
+          "instruction": "Seat the empty, dry trough; A1, A2, A3, A4, and A12 must be empty and clear.",
+          "why": "The cleanup motions model beads, two ethanol washes, elution buffer, and waste at those wells."
+        },
+        {
+          "key": "r20p1_odtc",
+          "rail": 20,
+          "position": 1,
+          "location_label": "Rail 20 · p1 (ODTC modeled target)",
+          "role": "ODTC landing nest",
+          "instruction": "Keep the ODTC installed. Confirm its nest is empty, open, cool, idle, and clear for the iSWAP path.",
+          "why": "The work plate completes eight ODTC out-and-back dry transfers; this rehearsal prints thermal notes but does not heat."
+        }
+      ],
+      "global_checks": [
+        {
+          "key": "channels_clear",
+          "instruction": "Confirm every pipetting channel starts untipped.",
+          "why": "The validated starting state assumes clear channels before each scoped script initializes."
+        },
+        {
+          "key": "iswap_clear",
+          "instruction": "Confirm the iSWAP holds nothing and all rail35-to-magnet and rail35-to-ODTC paths are clear.",
+          "why": "A stale plate, lid, or obstruction makes the recorded physical state false."
+        },
+        {
+          "key": "carriers_locked",
+          "instruction": "Confirm carriers and the installed ODTC are secured at the mapped rail targets 48, 35, and 20.",
+          "why": "The validated geometry is tied to these exact targets and modeled positions."
+        },
+        {
+          "key": "dry_only",
+          "instruction": "Confirm there are no samples, reagents, ethanol, or water on the deck.",
+          "why": "The physical release manifest covers empty-labware motion only."
+        },
+        {
+          "key": "operator_present",
+          "instruction": "A trained operator remains at the deck with immediate E-stop access for the entire run.",
+          "why": "No browser checklist or software gate replaces continuous physical observation."
+        },
+        {
+          "key": "final_targets_clear",
+          "instruction": "Confirm rail35 p0 is the intended final plate site and both the magnet and ODTC nests are empty before launch.",
+          "why": "The 36-leg choreography is stateful and depends on every destination being empty at the correct handoff."
+        }
+      ]
+    }
+  }
+}

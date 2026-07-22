@@ -9,6 +9,11 @@ sparse manifest, resolves the exact low- or high-input chemistry route, produces
 sourced 24-step run card, simulates the complete flow, applies library/conversion QC
 gates, and writes an auditable dossier plus sequencing handoff.
 
+For bench setup and sample-layout proposals, use the companion
+[`../emseq-app/`](../emseq-app/) browser planner. It maps 1-96 library positions across
+one 96-well plate, shows the observed dry and programmed thermal runtime context, and
+prints the physically dry-validated A1:H1 deck checklist. The app cannot start hardware.
+
 Status: **complete in deterministic simulation; physical empty-deck STAR dry motion
 passed; blocked for live sample execution.** The full 36-leg choreography ran on the
 physical STAR on 2026-07-21 with no liquid and no ODTC heat; the evidence and scope are
@@ -58,6 +63,13 @@ python -m emseq_automation doctor
 python -m emseq_automation plan configs/example_run.json
 python -m emseq_automation demo
 python -m unittest discover -s tests -v
+```
+
+Companion bench planner:
+
+```bash
+cd packages/emseq-app
+python3 -m emseq_app --port 8767
 ```
 
 Or install the command:

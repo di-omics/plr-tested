@@ -36,6 +36,9 @@ says otherwise.
     manifest to a sourced 24-step plan, deterministic simulation, conversion-control
     gates, dossier, a passed physical empty-deck STAR choreography, and an explicitly
     blocked live-sample run until wet and thermal qualification.
+  - [`emseq-app/`](packages/emseq-app) - local EM-seq bench planner: 1-96 position
+    96-well plate map, runtime context, dry-release evidence, interactive deck checklist,
+    and printable one-column setup sheet; no hardware execution layer.
   - [`iswap-move/`](packages/iswap-move) - STAR iSWAP plate-lid moves.
 
 ## What "tested" means here
