@@ -4,6 +4,10 @@ A local, planning-only browser wizard for NEBNext EM-seq v2 with UltraShear on t
 Hamilton STAR. It ships beside the protocol package and uses the same plain-language
 deck terminology as the whole-genome amplification + Targeted PCR bench planner.
 
+Status: the complete one-column Hamilton physical dry run passed all 36 of 36 legs on
+2026-07-21 with no command or USB fault and the plate returned to rail35 p0. Wet liquid,
+heated ODTC programs, and multi-column execution are the next qualification scope.
+
 The operator enters 1 through 96 library positions. The planner fills one 96-well
 plate column-major: A1:H1, then A2:H2, through A12:H12. The final partial column is
 explicitly blank-padded so the eight-channel actuation footprint is visible.

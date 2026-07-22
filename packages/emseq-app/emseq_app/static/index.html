@@ -1056,8 +1056,8 @@
       </div>
       <div class="status-stack" aria-label="Validation status">
         <span class="mode-badge">simulation-first</span>
-        <span class="mode-badge passed">physical dry passed: A1:H1</span>
-        <span class="mode-badge gated">wet + ODTC heat gated</span>
+        <span class="mode-badge passed">Hamilton dry run: 36/36 passed</span>
+        <span class="mode-badge gated">next: wet + ODTC heat qualification</span>
       </div>
     </header>
 
@@ -1066,7 +1066,7 @@
         <strong>Protocol scope:</strong> NEB #M7634 v3.0 Section 3 couples UltraShear to EM-seq v2; NEB #E8015 supplies protection, cleanup, denaturation, deamination, and library PCR. This planner follows that coupled route.
       </div>
       <div class="notice lock">
-        <strong>One-column motion passed; wet, heat, and 9–96 execution stay locked.</strong> The full 36-leg empty-deck A1:H1 rehearsal completed without errors on 2026-07-21. The plate map supports 1–96 positions, but the physical setup sheet remains limited to one eight-channel column (1–8).
+        <strong>Clean physical dry pass on the Hamilton STAR.</strong> All 36 legs completed without errors on 2026-07-21: all 11 reagent-add modes, all three cleanups, eight ODTC round trips, three magnet round trips, and the plate returned to rail35 p0. Wet chemistry, ODTC heat, and multi-column execution were outside that run’s scope.
       </div>
     </div>
 
@@ -1117,14 +1117,14 @@
           <h3 class="subsection-title">Run summary</h3>
           <div id="run-summary" class="run-summary" aria-label="Run summary">
             <div><span>Columns used</span><b id="summary-columns">1</b><small>layout</small></div>
-            <div><span>STAR / iSWAP legs</span><b id="summary-legs">36</b><small id="summary-legs-note">validated one-column runner</small></div>
+            <div><span>STAR / iSWAP legs</span><b id="summary-legs">36</b><small id="summary-legs-note">physical dry: 36/36 passed</small></div>
             <div><span>ODTC thermal programs</span><b>8</b><small>written; heat unvalidated</small></div>
             <div><span>SPRI cleanups</span><b>3</b><small>1.1× / 1.0× / 0.8×</small></div>
             <div><span>Multi-column run time</span><b>not estimated</b><small>9–96 runner not implemented</small></div>
           </div>
           <div class="runtime-grid" aria-label="Runtime evidence">
             <div class="runtime-card">
-              <span>Observed physical dry</span>
+              <span>Observed Hamilton dry pass</span>
               <b id="m-dry-runtime">about 1 h 7 min</b>
               <small>One A1:H1 column, empty deck, returned tips, no ODTC heat.</small>
             </div>
@@ -1157,7 +1157,7 @@
         </div>
         <div class="deck-table-wrap">
           <table class="deck-table">
-            <caption>One-column physical dry reference · 9–96 layouts do not expand this released setup</caption>
+            <caption>Hamilton dry-pass deck · 36/36 legs completed · 9–96 layouts do not expand this released setup</caption>
             <thead><tr><th>Rail</th><th>Pos</th><th>Labware</th><th>Role</th><th>Physical dry state</th></tr></thead>
             <tbody id="deck-table-body"></tbody>
           </table>
@@ -1189,7 +1189,7 @@
             <span>Use the carrier on labeled Rail 35, then load its third slot. The code does not mean left/right/front/back; follow the validated deck map.</span>
           </div>
         </div>
-        <h3 class="subsection-title checklist-title">One-column physical dry checklist</h3>
+        <h3 class="subsection-title checklist-title">Passed one-column physical dry checklist</h3>
         <div class="print-meta print-only" aria-hidden="true">
           <div><span>Library positions</span><b id="print-samples">8 planned</b></div>
           <div><span>Run envelope</span><b id="print-envelope">Dry / one column / A1:H1</b></div>
@@ -1270,8 +1270,8 @@
         <div class="posture-grid">
           <article><span>Deck preflight</span><b>Setup / homing only</b><code>run_emseq_odtc_1col_full_dry.py --deck</code><p>Initializes every scoped real-STAR deck view and prints the assignments; no protocol transfer follows.</p></article>
           <article><span>Local sim</span><b>Liquid-handling chatterbox</b><code>run_emseq_odtc_1col_full_dry.py --sim-lh</code><p>Runs the 14 liquid-handling legs locally. iSWAP and ODTC actions print as notes.</p></article>
-          <article><span>Motion rehearsal</span><b>Physical empty-deck dry</b><code>--confirm RUN_EMSEQ_ODTC_FULL<br>--labware-ack CELLTREAT_229195_WORK_SOURCE</code><p>The 36-leg A1:H1 rehearsal passed on 2026-07-21. Empty dry labware, returned tips, ODTC unheated, human at the E-stop.</p></article>
-          <article><span>Wet run</span><b>Blocked pending qualification</b><code>no released command</code><p>Dispense heights, mixing, SPRI eluate transfer and timing, ODTC heat, and 9–96 execution remain gated.</p></article>
+          <article><span>Hamilton dry run</span><b>Passed 36/36 legs</b><code>--confirm RUN_EMSEQ_ODTC_FULL<br>--labware-ack CELLTREAT_229195_WORK_SOURCE</code><p>Completed cleanly on 2026-07-21 with empty dry labware, returned tips, an unheated ODTC, continuous operator attendance, and the plate returned home.</p></article>
+          <article><span>Next qualification</span><b>Wet liquid + ODTC heat</b><code>no released wet command yet</code><p>Next work covers dispense heights, mixing, SPRI eluate transfer and timing, heated ODTC programs, and then multi-column execution.</p></article>
         </div>
         <p class="plain-note"><strong>One process per instrument.</strong> Physical execution remains attended, with a trained operator at the deck and immediate E-stop access.</p>
       </div>
@@ -1297,7 +1297,7 @@
     </section>
 
     <footer>
-      <span>di-omics · plr-tested · EM-seq UltraShear v2 · physical empty-deck dry passed · wet/heat and 9–96 execution gated</span>
+      <span>di-omics · plr-tested · EM-seq UltraShear v2 · Hamilton physical dry: 36/36 passed · next: wet/heat qualification</span>
       <span id="app-version">Localhost app</span>
     </footer>
   </main>
@@ -1371,8 +1371,8 @@
 
     function renderRelease(release) {
       if (release.available) {
-        setText(ui.releaseState, "dry evidence present");
-        setText(ui.releaseTitle, "One-column physical dry pass recorded; execution not installed");
+        setText(ui.releaseState, "Hamilton dry run passed");
+        setText(ui.releaseTitle, "36/36 legs completed cleanly; plate returned home");
       } else {
         setText(ui.releaseState, "locked");
         setText(ui.releaseTitle, "No validated EM-seq dry release");
@@ -1476,7 +1476,7 @@
       setText(
         ui.summaryLegsNote,
         plan.current_runner.eligible
-          ? "validated one-column runner"
+          ? "physical dry: 36/36 passed"
           : "multi-column runner not implemented"
       );
       setText(ui.positions, plan.robot_reaction_count);

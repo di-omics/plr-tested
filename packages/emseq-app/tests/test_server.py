@@ -245,10 +245,8 @@ class PlanningServerTests(unittest.TestCase):
         self.assertIn("NEB #M7634 v3.0 Section 3", html)
         self.assertIn("NEB #E8015", html)
         self.assertIn("full plate", html)
-        self.assertIn(
-            "physical setup sheet remains limited to one eight-channel column (1–8)",
-            html,
-        )
+        self.assertIn("Physically dry-validated setup-sheet scope", html)
+        self.assertIn("Setup sheet locked for this layout", html)
         self.assertIn("no hidden process-blank well is added", html)
         self.assertIn("Lambda and pUC19 conversion controls are spike-ins", html)
         self.assertIn("about 1 h 7 min", html)
@@ -294,7 +292,9 @@ class PlanningServerTests(unittest.TestCase):
         self.assertIn("--confirm RUN_EMSEQ_ODTC_FULL", html)
         self.assertIn("--labware-ack CELLTREAT_229195_WORK_SOURCE", html)
         self.assertIn("run_emseq_odtc_1col_full_dry.py --deck", html)
-        self.assertIn("physical empty-deck dry passed", html)
+        self.assertIn("Hamilton dry run: 36/36 passed", html)
+        self.assertIn("All 36 legs completed without errors", html)
+        self.assertIn("plate returned to rail35 p0", html)
         self.assertIn("Multi-column run time", html)
         self.assertIn("not estimated", html)
         self.assertNotIn("446 +", html)
