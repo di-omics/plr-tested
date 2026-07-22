@@ -40,8 +40,11 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
 - `emseq_cleanup.py` - the three SPRI cleanups. `--cleanup {post-ligation,post-tet2,post-pcr}`
   selects the bead ratio and elution volume; `--mode all` runs the motion sequence.
 - `run_emseq_odtc_1col_full_dry.py` - the full choreography (36 executed legs + ODTC notes).
-  `--print` shows the plan, `--sim-lh` runs the liquid-handling legs on the chatterbox,
-  `--confirm RUN_EMSEQ_ODTC_FULL` runs the dry rehearsal on hardware.
+  `--print` shows the plan, `--deck` initializes and prints every distinct real-STAR deck
+  assignment (normal setup/homing, no protocol transfer), `--sim-lh` runs the
+  liquid-handling legs on the chatterbox,
+  and `--confirm RUN_EMSEQ_ODTC_FULL --labware-ack CELLTREAT_229195_WORK_SOURCE`
+  runs the dry rehearsal on hardware.
 - ODTC thermal programs live in `instrument-integrations/odtc/odtc_protocols.py`
   (`emseq-shear`, `emseq-endprep`, `emseq-ligation`, `emseq-tet2`, `emseq-tet2-stop`,
   `emseq-denature`, `emseq-deaminate`, `emseq-pcr`) and run via `05_odtc_run_protocol.py`.
@@ -49,11 +52,19 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
 ## Deck (current 35/48 deck)
 
 ```
-rail48 pos0 = p10 tips            rail48 pos1 = p50 tips        rail48 pos2 = p300 tips
-rail35 pos0 = work plate (moves)  rail35 pos1 = reagent source (swap between reagent legs)
-rail35 pos2 = magnet              rail35 pos3 = 12-well reservoir
-rail20 pos1 = ODTC nest (empty, open to receive the plate)
+rail48 p0 (first slot) = p10 tips     p1 (second) = p50     p2 (third) = p300
+rail35 p0 (first slot) = CellTreat 350 uL work plate (moves)
+rail35 p1 (second slot) = CellTreat 350 uL reagent source (swap between legs)
+rail35 p2 (third slot) = magnet       p3 (fourth slot) = 12-well reservoir
+rail20 p1 (ODTC modeled target) = ODTC nest (empty, open to receive the plate)
 ```
+
+Exact physical liquid-handling resources: both the moving work plate and stationary
+source are `CellTreat_96_wellplate_350ul_Fb`; the reservoir is
+`CellTreat_12_troughplate_15000ul_Vb`. This matches the current working Targeted PCR
+playbook. Its subprocess iSWAP legs intentionally use the Cor 360 resource as a motion
+command stand-in for the physical CellTreat plate; EM-seq reuses those exact legs. Do
+not put a Cor plate at rail35 p0, and do not substitute either CellTreat plate.
 
 Reservoir map (rail35 pos3): A1 beads, A2 ethanol wash 1, A3 ethanol wash 2, A4 elution
 buffer, A12 waste.
@@ -119,11 +130,12 @@ STAR liquid handling (`hamilton-star/starlab_live/emseq`):
 
 Known gaps that MUST be closed on hardware before trusting a real run:
 
-- Dispense geometry is reused verbatim from the ampseq/whole-genome amplification-WGA column-1 adds, which were
-  tuned for adding into a small (2.5-3 uL) starting volume. Several EM-seq adds go into a
-  much fuller well (pcr-mm 45 uL into 40 uL; ligation-mm 31 uL into 51.5 uL). The
-  near-bottom dispense height (0.5 mm) needs tuning for high-volume adds, one step at a
-  time, before a wet run.
+- Source and destination plate models and heights now follow the working Targeted PCR logic.
+  The p50 path is source 0.0 mm / destination 1.5 mm; Targeted PCR raised the destination from
+  0.5 mm after the lower value crushed tips. The proven p10 path remains source 0.0 mm /
+  destination 0.5 mm. Several EM-seq adds enter a much fuller well (pcr-mm 45 uL into
+  45 uL; ligation-mm 31 uL into 51.5 uL), so submergence, splash, and withdrawal still
+  need stepwise dye/gravimetric tuning before a wet run.
 - No on-deck mixing. The manual asks for 10x pipette mixing at most steps; these scripts
   add and blow out only. Mixing is an operator step until tuned.
 - SPRI cleanup does not model the final "transfer clear eluate off the beads to a fresh
@@ -172,12 +184,16 @@ Scripts execute on the Pi wired to the instruments, via each tree's `run_on_pi.s
 # review first
 python run_emseq_odtc_1col_full_dry.py --print
 
+# on the Pi: initialize every deck/geometry view; setup/homing, no protocol transfer
+./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py --deck
+
 # exercise the liquid-handling legs locally, no hardware
 python run_emseq_odtc_1col_full_dry.py --sim-lh
 
-# on the Pi: deck check every leg (assignment only, no motion)
-./hamilton-star/run_on_pi.sh starlab_live/emseq/emseq_reagent_adds.py --mode deck
-./hamilton-star/run_on_pi.sh starlab_live/emseq/emseq_cleanup.py --cleanup post-pcr --mode deck
+# motion-only dry rehearsal on the real STAR; human present at the E-stop
+./hamilton-star/run_on_pi.sh starlab_live/emseq/run_emseq_odtc_1col_full_dry.py \
+  --confirm RUN_EMSEQ_ODTC_FULL \
+  --labware-ack CELLTREAT_229195_WORK_SOURCE
 
 # an ODTC program (this heats; human at the E-stop)
 ./instrument-integrations/run_on_pi.sh odtc/05_odtc_run_protocol.py --program emseq-shear --dry
@@ -189,9 +205,9 @@ The reagent PCR cycle count is input-dependent (E8015: 200 ng 4-5, 50 ng 5-6, 10
 ## Safety
 
 Same rules as the rest of this repo. Assume a script drives real hardware unless it names
-an exception (`--mode deck`, `--dry`, `--sim-lh`, `--print`). Never run unattended, a
+an exception (`--mode deck`, `--deck`, `--dry`, `--sim-lh`, `--print`). Never run unattended, a
 person watches with a hand near the E-stop. Run `--mode deck` first. The full choreography
-moves the arm through 7 ODTC round trips and 3 magnet round trips and is gated behind
+moves the arm through 8 ODTC round trips and 3 magnet round trips and is gated behind
 `--confirm RUN_EMSEQ_ODTC_FULL`. The ODTC block reaches 98 C on the PCR (1 C under the
 99 C ceiling, expect "out of specification" warnings, not faults) and stays hot after a
 program ends. Only one process may drive an instrument at a time.

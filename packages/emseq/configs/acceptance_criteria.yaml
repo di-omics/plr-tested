@@ -1,0 +1,15 @@
+# Gate 0: site-specific liquid-handler qualification.
+lh_cv_max_percent: 5.0
+
+# M7634 v3.0 3.1.1 control-read minima.
+lambda_reads_min: 5000
+puc19_reads_min: 500
+
+# TUNABLE di-omics run gates; verify against local validation data.
+lambda_conversion_min_percent: 99.5
+puc19_protection_min_percent: 95.0
+library_mean_bp_min: 420.0
+library_mean_bp_max: 620.0
+library_concentration_min_ng_ul: 2.0
+process_blank_concentration_max_ng_ul: 1.0
+

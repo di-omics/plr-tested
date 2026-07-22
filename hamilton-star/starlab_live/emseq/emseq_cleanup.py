@@ -36,7 +36,7 @@ import pylabrobot.resources as plr_resources
 # Deck (current 35/48 deck):
 #   rail48 pos1 = p50 tips (elution add, residual ethanol removal)
 #   rail48 pos2 = p300 tips (beads add, supernatant/ethanol removal)
-#   rail35 pos2 = magnet, holding the work plate (moved here by iSWAP), column 1
+#   rail35 pos2 = magnet, holding CellTreat_96_wellplate_350ul_Fb moved here by iSWAP, column 1
 #   rail35 pos3 = 12-well reservoir/trough
 #
 # Reservoir map (rail35 pos3):
@@ -102,7 +102,10 @@ CLEANUPS: Dict[str, Cleanup] = {
 }
 
 # Geometry reused verbatim from 02_ampseq_pcr1_cleanup_col1_dry_v2_p50low.py (mag pos2 +
-# trough pos3). No EM-seq-specific tuning yet.
+# trough pos3). The physical and liquid-handling plate is the same CellTreat 350 uL work
+# plate as the current working Targeted PCR playbook. The separate iSWAP subprocesses retain
+# the hardware-proven Cor command stand-in intentionally; wet cleanup heights still
+# require dye tuning.
 P300_TROUGH_ASP_HEIGHT = [0.3] * 8
 P300_TROUGH_ASP_OFFSETS = [Coordinate(0.0, 1.5, 0.0)] * 8
 P300_MAG_DSP_HEIGHT = [4.0] * 8
@@ -168,7 +171,7 @@ async def assign_deck(lh: LiquidHandler, cleanup: Cleanup) -> Dict[str, object]:
 
     p50_tips = make_p50_tips("r48_pos1_p50_filter_tips")
     p300_tips = make_p300_tips("r48_pos2_p300_filter_tips")
-    mag_plate = CellTreat_96_wellplate_350ul_Fb(name="rail35_pos2_emseq_cleanup_mag_96wp")
+    mag_plate = CellTreat_96_wellplate_350ul_Fb(name="rail35_pos2_emseq_cleanup_mag_celltreat_350_96wp")
     trough = CellTreat_12_troughplate_15000ul_Vb(name="rail35_pos3_emseq_cleanup_12w_reservoir")
 
     tip_carrier[P50_TIP_POS] = p50_tips
@@ -179,7 +182,7 @@ async def assign_deck(lh: LiquidHandler, cleanup: Cleanup) -> Dict[str, object]:
     print("\nDeck:")
     print("  rail48 pos1 = p50 tips (elution add, residual ethanol removal)")
     print("  rail48 pos2 = p300 tips (beads add, supernatant/ethanol removal)")
-    print("  rail35 pos2 = magnet + work plate, column 1")
+    print("  rail35 pos2 = magnet + CellTreat_96_wellplate_350ul_Fb work plate, column 1")
     print("  rail35 pos3 = 12-well reservoir/trough")
 
     print("\nReservoir map:")

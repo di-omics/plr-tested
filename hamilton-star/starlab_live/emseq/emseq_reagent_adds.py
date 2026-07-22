@@ -7,7 +7,11 @@ from pylabrobot.liquid_handling import LiquidHandler
 from pylabrobot.liquid_handling.backends import STARBackend
 from pylabrobot.liquid_handling.backends.hamilton.STAR_chatterbox import STARChatterboxBackend
 from pylabrobot.resources.hamilton import STARDeck, TIP_CAR_480_A00
-from pylabrobot.resources import PLT_CAR_L5AC_A00, CellTreat_96_wellplate_350ul_Fb, Coordinate
+from pylabrobot.resources import (
+    PLT_CAR_L5AC_A00,
+    CellTreat_96_wellplate_350ul_Fb,
+    Coordinate,
+)
 import pylabrobot.resources as plr_resources
 
 # EM-seq v2 (UltraShear-coupled) - staged reagent additions, column 1 only, swap-source.
@@ -49,20 +53,28 @@ import pylabrobot.resources as plr_resources
 # Deck (current 35/48 deck):
 #   rail48 pos0 = p10 tips
 #   rail48 pos1 = p50 tips
-#   rail35 pos0 = destination/work 96WP, column 1
-#   rail35 pos1 = source 96WP/strip, column 1 only (swap the reagent here between modes)
+#   rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1
+#   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, column 1 only
+#                 (swap the reagent here between modes)
 #
 # Geometry provenance and its limit (read before a hardware run)
 # -------------------------------------------------------------
-# The p50 and p10 source->work offsets and heights below are reused VERBATIM from the
-# hardware-confirmed ampseq/whole-genome amplification-WGA column-1 adds (01_ampseq_pcr1_mastermix_col1.py, p50,
-# confirmed 2026-06-15; the whole-genome sequencing p10 lock 2026-05-12). No new coordinate is invented
-# here. BUT those values were tuned for adding a mix INTO a small starting volume (2.5-3
-# uL). Several EM-seq adds go into a much fuller well (e.g. pcr-mm 45 uL into 40 uL;
-# ligation-mm 31 uL into 51.5 uL). Dispensing at work height 0.5 mm into a half-full well
-# may submerge the tip and drag liquid on withdrawal. This is a real tuning item and is
-# why every EM-seq mode is sim-only until a person tunes the high-volume dispense on the
-# deck, one step at a time, the way every other coordinate in this repo was tuned.
+# Source and destination now follow the current hardware-working Targeted PCR playbook: both
+# are truthful CellTreat_96_wellplate_350ul_Fb resources. The p50 source aspiration is
+# 0.0 mm and the work dispense is 1.5 mm, with the same x/y offsets as the guarded
+# single-home Targeted PCR runner. Targeted PCR raised that p50 destination from 0.5 to 1.5 mm after
+# 0.5 mm crushed tips into the CellTreat well; do not lower it. The p10 path retains the
+# hardware-confirmed whole-genome sequencing 0.0 mm source / 0.5 mm destination geometry.
+#
+# The separate iSWAP subprocesses intentionally retain their Cor resource stand-in: that
+# is the command model used by the hardware-proven Targeted PCR subprocess choreography for the
+# physical CellTreat work plate. This is an intentional liquid-model/motion-model split,
+# not a reason to put a Cor plate on rail35 pos0.
+#
+# Several EM-seq adds go into much fuller wells than Targeted PCR (pcr-mm is 45 uL into 45 uL;
+# ligation-mm is 31 uL into 51.5 uL). Matching Targeted PCR prevents the known low-Z crush, but
+# it does not validate wet delivery, submergence, splash, or withdrawal. Dye/gravimetric
+# tuning is still required before samples or reagents.
 #
 # This script adds and blows out; it does NOT mix on deck. The manual asks for 10x pipette
 # mixing at most steps. On-deck mixing is deliberately out of scope here (it is new,
@@ -82,10 +94,10 @@ SOURCE_96WP_POS = 1
 SOURCE_COL = 1
 DEST_COL = 1
 
-# Reused verbatim from 01_ampseq_pcr1_mastermix_col1.py (p50, confirmed 2026-06-15).
+# Reused verbatim from the current guarded single-home Targeted PCR mastermix path.
 P50_SOURCE_ASP_HEIGHT = [0.0] * 8
 P50_SOURCE_ASP_OFFSETS = [Coordinate(-0.65, 3.35, 0.0)] * 8
-P50_WORK_DSP_HEIGHT = [0.5] * 8
+P50_WORK_DSP_HEIGHT = [1.5] * 8
 P50_WORK_DSP_OFFSETS = [Coordinate(-0.68, 3.22, 0.0)] * 8
 P50_BLOWOUT_AIR_VOLUME = 6.0
 
@@ -237,7 +249,7 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
 
     p10_tips = make_p10_tips("r48_pos0_p10_filter_tips")
     p50_tips = make_p50_tips("r48_pos1_p50_filter_tips")
-    work_plate = CellTreat_96_wellplate_350ul_Fb(name="rail35_pos0_emseq_work_96wp")
+    work_plate = CellTreat_96_wellplate_350ul_Fb(name="rail35_pos0_emseq_work_celltreat_350_96wp")
     source_96wp = CellTreat_96_wellplate_350ul_Fb(name="rail35_pos1_emseq_reagent_source_96wp")
 
     tip_carrier[P10_TIP_POS] = p10_tips
@@ -248,10 +260,11 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
     print("\nDeck:")
     print("  rail48 pos0 = p10 tips")
     print("  rail48 pos1 = p50 tips")
-    print("  rail35 pos0 = destination/work 96WP, column 1")
-    print("  rail35 pos1 = source 96WP/strip, SOURCE COLUMN 1 ONLY (swap reagent between modes)")
+    print("  rail35 pos0 = CellTreat_96_wellplate_350ul_Fb destination/work plate, column 1")
+    print("  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY")
+    print("                  (swap reagent between modes)")
 
-    print("\nGeometry (reused verbatim from confirmed ampseq/PTA-WGA col-1 adds; see header):")
+    print("\nGeometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):")
     print(f"  P50 source asp height {P50_SOURCE_ASP_HEIGHT[0]}, work dsp height {P50_WORK_DSP_HEIGHT[0]}, "
           f"blowout {P50_BLOWOUT_AIR_VOLUME} uL")
     print(f"  P10 source asp height {P10_SOURCE_ASP_HEIGHT[0]}, work dsp height {P10_WORK_DSP_HEIGHT[0]}, "

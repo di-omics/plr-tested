@@ -29,16 +29,22 @@ from pathlib import Path
 #
 # Modes:
 #   --print              print the ordered plan and exit. No execution. Review this first.
+#   --deck               initialize the STAR for each distinct deck/geometry view and print
+#                        all assignments. Normal STAR setup/homing can occur, but no
+#                        pipetting or iSWAP transfer is issued after setup.
 #   --sim-lh             run the liquid-handling legs on the chatterbox backend (--dry);
 #                        iSWAP and ODTC legs become printed notes. Fully local, no hardware.
 #   --confirm RUN_EMSEQ_ODTC_FULL
 #                        run the dry rehearsal on hardware: real iSWAP motion, LH legs with
 #                        tips returned and no reagents, ODTC thermal as operator notes.
+#   --labware-ack CELLTREAT_229195_WORK_SOURCE
+#                        required with --confirm so the earlier Cor/CellTreat mismatch
+#                        cannot silently reach hardware.
 #
 # FULL DECK required before a hardware run (all at once):
 #   rail48 pos0 = p10 tips        rail48 pos1 = p50 tips        rail48 pos2 = p300 tips
-#   rail35 pos0 = work plate (the plate that gets moved around)
-#   rail35 pos1 = reagent source (swap the reagent between reagent legs; see PREP lines)
+#   rail35 pos0 = CellTreat_96_wellplate_350ul_Fb work plate (moves throughout the run)
+#   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb reagent source (swap between legs)
 #   rail35 pos2 = magnet block (iSWAP target for the three cleanups)
 #   rail35 pos3 = 12-well reservoir (beads, 2x ethanol, elution buffer, waste)
 #   rail20 pos1 = ODTC nest, EMPTY and open to receive the plate
@@ -66,6 +72,7 @@ MAG_RET = STARLAB / "test_iswap_plate_rail35pos2_mag_to_rail35pos0_variable.py"
 ODTC_RAIL = ["--odtc-rail", "20", "--odtc-position", "1"]
 
 CONFIRM_PHRASE = "RUN_EMSEQ_ODTC_FULL"
+LABWARE_ACK = "CELLTREAT_229195_WORK_SOURCE"
 
 
 def odtc_command(program: str) -> str:
@@ -176,6 +183,43 @@ def build_plan(sim_lh: bool):
     return plan
 
 
+def build_deck_preflight():
+    """Each distinct deck assignment the 36-leg rehearsal depends on, motion-free.
+
+    The scoped scripts remain the source of geometry truth. Running each once in deck
+    mode catches missing resources/imports on the Pi and prints the exact coordinates
+    the following dry rehearsal will use without issuing a pipetting or iSWAP transfer
+    after each script's normal STAR setup/initialization.
+    """
+    return [
+        ("note", "physical deck checklist",
+         "Stage the complete dry deck before continuing:\n"
+         "  rail48 p0 (first slot) = p10 filter tips\n"
+         "  rail48 p1 (second slot) = p50 filter tips\n"
+         "  rail48 p2 (third slot) = p300 filter tips\n"
+         "  rail35 p0 (first slot) = EMPTY CellTreat_96_wellplate_350ul_Fb sacrificial work plate\n"
+         "  rail35 p1 (second slot) = EMPTY CellTreat_96_wellplate_350ul_Fb reagent-source plate\n"
+         "  rail35 p2 (third slot) = magnetic rack/nest, empty and seated\n"
+         "  rail35 p3 (fourth slot) = EMPTY/DRY 12-well reservoir\n"
+         "  rail20 p1 (ODTC modeled target) = ODTC nest, empty, open, and clear\n"
+         "Do not load samples, reagents, beads, ethanol, or formamide."),
+        ("run", "reagent-add deck assignment",
+         [str(REAGENTS), "--mode", "deck"]),
+        ("run", "SPRI cleanup deck assignment",
+         [str(CLEANUP), "--cleanup", "post-ligation", "--mode", "deck"]),
+        ("run", "ODTC forward iSWAP coordinate print",
+         [str(ODTC_FWD), "--mode", "deck"] + ODTC_RAIL),
+        ("run", "ODTC return iSWAP coordinate print",
+         [str(ODTC_RET), "--mode", "deck"] + ODTC_RAIL
+         + ["--odtc-pickup-z-offset-mm", "0"]),
+        ("run", "magnet forward iSWAP coordinate print",
+         [str(MAG_FWD), "--mode", "deck"]),
+        ("run", "magnet return iSWAP coordinate print",
+         [str(MAG_RET), "--mode", "deck", "--pickup-z-offset-mm", "14.0",
+          "--drop-z-offset-mm", "8.5"]),
+    ]
+
+
 def print_plan(plan):
     print("")
     print("EM-seq v2 (UltraShear-coupled) full column-1 choreography plan")
@@ -211,12 +255,20 @@ def main():
     parser = argparse.ArgumentParser(
         description="EM-seq v2 (UltraShear-coupled) column-1 full choreography with ODTC and SPRI handoffs, dry."
     )
-    parser.add_argument("--print", dest="print_only", action="store_true",
-                        help="Print the ordered plan and exit. No execution.")
-    parser.add_argument("--sim-lh", action="store_true",
-                        help="Run liquid-handling legs on the chatterbox backend; iSWAP/ODTC legs become notes. Local, no hardware.")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--print", dest="print_only", action="store_true",
+                       help="Print the ordered plan and exit. No execution.")
+    modes.add_argument("--deck", action="store_true",
+                       help="Run every deck/coordinate view on the STAR. Setup/homing only; no protocol transfer.")
+    modes.add_argument("--sim-lh", action="store_true",
+                       help="Run liquid-handling legs on the chatterbox backend; iSWAP/ODTC legs become notes. Local, no hardware.")
     parser.add_argument("--confirm", default="",
                         help=f"Required to run the dry rehearsal on hardware: --confirm {CONFIRM_PHRASE}")
+    parser.add_argument(
+        "--labware-ack",
+        default="",
+        help=f"Required hardware labware acknowledgement: --labware-ack {LABWARE_ACK}",
+    )
     args = parser.parse_args()
 
     plan = build_plan(sim_lh=args.sim_lh)
@@ -225,20 +277,34 @@ def main():
         print_plan(plan)
         return
 
+    if args.deck:
+        print("")
+        print("EM-seq v2 FULL-DECK PREFLIGHT (REAL STAR BACKEND; SETUP/HOMING ONLY)")
+        print("Each scoped script initializes the STAR, assigns its resources, prints coordinates,")
+        print("and exits in --mode deck without pipetting or iSWAP transfer. Normal STAR setup/homing")
+        print("can occur. Watch the console for any resource or geometry mismatch.")
+        for kind, label, payload in build_deck_preflight():
+            run_step(kind, label, payload)
+        print("")
+        print("SUCCESS: all EM-seq deck/coordinate views initialized without protocol transfer.")
+        print(f"Next, with the staged dry deck and a human at the E-stop: --confirm {CONFIRM_PHRASE}")
+        return
+
     print("")
     print("EM-seq v2 FULL CHOREOGRAPHY, COLUMN 1, DRY")
-    print("Reagent adds -> ODTC out/back (x7 programs) -> 3x magnet + SPRI cleanup out/back.")
+    print("Reagent adds -> ODTC out/back (x8 programs) -> 3x magnet + SPRI cleanup out/back.")
     print("Every leg runs its own scoped script; geometry is not re-derived here.")
     print("STATUS: written, simulation-first, NOT yet run on hardware. Tune each leg before trusting it.")
 
     if args.sim_lh:
         print("\n--sim-lh: liquid-handling legs run on the chatterbox (no hardware); iSWAP and ODTC")
         print("legs are printed as notes only.")
-    elif args.confirm != CONFIRM_PHRASE:
+    elif args.confirm != CONFIRM_PHRASE or args.labware_ack != LABWARE_ACK:
         print("")
-        print("Refusing to run on hardware. This moves the arm through many transfers, seven ODTC")
+        print("Refusing to run on hardware. This moves the arm through many transfers, eight ODTC")
         print("round trips, and three magnet round trips. Review the plan first with --print, run")
-        print(f"each leg's --mode deck, stage the full deck, then add: --confirm {CONFIRM_PHRASE}")
+        print("each leg's --mode deck, stage both physical CellTreat 229195/229196 plates, then add:")
+        print(f"  --confirm {CONFIRM_PHRASE} --labware-ack {LABWARE_ACK}")
         print("Or exercise the liquid-handling legs locally with --sim-lh.")
         return
 
