@@ -65,8 +65,11 @@ rail35 pos3 = trough/reservoir
   - `run_emseq_odtc_1col_full_dry.py --print` shows the full 36-leg plan.
   - `run_emseq_odtc_1col_full_dry.py --sim-lh` runs the liquid-handling legs on the
     chatterbox (no hardware).
+  - `launch_bench_planner.py` opens the local 1-96 position plate planner, deck checklist,
+    and printable setup sheet. It is planning-only and cannot drive the STAR.
   - ODTC programs (`emseq-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
-  - Status: written, simulation-first, not yet run on the instrument.
+  - Status: all 36 legs passed a physical empty-deck dry choreography on 2026-07-21;
+    wet liquid handling and heated ODTC execution remain unvalidated.
 
 ## scRNA-seq entrypoint (NEBNext Single Cell / Low Input RNA, E6420)
 

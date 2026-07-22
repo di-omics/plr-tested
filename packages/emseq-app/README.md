@@ -58,6 +58,16 @@ python3 -m emseq_app --port 8767
 
 Open `http://127.0.0.1:8767` on the same computer.
 
+The Hamilton STAR EM-seq folder also exposes the same canonical app through its local
+launcher:
+
+```bash
+python3 hamilton-star/starlab_live/emseq/launch_bench_planner.py
+```
+
+That launcher contains no planner copy and no instrument execution code; it resolves
+this package and starts the same localhost-only server.
+
 ## Test
 
 ```bash

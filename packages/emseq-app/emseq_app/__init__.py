@@ -1,3 +1,3 @@
 """Planning-only local app for EM-seq v2 + UltraShear on the Hamilton STAR."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

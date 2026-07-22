@@ -38,7 +38,9 @@ says otherwise.
     blocked live-sample run until wet and thermal qualification.
   - [`emseq-app/`](packages/emseq-app) - local EM-seq bench planner: 1-96 position
     96-well plate map, runtime context, dry-release evidence, interactive deck checklist,
-    and printable one-column setup sheet; no hardware execution layer.
+    and printable one-column setup sheet; no hardware execution layer. The Hamilton
+    protocol exposes it through
+    [`launch_bench_planner.py`](hamilton-star/starlab_live/emseq/launch_bench_planner.py).
   - [`iswap-move/`](packages/iswap-move) - STAR iSWAP plate-lid moves.
 
 ## What "tested" means here

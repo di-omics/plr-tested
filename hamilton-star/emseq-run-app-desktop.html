@@ -1,4 +1,4 @@
-<title>emseq // console (sim)</title>
+<title>emseq // legacy visual preview</title>
 <style>
   :root{
     color-scheme: light;
@@ -39,6 +39,9 @@
       color:#fff;background:var(--ink);border-radius:99px;padding:8px 14px;white-space:nowrap}
   .sub{color:var(--gray);font-size:clamp(14.5px,1.3vw,16.5px);margin:12px 0 0;max-width:74ch}
   .sub b{color:var(--matcha-text);font-weight:600}
+  .planner-link{display:inline-block;margin-top:9px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--matcha-text);text-decoration:none;border-bottom:1px solid var(--matcha)}
+  .planner-link:hover{color:var(--ink)}
+  .planner-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
   .body{display:grid;grid-template-columns:1.12fr .88fr;gap:clamp(20px,2.6vw,38px);align-items:stretch;margin-top:clamp(16px,2.2vw,26px);flex:1;min-height:0}
   .left,.right{display:flex;flex-direction:column;min-width:0;min-height:0}
@@ -145,9 +148,9 @@
       <div class="kick">// enzymatic methyl-seq &middot; hamilton star + odtc &middot; column 1</div>
       <h1>emseq<span>.</span></h1>
     </div>
-    <span class="sim">simulation &middot; preview</span>
+    <span class="sim">legacy visual preview</span>
   </header>
-  <p class="sub">the whole methyl-seq protocol, one click. ultrashear fragmentation, all the enzymatic conversion steps, <b>seven thermocycler round trips</b>, and <b>three magnet bead cleanups</b>, run end to end on the arm. pick your samples and hit run.</p>
+  <p class="sub">the whole methyl-seq protocol, one click. ultrashear fragmentation, all the enzymatic conversion steps, <b>eight thermocycler round trips</b>, and <b>three magnet bead cleanups</b>, run end to end on the arm. pick your samples and hit run.<br><a class="planner-link" href="http://127.0.0.1:8767/">open the 1-96 bench planner &rarr;</a></p>
 
   <div class="body">
     <section class="left">
@@ -178,7 +181,7 @@
     </section>
   </div>
 
-  <div class="foot">em-seq v2 + ultrashear &middot; <b>simulation-first, not yet run on the instrument</b> &middot; visual simulation only, does not drive the arm</div>
+  <div class="foot">em-seq v2 + ultrashear &middot; <b>physical empty-deck dry passed 2026-07-21</b> &middot; visual simulation only, does not drive the arm</div>
 </div>
 
 <script>

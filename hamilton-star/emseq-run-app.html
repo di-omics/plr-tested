@@ -1,4 +1,4 @@
-<title>emseq // run (sim)</title>
+<title>emseq // legacy visual preview</title>
 <style>
   :root{
     color-scheme: light;
@@ -40,6 +40,9 @@
       color:#fff;background:var(--ink);border-radius:99px;padding:6px 11px;white-space:nowrap}
   .sub{color:var(--gray);font-size:14.5px;margin:10px 0 0}
   .sub b{color:var(--matcha-text);font-weight:600}
+  .planner-link{display:inline-block;margin-top:9px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--matcha-text);text-decoration:none;border-bottom:1px solid var(--matcha)}
+  .planner-link:hover{color:var(--ink)}
+  .planner-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
   .orn{display:block;width:min(230px,66%);height:20px;margin:16px auto 4px;opacity:.75}
   .orn path{fill:none;stroke:url(#og);stroke-width:1.3;stroke-linecap:round}
@@ -141,9 +144,9 @@
       <div class="kick">// enzymatic methyl-seq &middot; hamilton star + odtc</div>
       <h1>emseq<span>.</span></h1>
     </div>
-    <span class="sim">simulation &middot; preview</span>
+    <span class="sim">legacy visual preview</span>
   </div>
-  <p class="sub">watch the whole methyl-seq protocol play out. ultrashear fragmentation, the enzymatic conversion steps, <b>seven thermocycler</b> round trips, and <b>three magnet bead cleanups</b>. pick your samples and hit run.</p>
+  <p class="sub">watch the whole methyl-seq protocol play out. ultrashear fragmentation, the enzymatic conversion steps, <b>eight thermocycler</b> round trips, and <b>three magnet bead cleanups</b>. pick your samples and hit run.<br><a class="planner-link" href="http://127.0.0.1:8767/">open the 1-96 bench planner &rarr;</a></p>
 
   <svg class="orn" viewBox="0 0 240 24" aria-hidden="true">
     <path d="M120 12 C96 3 78 21 40 12 C60 12 66 8 88 12"/>
@@ -175,7 +178,7 @@
 
   <div class="legs" id="legs" role="list"></div>
 
-  <div class="foot">thirty-six legs &middot; one tap &middot; plate ends home<br>simulation-first &middot; not yet run on the instrument &middot; does not drive the arm</div>
+  <div class="foot">thirty-six legs &middot; one tap &middot; plate ends home<br>physical empty-deck dry passed 2026-07-21 &middot; visual simulation only &middot; does not drive the arm</div>
 </div>
 
 <script>

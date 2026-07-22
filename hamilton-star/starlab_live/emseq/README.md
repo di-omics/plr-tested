@@ -11,6 +11,24 @@ judgment record. No liquid or ODTC heat ran, so wet, thermal, and biological exe
 remain unvalidated and blocked. The chatterbox simulations remain the compute-level
 checks described below.
 
+## Bench planner (1-96 positions)
+
+This STAR protocol folder includes `launch_bench_planner.py`, the local entrypoint for
+the EM-seq v2 + UltraShear bench planner. From the repository root:
+
+```bash
+python3 hamilton-star/starlab_live/emseq/launch_bench_planner.py
+```
+
+Then open `http://127.0.0.1:8767`. The planner maps 1-96 requested library positions
+onto one 96-well work plate, shows the exact deck checklist below, and prints the setup
+sheet. It uses the canonical implementation in [`packages/emseq-app`](../../../packages/emseq-app),
+so there is no second copy of the app to drift away from this protocol.
+
+The planner does not drive the STAR. Its physical dry-release setup sheet remains
+limited to 1-8 positions in A1:H1; plans for 9-96 positions are plate-layout proposals
+until the multi-column runner is implemented and physically qualified.
+
 ## What this automates
 
 The coupled UltraShear + EM-seq v2 workflow, one 8-well column (A-H). The sample plate
@@ -47,6 +65,8 @@ Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
   liquid-handling legs on the chatterbox,
   and `--confirm RUN_EMSEQ_ODTC_FULL --labware-ack CELLTREAT_229195_WORK_SOURCE`
   runs the dry rehearsal on hardware.
+- `launch_bench_planner.py` - launches the local, planning-only 1-96 position plate-map
+  and deck-setup app from this Hamilton STAR protocol folder. It cannot run hardware.
 - ODTC thermal programs live in `instrument-integrations/odtc/odtc_protocols.py`
   (`emseq-shear`, `emseq-endprep`, `emseq-ligation`, `emseq-tet2`, `emseq-tet2-stop`,
   `emseq-denature`, `emseq-deaminate`, `emseq-pcr`) and run via `05_odtc_run_protocol.py`.
