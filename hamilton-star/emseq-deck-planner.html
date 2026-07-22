@@ -1,0 +1,261 @@
+<title>emseq // deck planner (sim)</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#fbfbf9; --panel:#ffffff; --panel-2:#fdfdfb;
+    --ink:#232320; --gray:#66655f; --faint:#9d9c95; --line:#e9e8e2; --line-2:#dddcd4;
+    --matcha:#98c73c; --matcha-deep:#5f8f1e; --matcha-text:#497015; --matcha-tint:#eff7da; --matcha-wash:#f5fbe9;
+    --iris:#b6a4e6; --iris-deep:#7c66b8; --iris-wash:#f1ecfb;
+    --thermal:#c1852a; --thermal-wash:#f7efdc;
+    --red:#c05a4d; --red-wash:#f7e8e5;
+    --sans:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --r:15px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    background:
+      radial-gradient(115% 70% at 10% -4%, #f1ecfb 0%, transparent 52%),
+      radial-gradient(110% 62% at 92% 1%, #eef7da 0%, transparent 46%),
+      radial-gradient(120% 80% at 50% 108%, #e8f0fa 0%, transparent 58%),
+      var(--bg);
+    background-attachment:fixed}
+  .wrap{max-width:780px;margin:0 auto;padding:26px clamp(16px,4vw,30px) 70px}
+  .kick{font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--faint)}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  h1{font-size:clamp(30px,7vw,46px);font-weight:700;letter-spacing:-.03em;line-height:.95;margin:6px 0 0}
+  h1 span{background:linear-gradient(120deg,#98c73c,#7fb3dc,#b6a4e6,#efa8c6);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sim{flex:none;margin-top:6px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+    color:#fff;background:var(--ink);border-radius:99px;padding:6px 11px;white-space:nowrap}
+  .sub{color:var(--gray);font-size:14.5px;margin:12px 0 0;max-width:62ch}
+  .sub b{color:var(--matcha-text);font-weight:600}
+  .status{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 0}
+  .pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;font-weight:500;padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--gray);background:var(--panel);display:inline-flex;align-items:center;gap:6px}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .pill.warn{color:var(--thermal);border-color:var(--thermal);background:var(--thermal-wash)}
+  .pill.lock{color:var(--red);border-color:var(--red);background:var(--red-wash)}
+  .pill.go{color:var(--matcha-text);border-color:var(--matcha);background:var(--matcha-wash)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 16px;margin-top:16px;
+    box-shadow:0 20px 50px -40px rgba(120,110,160,.5)}
+  .card h2{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:500;color:var(--matcha-text);margin:0 0 13px}
+  .card h2 b{color:var(--iris-deep)}
+  .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr}}
+  .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .chip{font-family:var(--sans);font-weight:600;font-size:16px;color:var(--gray);background:var(--panel-2);border:1.5px solid var(--line);
+    border-radius:12px;padding:13px 4px 9px;cursor:pointer;text-align:center;transition:.15s;line-height:1;min-height:52px}
+  .chip small{display:block;font-family:var(--mono);font-weight:400;font-size:9px;letter-spacing:.06em;color:var(--faint);margin-top:6px}
+  .chip:hover{border-color:var(--matcha)}
+  .chip.on{border-color:var(--matcha);background:var(--matcha-wash);color:var(--matcha-text);box-shadow:0 0 0 3px var(--matcha-tint)}
+  .chip.on small{color:var(--matcha-text)}
+  .sliderrow{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:12px}
+  input[type=range]{flex:1;min-width:170px;accent-color:var(--matcha);height:4px}
+  .numbox{display:flex;align-items:baseline;gap:7px}
+  .numbox input{width:70px;font-family:var(--mono);font-size:21px;font-weight:700;text-align:center;color:var(--ink);background:var(--panel-2);border:1.5px solid var(--line-2);border-radius:9px;padding:6px 4px}
+  .numbox .u{font-family:var(--mono);font-size:11px;color:var(--gray)}
+  .readout{margin-top:13px;font-size:14px;color:var(--gray)}
+  .readout b{color:var(--ink);font-family:var(--mono)}
+  .cap{margin-top:11px;font-size:12.5px;padding:10px 12px;border-radius:11px;border:1px solid var(--thermal);background:var(--thermal-wash);color:var(--thermal);display:none}
+  .cap.show{display:block}
+  .plate{display:grid;grid-template-columns:15px repeat(12,1fr);gap:4px}
+  .plate .ch,.plate .rh{font-family:var(--mono);font-size:8.5px;color:var(--faint);text-align:center;align-self:center;justify-self:center}
+  .well{aspect-ratio:1;border-radius:50%;border:1.5px solid var(--line-2);background:var(--panel-2)}
+  .well.s{background:var(--matcha);border-color:var(--matcha-deep)}
+  .well.p{background:transparent;border:1.5px dashed var(--iris)}
+  .platekey{display:flex;gap:15px;margin-top:11px;font-family:var(--mono);font-size:10.5px;color:var(--gray);flex-wrap:wrap}
+  .platekey span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .stat{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+  .stat:last-child{border-bottom:0}
+  .stat .k{color:var(--gray);font-size:13px}
+  .stat .v{font-family:var(--mono);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+  .stat .v small{font-size:11px;color:var(--gray);font-weight:400}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;font-size:9.5px;font-weight:500;color:var(--matcha-text);text-align:left;padding:8px 9px;border-bottom:1px solid var(--line-2)}
+  td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  td.m{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  .badge{font-family:var(--mono);font-size:9.5px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+  .badge.moves{background:var(--iris-wash);color:var(--iris-deep)}
+  .badge.empty{background:var(--panel-2);color:var(--gray);border:1px solid var(--line)}
+  .badge.hot{background:var(--thermal-wash);color:var(--thermal)}
+  .trough{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-top:4px}
+  .tw{border:1.5px solid var(--line-2);border-radius:8px;padding:7px 3px;text-align:center;font-family:var(--mono);background:var(--panel-2)}
+  .tw .id{font-size:10.5px;font-weight:700}
+  .tw .lb{font-size:8px;color:var(--gray);line-height:1.2;margin-top:3px}
+  .tw.fill{border-color:var(--matcha);background:var(--matcha-wash)}
+  .tw.waste{border-color:var(--red);background:var(--red-wash)}
+  .flow{display:flex;flex-wrap:wrap;gap:5px}
+  .step{font-family:var(--mono);font-size:10.5px;padding:5px 8px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink)}
+  .step .n{color:var(--matcha-text);font-weight:700}
+  .step.t{border-color:var(--thermal);background:var(--thermal-wash);color:var(--thermal)}
+  .arrow{color:var(--faint);align-self:center;font-family:var(--mono);font-size:10px}
+  .posture{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px}
+  .mode{border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:var(--panel-2)}
+  .mode .t{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.03em;display:flex;align-items:center;gap:7px}
+  .mode .d{font-size:12px;color:var(--gray);margin-top:6px}
+  .mode.go .t{color:var(--matcha-text)} .mode.gate .t{color:var(--thermal)} .mode.blocked .t{color:var(--red)}
+  code{font-family:var(--mono);font-size:11.5px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+  .note{font-size:12px;color:var(--gray);margin-top:11px}
+  .note b{color:var(--ink)}
+  .foot{margin-top:32px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+</style>
+
+<div class="wrap">
+  <div class="kick">di-omics // plr-tested // hamilton star + inheco odtc</div>
+  <div class="top">
+    <h1><span>EM-seq</span> UltraShear v2<br>deck planner</h1>
+    <span class="sim">simulation</span>
+  </div>
+  <p class="sub">Pick a sample count, stage the deck, and read the run before you touch the instrument. NEBNext UltraShear enzymatic methyl-seq (kit M7634 / E8015), automated on a Hamilton Microlab STAR with an Inheco ODTC.</p>
+  <div class="status">
+    <span class="pill go"><span class="dot"></span>Simulation-first</span>
+    <span class="pill warn"><span class="dot"></span>Dry-run rehearsal only</span>
+    <span class="pill lock"><span class="dot"></span>Wet run gated: not hardware-validated</span>
+  </div>
+
+  <div class="card">
+    <h2><b>1</b> &nbsp; Samples</h2>
+    <div class="chips" id="presets"></div>
+    <div class="sliderrow">
+      <input type="range" id="range" min="1" max="96" value="8" aria-label="Sample count">
+      <div class="numbox"><input type="number" id="num" min="1" max="96" value="8" aria-label="Sample count"><span class="u">of 96</span></div>
+    </div>
+    <div class="readout" id="readout"></div>
+    <div class="cap" id="cap"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Work plate &nbsp; rail 35 &middot; pos 0</h2>
+      <div class="plate" id="plate"></div>
+      <div class="platekey">
+        <span><i class="sw" style="background:var(--matcha);border:1.5px solid var(--matcha-deep)"></i>sample</span>
+        <span><i class="sw" style="border:1.5px dashed var(--iris);background:transparent"></i>column pad</span>
+        <span><i class="sw" style="background:var(--panel-2);border:1.5px solid var(--line-2)"></i>unused</span>
+      </div>
+      <p class="note">Fills column by column, A1:H1 through A12:H12; a partial final column is padded to a full 8-channel column. This is the only plate the iSWAP moves.</p>
+    </div>
+    <div class="card">
+      <h2>Run summary</h2>
+      <div class="stat"><span class="k">Columns used</span><span class="v" id="s-cols">1</span></div>
+      <div class="stat"><span class="k">STAR / iSWAP legs</span><span class="v">36</span></div>
+      <div class="stat"><span class="k">ODTC thermal programs</span><span class="v">8</span></div>
+      <div class="stat"><span class="k">SPRI cleanups</span><span class="v">3 <small>1.1x / 1.0x / 0.8x</small></span></div>
+      <div class="stat"><span class="k">Est. run time</span><span class="v" id="s-time">7h 26m</span></div>
+      <p class="note">Time model: <code>446 + (columns - 1) x 5</code> min. Leg and program counts are fixed by the choreography; only per-column dispense time scales.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><b>2</b> &nbsp; Stage this deck</h2>
+    <div class="tablewrap"><table>
+      <tr><th>Rail</th><th>Pos</th><th>Labware</th><th>Role</th><th>Dry run</th></tr>
+      <tr><td class="m">48</td><td class="m">0</td><td class="m">hamilton_96_tiprack_10uL_filter</td><td>p10 tips</td><td><span class="badge empty">returned</span></td></tr>
+      <tr><td class="m">48</td><td class="m">1</td><td class="m">hamilton_96_tiprack_50uL_filter</td><td>p50 tips</td><td><span class="badge empty">returned</span></td></tr>
+      <tr><td class="m">48</td><td class="m">2</td><td class="m">hamilton_96_tiprack_300uL_filter</td><td>p300 tips (beads / ethanol)</td><td><span class="badge empty">returned</span></td></tr>
+      <tr><td class="m">35</td><td class="m">0</td><td class="m">CellTreat_96_wellplate_350ul_Fb</td><td>Work plate <span class="badge moves">iSWAP moves this</span></td><td><span class="badge empty">water / empty</span></td></tr>
+      <tr><td class="m">35</td><td class="m">1</td><td class="m">CellTreat_96_wellplate_350ul_Fb</td><td>Reagent source, column 1 (swap per leg)</td><td><span class="badge empty">empty</span></td></tr>
+      <tr><td class="m">35</td><td class="m">2</td><td class="m">CellTreat_96_wellplate_350ul_Fb</td><td>Magnet nest (SPRI cleanups)</td><td><span class="badge empty">seated, no plate</span></td></tr>
+      <tr><td class="m">35</td><td class="m">3</td><td class="m">CellTreat_12_troughplate_15000ul_Vb</td><td>Reservoir (beads / ethanol / elution / waste)</td><td><span class="badge empty">empty / dry</span></td></tr>
+      <tr><td class="m">20</td><td class="m">1</td><td class="m">Inheco ODTC nest</td><td>On-deck thermal cycler</td><td><span class="badge hot">empty, unheated</span></td></tr>
+    </table></div>
+    <p class="note" style="margin-bottom:7px"><b>Reservoir map</b> (rail 35 &middot; pos 3):</p>
+    <div class="trough" id="trough"></div>
+    <p class="note">Reagents are not pre-plated: the source plate holds one reagent at a time in column 1, swapped by the operator between legs. Do not substitute the work-plate model; the iSWAP coordinates assume it.</p>
+  </div>
+
+  <div class="card">
+    <h2>Workflow &nbsp; 11 stages &middot; <b>8</b> thermal programs</h2>
+    <div class="flow" id="flow"></div>
+    <div class="tablewrap" style="margin-top:15px"><table>
+      <tr><th>ODTC program</th><th>Profile</th><th>Lid</th></tr>
+      <tr><td class="m">emseq-shear</td><td>37 C 30 min, 65 C 15 min, 4 C hold</td><td class="m">75 C</td></tr>
+      <tr><td class="m">emseq-endprep</td><td>20 C 15 min, 65 C 15 min, 4 C hold</td><td class="m">75 C</td></tr>
+      <tr><td class="m">emseq-ligation</td><td>20 C 15 min, 4 C hold</td><td class="m">50 C</td></tr>
+      <tr><td class="m">emseq-tet2</td><td>37 C 60 min, 4 C hold</td><td class="m">45 C</td></tr>
+      <tr><td class="m">emseq-tet2-stop</td><td>37 C 30 min, 4 C hold</td><td class="m">45 C</td></tr>
+      <tr><td class="m">emseq-denature</td><td>85 C 10 min, 4 C hold</td><td class="m">105 C</td></tr>
+      <tr><td class="m">emseq-deaminate</td><td>37 C 180 min, 4 C hold</td><td class="m">45 C</td></tr>
+      <tr><td class="m">emseq-pcr</td><td>98 C 30 s; N x [98 C 10 s / 62 C 30 s / 65 C 60 s]; 65 C 5 min; 4 C</td><td class="m">105 C</td></tr>
+    </table></div>
+    <p class="note">Package copy says seven round trips; the code wires <b>8</b> (it counts tet2 and tet2-stop separately). Shown here as 8.</p>
+  </div>
+
+  <div class="card">
+    <h2><b>3</b> &nbsp; Input mass sets the PCR cycles</h2>
+    <div class="chips" id="inpresets" style="grid-template-columns:repeat(5,1fr)"></div>
+    <div class="readout" id="inreadout" style="margin-top:11px"></div>
+    <p class="note"><b>Low-input branch</b> (&le; 10 ng): spike NEBNext Carrier DNA into the cleanup-1 elution and dilute T4-BGT 1:10 in the TET2 mix. The package defaults to the &gt; 10 ng path; the low-input steps are off-deck operator prep.</p>
+  </div>
+
+  <div class="card">
+    <h2><b>4</b> &nbsp; Run posture</h2>
+    <div class="posture">
+      <div class="mode go"><div class="t">Deck preflight</div><div class="d"><code>--mode deck</code> assigns and prints the deck. No motion, no pipetting.</div></div>
+      <div class="mode go"><div class="t">Local sim</div><div class="d"><code>--sim-lh</code> runs the 14 liquid-handling legs on the STAR chatterbox. iSWAP and ODTC print as notes.</div></div>
+      <div class="mode gate"><div class="t">Motion rehearsal</div><div class="d"><code>--confirm RUN_EMSEQ_ODTC_FULL</code> drives real iSWAP motion on empty, water labware. Tips returned; ODTC not heated. Human at the E-stop.</div></div>
+      <div class="mode blocked"><div class="t">Wet run</div><div class="d">Blocked pending qualification: dispense heights, on-deck mixing, SPRI eluate transfer and dry timings, and the ODTC iSWAP geometry.</div></div>
+    </div>
+    <p class="note">Everything above is modeled in simulation and has not been run on the instrument. Physical execution stays attended, one process per instrument, with a hand near the E-stop.</p>
+  </div>
+
+  <div class="foot">di-omics &middot; plr-tested &middot; emseq ultrashear v2 &middot; simulation-modeled, not hardware-validated</div>
+</div>
+
+<script>
+(function(){
+  var PRESETS=[{n:8,c:1},{n:24,c:3},{n:48,c:6},{n:96,c:12}];
+  var range=document.getElementById('range'), num=document.getElementById('num');
+  var readout=document.getElementById('readout'), cap=document.getElementById('cap');
+  var sCols=document.getElementById('s-cols'), sTime=document.getElementById('s-time');
+  function el(tag,cls,txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+
+  var plate=document.getElementById('plate'), rows="ABCDEFGH";
+  plate.appendChild(el('div','ch',''));
+  for(var c=1;c<=12;c++) plate.appendChild(el('div','ch',String(c)));
+  var wells=[];
+  for(var r=0;r<8;r++){ plate.appendChild(el('div','rh',rows[r]));
+    for(var cc=1;cc<=12;cc++){ var w=el('div','well',''); plate.appendChild(w); wells.push({el:w,col:cc,row:r}); } }
+
+  var pc=document.getElementById('presets');
+  PRESETS.forEach(function(p){ var b=el('div','chip',''); b.setAttribute('role','button'); b.tabIndex=0;
+    b.innerHTML=p.n+'<small>'+p.c+' col</small>'; b.onclick=function(){ set(p.n); };
+    b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();set(p.n);} }; pc.appendChild(b); });
+
+  var TR={1:['Beads','SPRI',1],2:['80% EtOH','wash 1',1],3:['80% EtOH','wash 2',1],4:['Elution','buffer',1],12:['Waste','',2]};
+  var trough=document.getElementById('trough');
+  for(var t=1;t<=12;t++){ var d=el('div','tw',''); var meta=TR[t]; d.appendChild(el('div','id','A'+t));
+    if(meta){ d.classList.add(meta[2]===2?'waste':'fill'); d.appendChild(el('div','lb',meta[0]+(meta[1]?(' '+meta[1]):''))); } trough.appendChild(d); }
+
+  var FLOW=[['Shear',1],['End prep',1],['Ligation',1],['SPRI 1.1x',0],['TET2',1],['Stop',1],['SPRI 1.0x',0],['Denature',1],['Deaminate',1],['PCR',1],['SPRI 0.8x',0]];
+  var flow=document.getElementById('flow');
+  FLOW.forEach(function(f,i){ if(i) flow.appendChild(el('span','arrow','>'));
+    var s=el('span','step'+(f[1]?' t':''),''); s.innerHTML='<span class="n">'+(i+1)+'</span> '+f[0]; flow.appendChild(s); });
+
+  var IN=[{m:'200 ng',c:'4-5',b:0},{m:'50 ng',c:'5-6',b:0},{m:'10 ng',c:'8',b:0},{m:'1 ng',c:'11',b:1},{m:'0.1 ng',c:'14',b:1}];
+  var inpc=document.getElementById('inpresets'), inro=document.getElementById('inreadout');
+  IN.forEach(function(p,i){ var b=el('div','chip',''); b.setAttribute('role','button'); b.tabIndex=0; b.textContent=p.m;
+    b.onclick=function(){ inset(i); }; b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();inset(i);} }; inpc.appendChild(b); });
+  function inset(i){ var p=IN[i];
+    Array.prototype.forEach.call(inpc.children,function(x,j){ x.classList.toggle('on', j===i); });
+    inro.innerHTML='At <b>'+p.m+'</b> input: <b>'+p.c+'</b> PCR cycles &nbsp; &middot; &nbsp; '+(p.b?'<b style="color:var(--thermal)">low-input branch</b> (Carrier DNA + 1:10 T4-BGT)':'standard &gt; 10 ng path'); }
+
+  function set(n){ n=Math.max(1,Math.min(96,Math.round(n||1))); range.value=n; num.value=n;
+    var cols=Math.ceil(n/8);
+    wells.forEach(function(w){ var sn=(w.col-1)*8+w.row+1; w.el.className='well'+(sn<=n?' s':(w.col<=cols?' p':'')); });
+    Array.prototype.forEach.call(pc.children,function(b,i){ b.classList.toggle('on', PRESETS[i].n===n); });
+    sCols.textContent=cols;
+    var mins=446+(cols-1)*5; sTime.textContent=Math.floor(mins/60)+'h '+(mins%60)+'m';
+    var pad=cols*8-n;
+    readout.innerHTML='<b>'+n+'</b> samples fill <b>'+cols+'</b> column'+(cols>1?'s':'')+(pad>0?(' with <b>'+pad+'</b> padded well'+(pad>1?'s':'')):'')+'.';
+    if(n>8){ cap.classList.add('show'); cap.innerHTML='Planner view only. The validated physical runner covers <b>1 column (8 samples)</b>; counts above 8 are simulation-only until a multi-column runner is qualified on the instrument.'; }
+    else cap.classList.remove('show'); }
+  range.addEventListener('input',function(){set(+range.value);});
+  num.addEventListener('input',function(){set(+num.value);});
+
+  inset(2); set(8);
+})();
+</script>
