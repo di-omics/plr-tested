@@ -60,8 +60,8 @@ MAG_POS = 2
 TROUGH_POS = 3
 
 # 4-COLUMN DRY MOTION PROOF (2026-07-16). Copied byte-for-byte from
-# 02_targeted_pcr_round1_cleanup_col1_dry_v2_p50low.py (the cleanup leg of the 13/13 build at tag
-# targeted_pcr-lidded-inwellmix-2026-07-16) and changed in ONE respect: run_all_dry now loops its
+# 02_targeted_pcr_round1_cleanup_col1_dry_v2_p50low.py as documented by the
+# 13/13 hardware validation record, and changed in ONE respect: run_all_dry now loops its
 # 8 motions over four columns of the mag plate instead of one. Every tuned height, offset,
 # volume and blowout is unchanged.
 #

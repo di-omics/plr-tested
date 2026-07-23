@@ -53,8 +53,8 @@ SOURCE_96WP_POS = 1
 SOURCE_COL = 1
 
 # 4-COLUMN DRY MOTION PROOF (2026-07-16). Copied byte-for-byte from
-# 01_targeted_pcr_round1_mastermix_col1.py at tag targeted_pcr-lidded-inwellmix-2026-07-16 (13/13 clean on
-# hardware, twice) and changed in ONE respect: the dispense+mix now loops over four
+# 01_targeted_pcr_round1_mastermix_col1.py as documented by the hardware validation
+# record (13/13 clean twice), and changed in ONE respect: the dispense+mix now loops over four
 # destination columns instead of one. Every tuned coordinate, the firmware in-well Mix, and
 # the blowout are unchanged. Source stays column 1: each A-H source well feeds its own row
 # across all four destination columns.
