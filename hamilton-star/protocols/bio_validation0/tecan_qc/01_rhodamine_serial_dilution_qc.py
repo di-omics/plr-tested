@@ -136,7 +136,7 @@ FINAL_DISCARD_VOL = 100.0    # col 11 -> waste, leaves col 11 at 100 uL
 # lld_mode is never passed and defaults to LLDMode.OFF, so the modelled surface is
 # well_bottom + liquid_height (the value passed to dispense), NOT the real meniscus.
 # With liquid_height = 1.5 and param 1.0 -> mix Z = +0.5 mm above the well bottom, the
-# same proven-safe geometry as targeted_pcr. param 2.0 would give -0.5 mm = tips INTO the
+# same proven-safe geometry as targeted PCR. param 2.0 would give -0.5 mm = tips INTO the
 # plastic (the 87b6e52 bug). PLR 0.2.1's STARBackend.dispense docstring calls this
 # "above the liquid surface" and is WRONG; dispense_pip ("Z- direction") is right.
 # Nothing guards it. The number below is load-bearing.
@@ -144,9 +144,9 @@ MIX_CYCLES = 5               # in-well mix cycles per destination (override with
 MIX_VOLUME_UL = 80.0         # 40% of the 200 uL working volume. CellTreat 350 uL Fb bore =
                              # 6.96 mm = 38.046 mm2 = 0.0263 mm per uL, so 200 uL is 5.26 mm
                              # deep and an 80 uL stroke drops the surface to 3.16 mm: the tip
-                             # at 0.5 mm stays submerged for the whole stroke (unlike targeted_pcr's
+                             # at 0.5 mm stays submerged for the whole stroke (unlike targeted PCR's
                              # shallow 25 uL reaction, which had to drop to 6 uL to stay under).
-MIX_FLOW_RATE = 50.0         # uL/s. targeted_pcr uses 10 because its 10 uL stroke at 50 finished in
+MIX_FLOW_RATE = 50.0         # uL/s. targeted PCR uses 10 because its 10 uL stroke at 50 finished in
                              # 1.2 s, too fast to see or hear. An 80 uL stroke at 50 takes
                              # 1.6 s, so 5 cycles is ~16 s per column: visible, and it keeps
                              # the 10-column serial from spending 13 min mixing. 50 is a rate
@@ -163,7 +163,7 @@ P300_RES_ASP_OFFSET = Coordinate(0.0, 1.5, 0.0)
 # (Coordinate(-0.68, 3.22, 0.0)). Y MUST stay > 3.20: Y = 3.20 trips the
 # <9 mm adjacent-channel spacing safety error and is blacklisted repo-wide.
 P300_PLATE_XY = Coordinate(-0.68, 3.22, 0.0)
-P300_PLATE_DSP_HEIGHT = 1.5   # PROVEN, DO NOT LOWER. targeted_pcr raised this 0.5 -> 1.5 on
+P300_PLATE_DSP_HEIGHT = 1.5   # PROVEN, DO NOT LOWER. targeted PCR raised this 0.5 -> 1.5 on
                               # 2026-07-12 because at 0.5 the tips crushed into this same
                               # CellTreat 350 uL Fb well at dispense. It is also the mix Z
                               # anchor: mix Z = this - MIX_POSITION_FROM_SURFACE = 0.5 mm.
@@ -179,7 +179,7 @@ DSP_BLOWOUT_AIR_VOLUME = 3.0
 WASTE_BLOWOUT_AIR_VOLUME = 2.0
 P300_MIX_BLOWOUT_AIR_VOLUME = 10.0   # heavy blowout after the in-well mix so nothing is left
                                      # in the tip, per the targeted PCR build. 200 uL is deep enough
-                                     # that the shallow-well splash risk targeted_pcr worried about
+                                     # that the shallow-well splash risk targeted PCR worried about
                                      # at 12 uL does not apply here.
 
 POST_DISPENSE_SETTLE_SECONDS = 1.0
@@ -396,7 +396,7 @@ async def run_serial(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool
             await asyncio.sleep(POST_DISPENSE_SETTLE_SECONDS)
         finally:
             await finish_tips(lh, discard_tips)
-        # Only burn a fresh rack column when we are actually discarding. This is the targeted_pcr
+        # Only burn a fresh rack column when we are actually discarding. This is the targeted PCR
         # cleanup idiom (`if discard_tips: tip_col += 1`). Fresh tips per step are mandatory
         # for a WET run (dilution accuracy, and the tip re-enters the shared chain), but a dry
         # rehearsal returns tips, so reusing one column costs nothing and keeps the whole dry

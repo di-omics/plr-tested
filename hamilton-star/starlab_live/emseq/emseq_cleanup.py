@@ -53,7 +53,7 @@ import pylabrobot.resources as plr_resources
 # added with the p50-low geometry. This script does not incubate, does not mix, and does
 # NOT model the final "transfer the clear eluate off the beads to a fresh column" step
 # (E8015 1.x.11 / M7634 3.4.9A.3): that needs a second destination plate and its own tuned
-# transfer, and is left as an operator/off-deck step exactly as in the targeted_pcr cleanup. Bead
+# transfer, and is left as an operator/off-deck step exactly as in the targeted PCR cleanup. Bead
 # ratios, ethanol volume, and elution volumes are transcribed from the two NEB manuals.
 # All geometry is inherited, not re-tuned for EM-seq, so every mode is sim-only until a
 # person tunes it on the deck.
@@ -278,7 +278,7 @@ async def p50_remove_residual_to_waste(lh, r, volume_ul, discard_tips, tip_col):
 
 # The cleanup motion sequence, one leg per name, in order. Each leg is a coroutine
 # factory bound to the selected cleanup's volumes. Any single leg is also a valid --mode,
-# so heights can be tuned one step at a time on hardware (the same granularity the targeted_pcr
+# so heights can be tuned one step at a time on hardware (the same granularity the targeted PCR
 # cleanup script offers).
 LEG_ORDER = [
     "beads-add", "supernatant-remove",

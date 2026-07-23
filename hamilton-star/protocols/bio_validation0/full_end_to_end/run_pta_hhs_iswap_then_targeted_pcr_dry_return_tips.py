@@ -107,7 +107,7 @@ def main():
     preflight()
 
     print("")
-    print("FULL PTA/HHS iSWAP -> targeted_pcr DRY CHOREOGRAPHY (return tips)")
+    print("FULL PTA/HHS iSWAP -> targeted PCR DRY CHOREOGRAPHY (return tips)")
     print("Dry / camera choreography only. Use an EMPTY sacrificial plate.")
     print("Destination nests must be physically empty. Hand near E-stop.")
 

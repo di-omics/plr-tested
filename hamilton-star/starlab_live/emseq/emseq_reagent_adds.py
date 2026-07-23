@@ -23,7 +23,7 @@ import pylabrobot.resources as plr_resources
 # ------------
 # One reagent addition per --mode, into destination/work rail35 pos0 column 1, from a
 # single source column at rail35 pos1 column 1. This is the same swap-source, single-
-# column, one-add-per-run pattern as the verified PTA/WGA and targeted_pcr master-mix scripts
+# column, one-add-per-run pattern as the verified PTA/WGA and targeted PCR master-mix scripts
 # (00_pta_wga_col1_swap_source_staged..., 01_targeted_pcr_round1_mastermix_col1.py). The operator
 # loads the reagent named in each mode's PREP line into the source column, runs the mode,
 # then swaps in the next reagent. The thermocycling and the SPRI cleanups happen between

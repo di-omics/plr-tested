@@ -20,7 +20,7 @@ import pylabrobot.resources as plr_resources
 # ------------
 # One reagent addition per --mode, into destination/work rail35 pos0 column 1, from a single
 # source column at rail35 pos1 column 1 - the same swap-source, single-column, one-add-per-run
-# pattern as the verified PTA/WGA and targeted_pcr master-mix scripts and the emseq scripts. The
+# pattern as the verified PTA/WGA and targeted PCR master-mix scripts and the EM-seq scripts. The
 # operator loads the reagent named in each mode's PREP line into the source column, runs the
 # mode, then swaps in the next reagent. Thermocycling and the SPRI cleanups happen between the
 # adds; each mode's STOP line says which ODTC program (if any) runs next. The end-to-end order

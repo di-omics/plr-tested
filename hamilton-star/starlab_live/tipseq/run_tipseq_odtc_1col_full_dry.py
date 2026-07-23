@@ -14,7 +14,7 @@ from pathlib import Path
 # for each thermal program, and four magnet + SPRI cleanup out/backs. Same orchestration pattern as
 # the emseq/scrnaseq runners: each leg runs an already-scoped leg script by subprocess, and NO
 # geometry is re-derived here. The iSWAP plate-move legs reuse the parent starlab_live/ move scripts
-# with the SAME confirmed args the targeted_pcr/emseq choreographies used.
+# with the SAME confirmed args the targeted PCR/EM-seq choreographies used.
 #
 # The CUT&Tag front end (conA beads, antibody, pA-Tn5 tagmentation) and, for single cell / sciTIP,
 # FACS sorting are OFF-DECK; the plate enters here holding 8 uL of SPRI-purified tagmented gDNA +

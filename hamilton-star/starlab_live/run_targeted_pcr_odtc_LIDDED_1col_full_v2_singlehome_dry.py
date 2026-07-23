@@ -970,7 +970,7 @@ async def main():
 
     print("")
     print("#" * 88)
-    print("# SINGLE-HOME V2  LIDDED targeted_pcr col1 + ODTC  (dry, tips returned)")
+    print("# SINGLE-HOME V2  LIDDED targeted PCR col1 + ODTC  (dry, tips returned)")
     print("# mode = {}".format(args.mode))
     print("# 13 legs: PCR1 -> ODTC fwd / lid on / lid off / ret -> MAG fwd -> cleanup -> MAG ret")
     print("#          -> PCR2 -> ODTC fwd / lid on / lid off / ret ; ONE home / ONE deck / ONE stop")
@@ -1008,7 +1008,7 @@ async def main():
         r = assign_unified_deck(lh)
         await run_choreography(lh, r)
         print("")
-        print("SUCCESS: full LIDDED targeted_pcr + ODTC column-1 choreography completed in one STAR")
+        print("SUCCESS: full LIDDED targeted PCR + ODTC column-1 choreography completed in one STAR")
         print("session (single home). Plate back on rail35 pos0, lid back on pos4.")
     finally:
         try:

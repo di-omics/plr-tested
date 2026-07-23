@@ -20,7 +20,7 @@ import pylabrobot.resources as plr_resources
 # ------------
 # One reagent addition per --mode, into destination/work rail35 pos0 column 1, from a single
 # source column at rail35 pos1 column 1 - the same swap-source, single-column, one-add-per-run
-# pattern as the verified PTA/WGA and targeted_pcr master-mix scripts and the emseq/scrnaseq scripts.
+# pattern as the verified PTA/WGA and targeted PCR master-mix scripts and the EM-seq/scRNA-seq scripts.
 #
 # TIP-seq combines CUT&Tag pA-Tn5 tagmentation with T7 linear amplification. The CUT&Tag front
 # end (conA beads, primary/secondary antibody, pA-Tn5 binding, tagmentation, and - for single

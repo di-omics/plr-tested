@@ -247,7 +247,7 @@ TARGETED_PCR_ROUND2 = targeted_pcr_round2()
 #
 # The thermal programs only. Reagent volumes and the liquid-handling map live in the
 # STAR scripts under hamilton-star/starlab_live/emseq/, not here, exactly as the
-# targeted_pcr primer volumes live in the liquid-handling protocol and not in this file.
+# Targeted PCR primer volumes live in the liquid-handling protocol and not in this file.
 #
 # Two device translations, identical to the ones already used above:
 #   - "Hold at 4 C" with no time is encoded as a final 4 C step, hold_seconds=0,

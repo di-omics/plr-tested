@@ -1,6 +1,6 @@
 """Settle the sign of STARBackend mix_position_from_liquid_surface on real hardware, safely.
 
-PATCH 2026-07-16: created after a pre-flight audit blocked the targeted_pcr firmware-mix build.
+PATCH 2026-07-16: created after a pre-flight audit blocked the targeted PCR firmware-mix build.
 
 WHY THIS EXISTS
   PyLabRobot 0.2.1 ships two contradictory docstrings for the SAME parameter:

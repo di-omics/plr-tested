@@ -309,7 +309,7 @@ async def main():
 
         if args.mode == "full-mm-demo":
             print(f"Production tip behavior: discard_tips={discard_tips}")
-            print("Running full targeted_pcr 96WP dry demo in one STAR init:")
+            print("Running full targeted PCR 96WP dry demo in one STAR init:")
             print("  1. PCR1 MM source col1 -> destination cols 1-12")
             print("  2. PCR2 MM source col3 -> destination cols 1-12")
             await transfer_pcr1_master_mix(lh, r, discard_tips, tip_col=1)
