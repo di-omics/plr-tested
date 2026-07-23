@@ -1,6 +1,6 @@
 """Settle the sign of STARBackend mix_position_from_liquid_surface on real hardware, safely.
 
-PATCH 2026-07-16: created after a pre-flight audit blocked the ampseq firmware-mix build.
+PATCH 2026-07-16: created after a pre-flight audit blocked the targeted PCR firmware-mix build.
 
 WHY THIS EXISTS
   PyLabRobot 0.2.1 ships two contradictory docstrings for the SAME parameter:
@@ -47,13 +47,13 @@ SAFE BY CONSTRUCTION
 HOW TO READ THE RESULT
   Watch the tips during the three mix cycles:
     tips sit DOWN INSIDE the well, roughly half its depth (~5 mm off the bottom)
-        -> DEPTH. Measured DOWNWARD from the surface. The ampseq mix Z is
+        -> DEPTH. Measured DOWNWARD from the surface. The targeted PCR mix Z is
            well_bottom - 0.5 mm and WOULD HAVE CRUSHED all eight tips.
     tips sit UP ABOVE the plate rim (~15 mm off the bottom, clearly in open air)
-        -> RAISE. Measured UPWARD from the surface. The ampseq mix would have
+        -> RAISE. Measured UPWARD from the surface. The targeted PCR mix would have
            cycled air above the meniscus and mixed nothing.
 
-  Either way, report the observation and STOP. Do not re-run the ampseq mastermix
+  Either way, report the observation and STOP. Do not re-run the targeted PCR mastermix
   build until MIX_POSITION_FROM_SURFACE is corrected in all three call sites:
     01_ampseq_pcr1_mastermix_col1.py, 03_ampseq_pcr2_mastermix_col1.py,
     run_ampseq_odtc_LIDDED_1col_full_v2_singlehome_dry.py
@@ -83,7 +83,7 @@ from pylabrobot.resources import (
 from pylabrobot.resources.hamilton import STARDeck, TIP_CAR_480_A00
 import pylabrobot.resources as plr_resources
 
-# Deck geometry, identical to the validated ampseq mastermix scripts.
+# Deck geometry, identical to the validated targeted PCR mastermix scripts.
 TIP_RAIL = 48
 LABWARE_RAIL = 35
 P50_TIP_POS = 1

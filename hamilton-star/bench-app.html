@@ -112,11 +112,11 @@
 
   <p class="eyebrow">di-omics &middot; hamilton star &middot; starpi</p>
   <h1 class="title">Bench App</h1>
-  <p class="lede">The two liquid-handling workflows run on the STAR, as commands you can copy straight to the Pi. Single-cell PTA/WGA and amplicon-seq, dry-validated on hardware.</p>
+  <p class="lede">The two liquid-handling workflows run on the STAR, as commands you can copy straight to the Pi. Single-cell whole-genome sequencing and targeted PCR, dry-validated on hardware.</p>
 
   <div class="chips">
     <span class="chip">PTA real: lysis + reaction done</span>
-    <span class="chip">Ampseq dry: full choreography</span>
+    <span class="chip">Targeted PCR dry: full choreography</span>
     <span class="chip">plr-tested</span>
   </div>
 
@@ -163,7 +163,7 @@ python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">\
   <section>
     <div class="sh">
       <svg viewBox="0 0 64 64"><g class="ln"><path d="M11 36 C16 28 21 44 26 36 C31 28 36 44 41 36 C45 30 49 38 53 34"/><path d="M15 42 C20 35 25 49 30 42 C35 35 40 49 45 42"/></g></svg>
-      <h2>Amplicon-seq &mdash; full choreography</h2>
+      <h2>Targeted PCR &mdash; full choreography</h2>
       <span class="tag">dry, return tips</span>
     </div>
     <p class="snote">One wrapper, five steps: PCR1 mastermix, iSWAP to the magnet, bead cleanup, iSWAP back, PCR2 mastermix. The 1-col variant runs a single column so it is quick to watch.</p>
@@ -225,8 +225,8 @@ setsid env PYTHONUNBUFFERED=1 python &lt;script&gt; <span class="fl">\
       <tr><td>PTA real: lysis 3.0 uL + reaction 6.0 uL, discard tips</td><td><span class="ok">passed</span></td></tr>
       <tr><td>PTA dry round trip, iSWAP to HHS and back, +5.0 mm pickup</td><td><span class="ok">passed</span></td></tr>
       <tr><td>PTA full plate + 3-loop stress, 6/6 iSWAP transfers clean</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>Ampseq full dry choreography, single column, magnet clean</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>Ampseq / PTA on real reagents at full plate</td><td><span class="nx">next</span></td></tr>
+      <tr><td>Targeted PCR full dry choreography, single column, magnet clean</td><td><span class="ok">passed</span></td></tr>
+      <tr><td>Targeted PCR / whole-genome amplification on real reagents at full plate</td><td><span class="nx">next</span></td></tr>
     </table>
   </section>
 

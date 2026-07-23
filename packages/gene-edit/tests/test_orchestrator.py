@@ -35,7 +35,7 @@ def _cfg(**over):
 def test_simulation_completes_and_drops_ntc_before_ampseq():
     out = run(_cfg(), timestamp="t")
     assert out.status is RunStatus.COMPLETED
-    # the no-template well fails the post-PTA yield gate and never reaches sequencing
+    # the no-template well fails the post-whole-genome amplification yield gate and never reaches sequencing
     assert "ntc" not in out.final_active_sample_ids
     assert set(out.final_active_sample_ids) == {"s1", "s2", "pos"}
     # six stages ran to handoff
