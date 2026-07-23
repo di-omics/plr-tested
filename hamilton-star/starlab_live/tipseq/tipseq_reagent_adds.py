@@ -20,7 +20,7 @@ import pylabrobot.resources as plr_resources
 # ------------
 # One reagent addition per --mode, into destination/work rail35 pos0 column 1, from a single
 # source column at rail35 pos1 column 1 - the same swap-source, single-column, one-add-per-run
-# pattern as the verified whole-genome sequencing and targeted PCR master-mix scripts and the emseq/scrnaseq scripts.
+# pattern as the verified PTA/WGA and targeted_pcr master-mix scripts and the emseq/scrnaseq scripts.
 #
 # TIP-seq combines CUT&Tag pA-Tn5 tagmentation with T7 linear amplification. The CUT&Tag front
 # end (conA beads, primary/secondary antibody, pA-Tn5 binding, tagmentation, and - for single
@@ -62,7 +62,7 @@ import pylabrobot.resources as plr_resources
 # Geometry provenance and its limits
 # ----------------------------------
 # The p50 and p10 source->work offsets and heights are reused VERBATIM from the hardware-confirmed
-# ampseq/whole-genome amplification-WGA column-1 adds (via the emseq/scrnaseq scripts). No new coordinate is invented.
+# targeted PCR/PTA-WGA column-1 adds (via the emseq/scrnaseq scripts). No new coordinate is invented.
 # Those values were tuned for adding into a SMALL starting volume and for wells WITHOUT beads; the
 # TIP-seq well holds SPRI beads from the start, so the dispense height and mixing need tuning on the
 # deck before a wet run. This script adds and blows out; it does NOT mix on deck (the paper mixes
@@ -91,7 +91,7 @@ P50_MAX_TRANSFER_UL = 40.0
 # Highest confirmed p10 plunger demand (liquid + blowout air), used as a --dry sanity guard.
 P10_CONFIRMED_ENVELOPE_UL = 13.0
 
-# Reused verbatim from the confirmed ampseq/whole-genome amplification-WGA col-1 adds (via emseq/scrnaseq scripts).
+# Reused verbatim from the confirmed targeted PCR/PTA-WGA col-1 adds (via emseq/scrnaseq scripts).
 P50_SOURCE_ASP_HEIGHT = [0.0] * 8
 P50_SOURCE_ASP_OFFSETS = [Coordinate(-0.65, 3.35, 0.0)] * 8
 P50_WORK_DSP_HEIGHT = [0.5] * 8
@@ -244,7 +244,7 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
     print("  rail35 pos0 = destination/work 96WP, column 1 (holds DNA + retained SPRI beads)")
     print("  rail35 pos1 = source 96WP/strip, SOURCE COLUMN 1 ONLY (swap reagent between modes)")
 
-    print("\nGeometry (reused verbatim from confirmed ampseq/PTA-WGA col-1 adds; see header):")
+    print("\nGeometry (reused verbatim from confirmed targeted PCR/PTA-WGA col-1 adds; see header):")
     print(f"  P50 source asp height {P50_SOURCE_ASP_HEIGHT[0]}, work dsp height {P50_WORK_DSP_HEIGHT[0]}, "
           f"blowout {P50_BLOWOUT_AIR_VOLUME} uL, max {P50_MAX_TRANSFER_UL} uL/transfer")
     print(f"  P10 source asp height {P10_SOURCE_ASP_HEIGHT[0]}, work dsp height {P10_WORK_DSP_HEIGHT[0]}, "

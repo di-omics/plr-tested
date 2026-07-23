@@ -33,13 +33,13 @@ class HamiltonRunnerTests(unittest.TestCase):
         self.assertEqual(MODULE.CONFIRM_PHRASE, "RUN_EMSEQ_ODTC_FULL")
         self.assertEqual(MODULE.LABWARE_ACK, "CELLTREAT_229195_WORK_SOURCE")
 
-    def test_liquid_plate_and_heights_follow_working_ampseq_logic(self):
+    def test_liquid_plate_and_heights_follow_working_targeted_pcr_logic(self):
         repo = Path(__file__).resolve().parents[3]
         reagent = (repo / "hamilton-star/starlab_live/emseq/emseq_reagent_adds.py").read_text()
         cleanup = (repo / "hamilton-star/starlab_live/emseq/emseq_cleanup.py").read_text()
-        ampseq = (
+        targeted_pcr = (
             repo
-            / "hamilton-star/starlab_live/run_ampseq_odtc_LIDDED_1col_full_v2_singlehome_dry.py"
+            / "hamilton-star/starlab_live/run_targeted_pcr_odtc_LIDDED_1col_full_v2_singlehome_dry.py"
         ).read_text()
         runner = RUNNER.read_text()
         self.assertIn("work_plate = CellTreat_96_wellplate_350ul_Fb", reagent)
@@ -50,7 +50,7 @@ class HamiltonRunnerTests(unittest.TestCase):
             "P50_WORK_DSP_HEIGHT = [1.5] * 8",
             "P50_WORK_DSP_OFFSETS = [Coordinate(-0.68, 3.22, 0.0)] * 8",
         ):
-            self.assertIn(geometry_lock, ampseq)
+            self.assertIn(geometry_lock, targeted_pcr)
             self.assertIn(geometry_lock, reagent)
         self.assertIn("P10_SOURCE_ASP_HEIGHT = [0.0] * 8", reagent)
         self.assertIn("P10_WORK_DSP_HEIGHT = [0.5] * 8", reagent)

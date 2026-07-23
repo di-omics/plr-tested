@@ -14,7 +14,7 @@ from pylabrobot.resources import (
 import pylabrobot.resources as plr_resources
 
 # -----------------------------------------------------------------------------
-# whole-genome sequencing - p300 ethanol wash add/remove focused test
+# whole-genome sequencing PTA - p300 ethanol wash add/remove focused test
 # Hamilton STAR + PyLabRobot on starpi
 #
 # Purpose:

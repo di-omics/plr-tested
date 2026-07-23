@@ -29,7 +29,7 @@ import pylabrobot.resources as plr_resources
 # (E6420 Section 1.6). The manual warns that skipping the second round reduces cDNA purity.
 #
 # This is the emseq cleanup script generalized: same mag+trough geometry (reused VERBATIM from
-# the hardware-confirmed targeted PCR cleanup), same standard leg set, plus the extra reconstitution
+# the hardware-confirmed targeted_pcr cleanup), same standard leg set, plus the extra reconstitution
 # round for post-cdna. Only the per-cleanup volumes change. Any single leg is a valid --mode so
 # heights can be tuned one step at a time on hardware. RNA runs DISCARD tips (the default);
 # --return-tips is for dry rehearsal only.
@@ -54,7 +54,7 @@ import pylabrobot.resources as plr_resources
 # -----------------
 # Beads/reconstitution/50 uL elution use p300; smaller elutions and residual ethanol use p50.
 # This script does not incubate, does not mix, and does NOT model the final "transfer the clear
-# eluate off the beads to a fresh column" step (operator/off-deck, as in the ampseq/emseq
+# eluate off the beads to a fresh column" step (operator/off-deck, as in the targeted_pcr/emseq
 # cleanups). Bead ratios, ethanol volume, and elution volumes are transcribed from E6420. All
 # geometry is inherited, not re-tuned for scRNA, so every mode is sim-only until tuned.
 
@@ -116,7 +116,7 @@ CLEANUPS: Dict[str, Cleanup] = {
                         "NEB #E6420 Section 1.12"),
 }
 
-# Geometry reused verbatim from the confirmed targeted PCR cleanup (via emseq_cleanup.py). No
+# Geometry reused verbatim from the confirmed targeted_pcr cleanup (via emseq_cleanup.py). No
 # scRNA-specific tuning yet.
 P300_TROUGH_ASP_HEIGHT = [0.3] * 8
 P300_TROUGH_ASP_OFFSETS = [Coordinate(0.0, 1.5, 0.0)] * 8

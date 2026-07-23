@@ -73,18 +73,18 @@ class StarAdapter(Adapter):
             {"lysis_ul": lysis_ul, "reaction_ul": reaction_ul, "tip_column": self.tip_column},
             resolved_command=cmd,
             note=(f"whole-genome amplification: add {lysis_ul} uL lysis, manual lysis handoff, "
-                  f"add {reaction_ul} uL WGA reaction mix (the kit user guide)"),
+                  f"add {reaction_ul} uL WGA reaction mix (authorized WGS/WGA workflow source)"),
         )
 
     def add_mastermix(self, stage: str, volume_ul: float, tip: str,
                       script: str) -> None:
         """Add a PCR master mix from the source column to the work column.
 
-        `script` is the validated targeted PCR mastermix script this maps to (01 for PCR1,
+        `script` is the validated targeted PCR master mix script this maps to (01 for PCR1,
         03 for PCR2), so the run card runs the code that was dry-validated on the deck.
         """
         cmd = (f"cd {_STAR_DIR} && ./run_on_pi.sh "
-               f"protocols/bio_validation0/ampseq/{script}{self._tipcol()}")
+               f"protocols/bio_validation0/targeted_pcr/{script}{self._tipcol()}")
         self._record(
             "add_mastermix",
             {"stage": stage, "volume_ul": volume_ul, "tip": tip, "script": script,
@@ -110,7 +110,7 @@ class StarAdapter(Adapter):
         preset = "anti-dimer" if "PCR1" in spri.stage else "final"
         cmd = (
             f"cd {_STAR_DIR} && ./run_on_pi.sh "
-            f"starlab_live/ampseq_bead_clean_ratio_col1.py --preset {preset}{self._tipcol()}"
+            f"starlab_live/targeted_pcr_bead_clean_ratio_col1.py --preset {preset}{self._tipcol()}"
         )
         self._record(
             "spri_clean",

@@ -34,7 +34,7 @@ until the multi-column runner is implemented and physically qualified.
 The coupled UltraShear + EM-seq v2 workflow, one 8-well column (A-H). The sample plate
 (rail35 pos0) is the single plate that moves: to the ODTC nest for each thermal program,
 to the magnet for each bead cleanup, and back. Reagents are added one per run from a
-swap-source column (rail35 pos1), the same stepwise pattern as the confirmed whole-genome sequencing and
+swap-source column (rail35 pos1), the same stepwise pattern as the confirmed PTA/WGA and
 targeted PCR work in this repo.
 
 Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
@@ -124,7 +124,7 @@ All volumes are transcribed from the two NEB manuals, no rounding. The default p
 
 Only functional parameters (volumes, temperatures, times, bead ratios) are transcribed,
 each cited on the line where it is used in the code, the same way the whole-genome sequencing ODTC
-programs cite the kit user guide.
+programs cite authorized WGS/WGA workflow source.
 
 ## What "tested" means here (status)
 
@@ -188,7 +188,7 @@ before any leg is marked validated, in the repo's usual sense.
 - SPRI cleanups: elution recovers the expected volume (28 / 16 / 20 uL kept) with no bead
   carryover into the eluate (carryover degrades deamination and sequencing).
 - Thermocycling: each ODTC program holds every setpoint within about +/- 0.3 C (the bar
-  the ampseq-pcr1 run met), and the PCR completes despite the 98 C / 99 C-ceiling warnings.
+  the targeted-pcr-round1 run met), and the PCR completes despite the 98 C / 99 C-ceiling warnings.
 - End to end: conversion controls show high deamination of unmethylated lambda and
   protection of methylated pUC19; the final library has the expected size distribution
   (420-620 bp) and yield on a TapeStation/Bioanalyzer; the no-template control is clean.

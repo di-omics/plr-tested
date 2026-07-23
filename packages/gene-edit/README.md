@@ -2,7 +2,7 @@
 
 Confirm a gene edit from a single cell or embryo, the same way in any lab.
 
-This packages the repo's validated whole-genome amplification and targeted PCR work into one QC-gated product:
+This packages the repo's validated PTA and targeted PCR work into one QC-gated product:
 you give it a sparse manifest (which samples, which locus, simulation or hardware) and it
 drives whole-genome amplification, targeted library prep around the edit, and the two QC
 reads that decide what is real, then hands the survivors off to TapeStation and the
@@ -24,16 +24,16 @@ rather than reimplementing it.
   Gate 0  liquid-handling qualification   Rhodamine B, dispense CV <= 5% across the
         |                                  protocol's volumes, or STOP before any sample
         v
-  PTA     whole-genome amplification       ResolveDNA WGA on STAR + ODTC
+  PTA     whole-genome amplification       whole-genome amplification on STAR + ODTC
         |
         v
   Gate 1  post-PTA dsDNA yield             PicoGreen on Tecan; wells under the yield
         |                                  floor are dropped (PROCEED_SUBSET)
         v
-  ampseq  library prep at the edit locus   PCR1 -> anti-dimer clean -> PCR2 -> final clean
+  targeted PCR  library prep at the edit locus   PCR1 -> anti-dimer clean -> PCR2 -> final clean
         |
         v
-  Gate 2  post-ampseq library conc         PicoGreen on Tecan; wells outside the loading
+  Gate 2  post-targeted-PCR library conc         PicoGreen on Tecan; wells outside the loading
         |                                  window are dropped
         v
   handoff TapeStation QC + pooling + Illumina sample sheet
@@ -139,7 +139,7 @@ Honesty about maturity is part of the point.
 
 - The **liquid handling, the ODTC thermal programs, and the deck** this points at are
   validated on hardware in this repo (see `hamilton-star/` and
-  `instrument-integrations/odtc/`). The targeted PCR PCR1 program ran 30 cycles on the ODTC.
+  `instrument-integrations/odtc/`). The targeted PCR round 1 program ran 30 cycles on the ODTC.
 - The **Tecan reads have not been run on a reader yet** (see
   `instrument-integrations/tecan-infinite/`). The Rhodamine working concentration and the
   reader gain are CALIBRATE values; a hardware run is blocked until they are measured.
@@ -161,7 +161,7 @@ edit_confirmation/
   simulation.py     every synthetic number, quarantined and deterministic
   reagents/         rhodamine_b, picogreen, spri - recipes with provenance
   instruments/      STAR / ODTC / Tecan adapters (hardware run cards + simulation)
-  stages/           lh_qc, pta, qc_picogreen, ampseq, handoff
+  stages/           lh_qc, pta, qc_picogreen, targeted_pcr, handoff
   orchestrator.py   run the stages, enforce the gates, assemble the dossier
   reporting/        the house-style HTML dossier
   cli.py            edit-confirm run | plan | demo

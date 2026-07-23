@@ -109,7 +109,7 @@ def _picogreen_body(data: dict) -> str:
     return table + f"<div class='note'>{'; '.join(bits)}.</div>"
 
 
-def _ampseq_body(data: dict) -> str:
+def _targeted_pcr_body(data: dict) -> str:
     anneal = data.get("pcr1_anneal_c")
     anneal_txt = f"{anneal} C" if anneal is not None else "protocol default (67 C)"
     return (
@@ -151,8 +151,8 @@ _BODY = {
     "lh_qc": _lh_qc_body,
     "pta": _pta_body,
     "qc_post_pta": _picogreen_body,
-    "qc_post_ampseq": _picogreen_body,
-    "ampseq": _ampseq_body,
+    "qc_post_targeted_pcr": _picogreen_body,
+    "targeted_pcr": _targeted_pcr_body,
     "handoff": _handoff_body,
 }
 
@@ -223,7 +223,7 @@ def render_dossier(outcome: RunOutcome) -> str:
 <body><div class="wrap">
   <div class="eyebrow">Edit-confirmation package</div>
   <h1>{_esc(cfg.run_id)}</h1>
-  <p class="sub">whole-genome amplification + targeted PCR, QC-gated, for confirming {_esc(cfg.edit_type.value.replace('_',' '))} at {_esc(cfg.locus.name)}.</p>
+  <p class="sub">PTA + targeted PCR, QC-gated, for confirming {_esc(cfg.edit_type.value.replace('_',' '))} at {_esc(cfg.locus.name)}.</p>
   <div class="meta">
     <span>Operator <b>{_esc(cfg.operator)}</b></span>
     <span>Mode <b>{_esc(cfg.mode.value)}</b></span>

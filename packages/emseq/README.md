@@ -113,7 +113,7 @@ and process-blank criteria. The latter are marked `TUNABLE`, not presented as NE
 
 ## Why live execution is blocked
 
-The physical dry pass proves the complete STAR/iSWAP motion path and the AmpSeq-matched
+The physical dry pass proves the complete STAR/iSWAP motion path and the Targeted PCR-matched
 plate geometry can complete with empty labware. It does not close the measured wet and
 thermal qualifications below.
 

@@ -14,7 +14,7 @@
 lh_cv_max_percent: 5.0
 lh_recovery_tolerance_percent: 10.0
 # The volumes qualified. These span the protocol's real range: single-cell PTA adds at
-# the low end (2 to 6 uL), ampseq master mixes in the middle (20 to 22.5 uL), bulk and
+# the low end (2 to 6 uL), targeted PCR master mixes in the middle (20 to 22.5 uL), bulk and
 # top-up at the high end.
 lh_qualified_volumes_ul: [2.0, 3.0, 5.0, 10.0, 20.0, 22.5, 50.0, 100.0, 200.0]
 
@@ -24,13 +24,13 @@ lh_qualified_volumes_ul: [2.0, 3.0, 5.0, 10.0, 20.0, 22.5, 50.0, 100.0, 200.0]
 curve_r2_min: 0.98
 
 # --- Gate 1: post-PTA yield and uniformity ----------------------------------
-# TUNABLE. Set from the ResolveDNA yield your samples actually give. A well under the
+# TUNABLE. Set from the whole-genome sequencing yield your samples actually give. A well under the
 # floor did not amplify and does not go into a library.
 pta_yield_min_ng: 100.0
 pta_uniformity_cv_max_percent: 30.0
 
-# --- Gate 2: post-ampseq library concentration ------------------------------
+# --- Gate 2: post-targeted-PCR library concentration ------------------------------
 # TUNABLE. The loading window for even pooling and TapeStation. Verify against your
 # sequencer's guidance.
-ampseq_conc_min_ng_per_ul: 2.0
-ampseq_conc_max_ng_per_ul: 60.0
+targeted_pcr_conc_min_ng_per_ul: 2.0
+targeted_pcr_conc_max_ng_per_ul: 60.0

@@ -140,9 +140,9 @@ class AcceptanceCriteria:
     pta_yield_min_ng: float = 100.0        # TUNABLE, see acceptance_criteria.yaml
     pta_uniformity_cv_max_percent: float = 30.0
 
-    # Gate 2: post-ampseq library concentration window (for even pooling / TapeStation).
-    ampseq_conc_min_ng_per_ul: float = 2.0
-    ampseq_conc_max_ng_per_ul: float = 60.0
+    # Gate 2: post-targeted-PCR library concentration window (for even pooling / TapeStation).
+    targeted_pcr_conc_min_ng_per_ul: float = 2.0
+    targeted_pcr_conc_max_ng_per_ul: float = 60.0
 
     def lh_cv_criterion(self, volume_ul: float) -> Criterion:
         return Criterion(
@@ -174,12 +174,12 @@ class AcceptanceCriteria:
             source="TUNABLE: set from the whole-genome sequencing yield seen on your samples; verify",
         )
 
-    def ampseq_conc_criterion(self) -> Criterion:
+    def targeted_pcr_conc_criterion(self) -> Criterion:
         return Criterion(
-            key="ampseq_conc",
-            label="post-ampseq library concentration",
+            key="targeted_pcr_conc",
+            label="post-targeted-PCR library concentration",
             comparison=Comparison.RANGE,
-            bound=(self.ampseq_conc_min_ng_per_ul, self.ampseq_conc_max_ng_per_ul),
+            bound=(self.targeted_pcr_conc_min_ng_per_ul, self.targeted_pcr_conc_max_ng_per_ul),
             unit="ng/uL",
             source="TUNABLE: loading window for TapeStation and the sequencer; verify",
         )

@@ -112,11 +112,11 @@
 
   <p class="eyebrow">di-omics &middot; hamilton star &middot; starpi</p>
   <h1 class="title">Bench App</h1>
-  <p class="lede">The two liquid-handling workflows run on the STAR, as commands you can copy straight to the Pi. Single-cell PTA/WGA and amplicon-seq, dry-validated on hardware.</p>
+  <p class="lede">The two liquid-handling workflows run on the STAR, as commands you can copy straight to the Pi. Single-cell PTA/WGA and targeted PCR, dry-validated on hardware.</p>
 
   <div class="chips">
     <span class="chip">PTA real: lysis + reaction done</span>
-    <span class="chip">Ampseq dry: full choreography</span>
+    <span class="chip">Targeted PCR dry: full choreography</span>
     <span class="chip">plr-tested</span>
   </div>
 
@@ -163,18 +163,18 @@ python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">\
   <section>
     <div class="sh">
       <svg viewBox="0 0 64 64"><g class="ln"><path d="M11 36 C16 28 21 44 26 36 C31 28 36 44 41 36 C45 30 49 38 53 34"/><path d="M15 42 C20 35 25 49 30 42 C35 35 40 49 45 42"/></g></svg>
-      <h2>Amplicon-seq &mdash; full choreography</h2>
+      <h2>Targeted PCR &mdash; full choreography</h2>
       <span class="tag">dry, return tips</span>
     </div>
     <p class="snote">One wrapper, five steps: PCR1 mastermix, iSWAP to the magnet, bead cleanup, iSWAP back, PCR2 mastermix. The 1-col variant runs a single column so it is quick to watch.</p>
 
     <div class="card">
       <div class="steprow"><span class="pill">5 STEPS</span><b>Full built dry, single column</b><span class="facts"><span class="fact">p50</span><span class="fact">iSWAP &times;2</span><span class="fact">magnet clean</span></span></div>
-      <div class="cmd"><button class="copy" data-c="python 09_ampseq_1col_full_built_end_to_end_dry.py">Copy</button><pre><span class="cm"># PCR1 MM -&gt; iSWAP to magnet -&gt; cleanup -&gt; iSWAP back -&gt; PCR2 MM</span>
-python 09_ampseq_1col_full_built_end_to_end_dry.py
+      <div class="cmd"><button class="copy" data-c="python 09_targeted_pcr_1col_full_built_end_to_end_dry.py">Copy</button><pre><span class="cm"># PCR1 MM -&gt; iSWAP to magnet -&gt; cleanup -&gt; iSWAP back -&gt; PCR2 MM</span>
+python 09_targeted_pcr_1col_full_built_end_to_end_dry.py
 
 <span class="cm"># full-plate version (all 12 columns):</span>
-python 09_ampseq_full_built_end_to_end_dry.py</pre></div>
+python 09_targeted_pcr_full_built_end_to_end_dry.py</pre></div>
       <div class="handoff"><span><span class="lab">baked tuning</span>magnet return uses <b>pickup +14.0 mm, drop +8.5 mm</b>. Do not pass <b>--pause-after-*</b> when detached (they use input() and will crash).</span></div>
     </div>
 
@@ -225,8 +225,8 @@ setsid env PYTHONUNBUFFERED=1 python &lt;script&gt; <span class="fl">\
       <tr><td>PTA real: lysis 3.0 uL + reaction 6.0 uL, discard tips</td><td><span class="ok">passed</span></td></tr>
       <tr><td>PTA dry round trip, iSWAP to HHS and back, +5.0 mm pickup</td><td><span class="ok">passed</span></td></tr>
       <tr><td>PTA full plate + 3-loop stress, 6/6 iSWAP transfers clean</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>Ampseq full dry choreography, single column, magnet clean</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>Ampseq / PTA on real reagents at full plate</td><td><span class="nx">next</span></td></tr>
+      <tr><td>Targeted PCR full dry choreography, single column, magnet clean</td><td><span class="ok">passed</span></td></tr>
+      <tr><td>Targeted PCR / PTA on real reagents at full plate</td><td><span class="nx">next</span></td></tr>
     </table>
   </section>
 
@@ -247,7 +247,7 @@ setsid env PYTHONUNBUFFERED=1 python &lt;script&gt; <span class="fl">\
   });
   function fb(t){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(a);}
 
-  var RX={'PTA / WGA':[{n:'Lysis Mix',tip:'p10',c:[['L1 reagent',1.68],['L2 reagent',0.12],['L3 reagent',1.20]]},{n:'Reaction Mix',tip:'p10',c:[['R1 reagent',5.40],['R2 reagent',0.60]]}],'Amplicon-seq':[{n:'PCR1 complete MM',tip:'p50',c:[['2X Q5U master mix',12.50],['F primer 10uM',0.625],['R primer 10uM',0.625],['H2O',8.75]]},{n:'PCR2 common MM',tip:'p50',c:[['2X Q5 master mix',12.50],['H2O',8.00]]}]};
+  var RX={'PTA / WGA':[{n:'Lysis Mix',tip:'p10',c:[['L1 reagent',1.68],['L2 reagent',0.12],['L3 reagent',1.20]]},{n:'Reaction Mix',tip:'p10',c:[['R1 reagent',5.40],['R2 reagent',0.60]]}],'Targeted PCR':[{n:'PCR1 complete MM',tip:'p50',c:[['2X Q5U master mix',12.50],['F primer 10uM',0.625],['R primer 10uM',0.625],['H2O',8.75]]},{n:'PCR2 common MM',tip:'p50',c:[['2X Q5 master mix',12.50],['H2O',8.00]]}]};
   var st={n:8,m:1,o:1.3};
   function fmt(x){return x>=100?x.toFixed(0):x.toFixed(x<10?2:1);}
   function setV(id,v){var e=document.getElementById(id);if(e)e.textContent=fmt(v)+' uL';}

@@ -6,7 +6,7 @@ protocol the same way in any lab and controls what happens between the steps. It
 the three instrument adapters, threads a shared action log and a provenance guard
 through every stage, and runs the fixed sequence:
 
-  Gate 0 lh_qc -> whole-genome amplification -> Gate 1 post-whole-genome amplification -> targeted PCR -> Gate 2 post-ampseq -> handoff
+  Gate 0 lh_qc -> PTA -> Gate 1 post-PTA -> targeted_pcr -> Gate 2 post-targeted-PCR -> handoff
 
 After each stage it reads the gate's decision and acts on it, which is the whole reason
 gates are objects and not print statements:
@@ -35,7 +35,7 @@ from .instruments.star import StarAdapter
 from .instruments.tecan import TecanAdapter
 from .provenance import ProvenanceError, RunGuard
 from .simulation import POORLY_TUNED_DECK, WELL_TUNED_DECK
-from .stages.ampseq import AmpliconSeq
+from .stages.targeted_pcr import TargetedPCR
 from .stages.base import Stage, StageContext, StageResult, StageStatus
 from .stages.handoff import Handoff
 from .stages.lh_qc import LiquidHandlingQC
@@ -86,8 +86,8 @@ def build_stages(config: RunConfig) -> List[Stage]:
         LiquidHandlingQC(),
         PTA(),
         PicoGreenQC(Checkpoint.POST_PTA),
-        AmpliconSeq(),
-        PicoGreenQC(Checkpoint.POST_AMPSEQ),
+        TargetedPCR(),
+        PicoGreenQC(Checkpoint.POST_TARGETED_PCR),
         Handoff(),
     ]
 

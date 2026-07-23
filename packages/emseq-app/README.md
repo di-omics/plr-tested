@@ -2,7 +2,7 @@
 
 A local, planning-only browser wizard for NEBNext EM-seq v2 with UltraShear on the
 Hamilton STAR. It ships beside the protocol package and uses the same plain-language
-deck terminology as the whole-genome amplification + Targeted PCR bench planner.
+deck terminology as the PTA + Targeted PCR bench planner.
 
 Status: the complete one-column Hamilton physical dry run passed all 36 of 36 legs on
 2026-07-21 with no command or USB fault and the plate returned to rail35 p0. Wet liquid,

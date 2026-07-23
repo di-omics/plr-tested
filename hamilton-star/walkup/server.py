@@ -1,67 +1,18 @@
 #!/usr/bin/env python3
-"""
-Walk-up runner for the targeted PCR + ODTC choreography. Local, stdlib only.
+"""Local, gated walk-up runner for targeted PCR and ODTC choreography.
 
-WHAT THIS IS
-  A gated front end for run_on_pi.sh, so a non-programmer can start a validated
-  choreography without a terminal. It does NOT re-derive geometry, does NOT
-  replace the runner, and does NOT invent protocol values. It orchestrates the
-  same command you would type by hand, with the hand-typed safety steps turned
-  into gates that cannot be skipped.
+The server binds to localhost and drives real hardware through ``run_on_pi.sh``.
+Builds are supplied only through an external local JSON file. Missing, empty, or
+invalid configuration exposes zero runnable builds. Every configured build is
+pinned by both a tag and a full commit SHA, materialized in a detached worktree,
+and rejected if the tag no longer resolves to the configured SHA.
 
-WHAT THIS IS NOT
-  Not a simulator. The sibling files hamilton-star/ampseq-run-app*.html are
-  visual sims badged SIMULATION and cannot reach the Pi. This one really drives
-  the arm. Do not publish it, do not expose it off localhost, and do not let the
-  SIMULATION habit carry over: when this says RUNNING, metal is moving.
+The launch path also requires same-origin JSON, an idle STAR, explicit deck
+staging, and a human at the E-stop. Stop is a leg-boundary request: the leg in
+flight finishes before the runner exits. That stop path is not a substitute for
+the E-stop and requires a supervised hardware qualification before reliance.
 
-THE FRICTION IS THE FEATURE
-  Every gate below exists because something went wrong once. The confirm token
-  --confirm RUN_AMPSEQ_ODTC_LIDDED_FULL is not auto-filled into a Run button.
-  It is released only after four gates pass:
-    0. SAME ORIGIN  the POST came from this page, not some other browser tab.
-    1. SHA PIN      the validated commit, materialized to its own worktree.
-    2. STAR FREE    no other process may hold the USB.
-    3. DECK STAGED  every physical item confirmed by a human who looked.
-    4. PRESENT      explicit affirmation, hand near the E-stop, hold to arm.
-  Removing any of these turns this into the thing the operator asked it not to be.
-  Gate 0 is not paranoia: without it, ANY page in ANY tab can POST here and forge
-  gates 3 and 4, because they are just JSON fields. Found by review, see README.
-
-WHY THE TAG PIN MATTERS MOST, AND HOW IT IS DONE
-  run_on_pi.sh rsyncs the LOCAL WORKING TREE, not a commit. Parallel sessions
-  land on main constantly (5 landed overnight 07-15/16, one of which would have
-  driven 8 tips into the plate). Running "the latest code" is how you ship a
-  tip-crusher.
-
-  The first cut of this file only CHECKED that the tree matched the tag and
-  blocked otherwise. That was wrong in practice: on main the check fires every
-  single time (main's run_on_pi.sh legitimately differs from the tagged one), and
-  a gate that always fires is a gate people learn to route around.
-
-  So this does not nag, it removes the hazard structurally. Each build gets its
-  own detached git worktree materialized at its EXACT SHA (not its tag name: tags
-  are mutable and this repo force-rewrites refs), and run_on_pi.sh is invoked from
-  inside that worktree. rsync therefore ships the validated tree, byte for byte,
-  no matter what your main checkout is doing. Consequences:
-    - You never check out a tag and never have to remember to go back to main.
-    - Parallel chats can keep landing on main mid-run. It cannot reach the robot.
-    - A tag that has been moved off the validated sha is refused, not obeyed.
-    - What ran is recorded as a sha, not a promise.
-
-ABORT SEMANTICS -- READ THIS
-  Aborting mid-leg strands the plate wherever that leg left it (it has happened;
-  a plate sat in the ODTC nest). The clean stop is BETWEEN legs. Stop here sends
-  SIGTERM to the RUNNER process on the Pi only, matched on the runner filename.
-  The leg child has a different filename and is not matched, so the leg in flight
-  finishes its motion, and no further legs launch. That is a leg-boundary abort.
-
-  THIS ABORT PATH HAS NOT BEEN EXERCISED ON HARDWARE. It is reasoned from the
-  runner's structure (subprocess.run per leg, parent blocks in wait) and not yet
-  proven. Give it one supervised shakeout before trusting it. Until then the
-  E-stop remains the real stop, which is why a human stands at the deck.
-
-usage:  python3 server.py            # then open http://127.0.0.1:8765
+Usage: ``python3 server.py`` then open http://127.0.0.1:8765.
 """
 
 import json
@@ -77,7 +28,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 HERE = Path(__file__).resolve().parent
 HAMILTON = HERE.parent
@@ -90,38 +41,101 @@ PI = os.environ.get("PI", "starpi")
 # noise in anyone's git status, and so a stray `git clean` cannot eat them.
 WT_ROOT = Path(os.environ.get(
     "WALKUP_WORKTREES",
-    str(Path.home() / ".cache" / "ampseq-walkup" / "worktrees")))
+    str(Path.home() / ".cache" / "targeted-pcr-walkup" / "worktrees")))
+BUILDS_FILE = Path(os.environ.get(
+    "WALKUP_BUILDS_FILE",
+    str(Path.home() / ".config" / "plr-tested" / "walkup-builds.json")))
 
-# The two builds that have actually passed on hardware. Nothing else is offered.
-# Adding an entry here is a claim that it is validated; do not add speculatively.
-BUILDS = {
-    "1col": {
-        "tag": "ampseq-lidded-inwellmix-2026-07-16",
-        # The tag NAME is not the pin. A tag is a mutable ref, and this repo
-        # force-rewrites refs; a moved tag would resolve to unvalidated code and
-        # the app would cheerfully call it "validated". The sha IS the pin. If
-        # the tag stops resolving to this, the app refuses rather than guesses.
-        "sha": "2bd1b00695b17786566d5049fac87e5ebed1fc1d",
-        "script": "starlab_live/run_ampseq_odtc_LIDDED_1col_full_dry.py",
-        "token": "RUN_AMPSEQ_ODTC_LIDDED_FULL",
-        "runner_match": "run_ampseq_odtc_LIDDED_1col_full_dry",
-        "label": "1 column - 8 reactions",
-        "legs": 13,   # the runner's STEPS list. progress divides by this.
-        "record": "13/13 clean, twice",
-        "minutes": 18,
-    },
-    "4col": {
-        "tag": "ampseq-lidded-4col-dry-2026-07-16",
-        "sha": "6998eb46e262f31052fbae72fa8a2cffb71ee347",
-        "script": "starlab_live/run_ampseq_odtc_LIDDED_4col_full_dry.py",
-        "token": "RUN_AMPSEQ_ODTC_LIDDED_4COL",
-        "runner_match": "run_ampseq_odtc_LIDDED_4col_full_dry",
-        "label": "4 columns - 32 reactions",
-        "legs": 13,   # the runner's STEPS list. progress divides by this.
-        "record": "50 SUCCESS / 0 fail, twice",
-        "minutes": 42,
-    },
+BUILD_FIELDS = {
+    "tag", "sha", "script", "token", "runner_match",
+    "label", "legs", "record", "minutes",
 }
+BUILD_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+TAG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
+TOKEN_RE = re.compile(r"^[A-Z][A-Z0-9_]{3,127}$")
+RUNNER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _validate_build(key, value):
+    if not isinstance(key, str) or not BUILD_KEY_RE.fullmatch(key):
+        raise ValueError("build keys must match [a-z0-9][a-z0-9_-]{0,63}")
+    if type(value) is not dict:
+        raise ValueError(f"build {key!r} must be an object")
+    fields = set(value)
+    if fields != BUILD_FIELDS:
+        missing = sorted(BUILD_FIELDS - fields)
+        extra = sorted(fields - BUILD_FIELDS)
+        raise ValueError(
+            f"build {key!r} has invalid fields; missing={missing}, extra={extra}")
+
+    for field in ("tag", "sha", "script", "token", "runner_match", "label", "record"):
+        if type(value[field]) is not str:
+            raise ValueError(f"build {key!r} field {field!r} must be a string")
+
+    tag = value["tag"]
+    if (not TAG_RE.fullmatch(tag) or tag.endswith((".", "/")) or "//" in tag
+            or "@{" in tag or any(part in ("", ".", "..") for part in tag.split("/"))):
+        raise ValueError(f"build {key!r} has an unsafe tag")
+    if not SHA_RE.fullmatch(value["sha"]):
+        raise ValueError(f"build {key!r} sha must be 40 lowercase hex characters")
+
+    script = value["script"]
+    script_path = PurePosixPath(script)
+    if (not script or script != script_path.as_posix() or script_path.is_absolute()
+            or any(part in ("", ".", "..") for part in script_path.parts)
+            or script_path.parts[0] != "starlab_live" or script_path.suffix != ".py"):
+        raise ValueError(
+            f"build {key!r} script must be a safe starlab_live/*.py relative path")
+
+    if not TOKEN_RE.fullmatch(value["token"]):
+        raise ValueError(f"build {key!r} has an invalid confirmation token")
+    runner = value["runner_match"]
+    if not RUNNER_RE.fullmatch(runner) or runner not in script_path.stem:
+        raise ValueError(
+            f"build {key!r} runner_match must be a safe substring of the script stem")
+
+    for field in ("label", "record"):
+        text = value[field]
+        if not text.strip() or len(text) > 200 or CONTROL_RE.search(text):
+            raise ValueError(f"build {key!r} field {field!r} must be 1-200 safe characters")
+    for field, maximum in (("legs", 1000), ("minutes", 1440)):
+        number = value[field]
+        if type(number) is not int or not 1 <= number <= maximum:
+            raise ValueError(
+                f"build {key!r} field {field!r} must be a positive integer <= {maximum}")
+    return dict(value)
+
+
+def load_builds(path=BUILDS_FILE):
+    """Load and validate the external build registry; any error fails closed."""
+    try:
+        raw = json.loads(Path(path).read_text())
+    except FileNotFoundError:
+        return {}, "No local build configuration is available."
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return {}, f"Local build configuration is invalid: {type(exc).__name__}."
+
+    if type(raw) is not dict or set(raw) != {"schema_version", "builds"}:
+        return {}, "Local build configuration must contain schema_version and builds."
+    if type(raw["schema_version"]) is not int or raw["schema_version"] != 1:
+        return {}, "Unsupported local build configuration schema."
+    if type(raw["builds"]) is not dict:
+        return {}, "Local build configuration builds must be an object."
+    if not raw["builds"]:
+        return {}, "Local build configuration contains no builds."
+    try:
+        builds = {
+            key: _validate_build(key, value)
+            for key, value in raw["builds"].items()
+        }
+    except ValueError as exc:
+        return {}, f"Local build configuration is invalid: {exc}."
+    return builds, f"Loaded {len(builds)} authorized local build(s)."
+
+
+BUILDS, BUILDS_STATUS = load_builds()
 
 # Physical items. Get these wrong and an iSWAP releases into open space.
 # Order matches the deck, left to right, so the human's eye can sweep once.
@@ -478,6 +492,11 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, json.dumps({
                 "run": snap,
                 "builds": builds,
+                "build_config": {
+                    "path": str(BUILDS_FILE),
+                    "loaded": bool(BUILDS),
+                    "status": BUILDS_STATUS,
+                },
                 "deck": [{"key": k, "label": l, "why": w} for k, l, w in DECK_ITEMS],
                 "pi": PI,
                 "history": history(),
@@ -526,7 +545,7 @@ class H(BaseHTTPRequestHandler):
         # which is a CORS *simple request*: no preflight, the browser sends it,
         # and gates 3 and 4 happily read `deck` and `present` out of a body that
         # no human ever filled in. The arm starts with nobody at the E-stop.
-        # Worst of all, the sibling ampseq-run-app*.html sims are documented as
+        # Worst of all, the sibling targeted_pcr-run-app*.html sims are documented as
         # safe to publish: publish one, open it while this is running, and it
         # fires the real STAR. Found by adversarial review 2026-07-16.
         #
@@ -644,6 +663,8 @@ def main():
     print("  walk-up runner  ->  http://127.0.0.1:%d" % PORT)
     print("  repo: %s" % REPO)
     print("  pi:   %s" % PI)
+    print("  builds: %s" % BUILDS_STATUS)
+    print("  config: %s" % BUILDS_FILE)
     print("")
     print("  This drives the real arm. Bound to localhost only. Do not expose it.")
     print("  A human stays at the deck, hand near the E-stop.")

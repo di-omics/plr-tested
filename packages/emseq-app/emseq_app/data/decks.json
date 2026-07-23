@@ -58,7 +58,7 @@
           "role": "CellTreat 350 µL dry source plate",
           "dry_run_state": "empty / dry",
           "instruction": "Seat the second bare, empty CellTreat 229195/229196 plate squarely; source column 1 must be clear.",
-          "why": "Every dry reagent-add mode models its source at column 1 using the working AmpSeq plate-height logic."
+          "why": "Every dry reagent-add mode models its source at column 1 using the working Targeted PCR plate-height logic."
         },
         {
           "key": "r35p2_magnet",

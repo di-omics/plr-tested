@@ -2,7 +2,7 @@
 iSWAP return leg: ODTC plate nest -> rail35 pos0.
 
 di-omics / plr-tested
-Return half of the ampseq / PTA-WGA ODTC plate move. Plate-move only; triggers
+Return half of the targeted PCR / PTA-WGA ODTC plate move. Plate-move only; triggers
 no thermal program.
 
 PATCH LOG

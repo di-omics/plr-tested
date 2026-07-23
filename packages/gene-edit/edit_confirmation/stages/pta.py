@@ -2,7 +2,7 @@
 stages/pta.py - whole-genome amplification whole-genome amplification.
 
 For single-cell or single-embryo edit confirmation there is not enough template to
-amplify one locus directly, so the genome is amplified first by whole-genome amplification (Primary
+amplify one locus directly, so the genome is amplified first by PTA (Primary
 Template-directed Amplification, the whole-genome sequencing chemistry), and the edit locus is pulled
 out of that product by targeted PCR downstream. This stage does the deck work up to the
 thermal handoff and then runs the WGA program on the ODTC.
@@ -20,7 +20,7 @@ from __future__ import annotations
 from ..reagents import spri  # noqa: F401  (kept for symmetry; whole-genome amplification has no SPRI)
 from .base import Stage, StageContext, StageResult, StageStatus
 
-# whole-genome amplification volume breakdown (the kit user guide), as summed in odtc_protocols.py VOL_UL_WGA:
+# whole-genome amplification volume breakdown (authorized WGS/WGA workflow source), as summed in odtc_protocols.py VOL_UL_WGA:
 # 3 uL cells/Cell Buffer + 3 uL Lysis Mix + 6 uL Reaction Mix = 12 uL.
 PTA_LYSIS_UL = 3.0
 PTA_REACTION_UL = 6.0

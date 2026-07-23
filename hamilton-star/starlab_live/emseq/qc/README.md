@@ -11,7 +11,7 @@ and biological performance remain unvalidated and blocked.**
 | Field | Record |
 | --- | --- |
 | Source branch | `emseq-v2-ultrashear-package` |
-| Source commit | `c375117` (`emseq: match working AmpSeq liquid geometry`) |
+| Source commit | `c375117` (`emseq: match working Targeted PCR liquid geometry`) |
 | Instrument | Hamilton STAR, driven from the instrument Raspberry Pi |
 | Runner | `starlab_live/emseq/run_emseq_odtc_1col_full_dry.py` |
 | Completion | 2026-07-21 18:08:19 PDT |
@@ -41,7 +41,7 @@ trough, and the open ODTC nest at rail20 p1. Tips were returned for observation.
 - All three SPRI cleanup motion presets: post-ligation, post-TET2, and post-PCR.
 - Eight complete work-plate/ODTC round trips using the inherited Targeted PCR iSWAP geometry.
 - Three complete work-plate/magnet round trips.
-- The largest p50 command, 45 uL PCR master mix, completed using the AmpSeq-matched
+- The largest p50 command, 45 uL PCR master mix, completed using the Targeted PCR-matched
   0.0 mm source and 1.5 mm destination heights.
 - The final plate self-returned to rail35 p0 and the runner exited normally.
 

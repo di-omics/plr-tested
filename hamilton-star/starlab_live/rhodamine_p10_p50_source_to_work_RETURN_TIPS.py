@@ -14,7 +14,7 @@ from pylabrobot.resources import (
 import pylabrobot.resources as plr_resources
 
 # -----------------------------------------------------------------------------
-# whole-genome sequencing - p10 + p50 source-to-work RHODAMINE / LH geometry script
+# whole-genome sequencing PTA - p10 + p50 source-to-work RHODAMINE / LH geometry script
 # Hamilton STAR + PyLabRobot on starpi
 #
 # Purpose:
