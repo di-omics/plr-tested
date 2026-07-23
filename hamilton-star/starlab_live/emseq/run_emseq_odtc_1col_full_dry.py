@@ -12,7 +12,7 @@ from pathlib import Path
 # ------------
 # The whole UltraShear + EM-seq v2 shape as one ordered plan: reagent adds into column 1,
 # ODTC out/back for each thermal program, and three magnet + SPRI cleanup out/backs. It is
-# the same orchestration pattern as run_ampseq_odtc_1col_full_dry.py: each leg runs an
+# the same orchestration pattern as run_targeted_pcr_odtc_1col_full_dry.py: each leg runs an
 # already-scoped leg script by subprocess, and NO geometry is re-derived here. The iSWAP
 # plate-move legs reuse the parent starlab_live/ move scripts with the SAME confirmed args
 # the targeted PCR choreography used; the reagent and cleanup legs run the sibling emseq scripts.
@@ -45,7 +45,7 @@ from pathlib import Path
 # The magnet MUST be physically at rail35 pos2 and the ODTC nest empty, or an iSWAP releases
 # the plate into open space. Deck-check every position and keep a human at the E-stop.
 #
-# Confirmed iSWAP geometry baked into the leg args (from run_ampseq_odtc_1col_full_dry.py,
+# Confirmed iSWAP geometry baked into the leg args (from run_targeted_pcr_odtc_1col_full_dry.py,
 # gripped clean on hardware 2026-07-12; NOT re-derived here):
 #   ODTC forward : pickup z5, drop x2 / y36.5 / z12 at rail20 pos1
 #   ODTC return  : pickup z0 (plate settles ~9 mm deep in the nest), drop z8.5

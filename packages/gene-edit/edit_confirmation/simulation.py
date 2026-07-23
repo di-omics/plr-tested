@@ -62,7 +62,7 @@ class DeckQuality:
         return min(cv, self.cap_cv_percent)
 
 
-# A deck good enough to pass at and above a few uL, tight everywhere the ampseq/whole-genome amplification
+# A deck good enough to pass at and above a few uL, tight everywhere the targeted PCR/PTA
 # volumes actually sit. Swap for a worse one to demonstrate a Gate 0 stop.
 WELL_TUNED_DECK = DeckQuality(floor_cv_percent=1.5, low_volume_coeff=4.0)
 POORLY_TUNED_DECK = DeckQuality(floor_cv_percent=3.0, low_volume_coeff=12.0)
@@ -124,7 +124,7 @@ PICOGREEN_MODEL = PicoGreenModel()
 def simulate_pta_yield_conc_ng_per_ml(run_id: str, sample: Sample) -> float:
     """A simulated post-whole-genome amplification NEAT dsDNA concentration (ng/mL), by sample type.
 
-    Test and control wells amplify to whole-genome sequencing-scale yields - tens of ng/uL, i.e. tens
+    Test and control wells amplify to WGA-scale yields - tens of ng/uL, i.e. tens
     of thousands of ng/mL, well above the PicoGreen high-range top standard, which is why
     the real assay dilutes before reading (the stage models that dilution). A no-template
     well stays near background and fails the yield gate. Illustrative, not transcribed.
@@ -140,13 +140,13 @@ def simulate_pta_yield_conc_ng_per_ml(run_id: str, sample: Sample) -> float:
     return max(0.0, rng.gauss(center, center * 0.20))  # 20% well-to-well spread
 
 
-def simulate_ampseq_library_conc_ng_per_ml(run_id: str, sample: Sample) -> float:
-    """A simulated post-ampseq NEAT library concentration (ng/mL), by sample type.
+def simulate_targeted_pcr_library_conc_ng_per_ml(run_id: str, sample: Sample) -> float:
+    """A simulated post-targeted-PCR NEAT library concentration (ng/mL), by sample type.
 
     Test/control libraries land inside the loading window (about 18 ng/uL); a no-template
     well makes almost nothing and falls under the window floor.
     """
-    rng = det_rng(run_id, "ampseq_conc", sample.id, sample.well)
+    rng = det_rng(run_id, "targeted_pcr_conc", sample.id, sample.well)
     if sample.sample_type is SampleType.NO_TEMPLATE:
         return max(0.0, rng.gauss(400.0, 300.0))       # ~0.4 ng/uL -> below floor
     return max(0.0, rng.gauss(18000.0, 5000.0))        # ~18 ng/uL, inside 2 to 60 ng/uL

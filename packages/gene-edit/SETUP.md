@@ -23,7 +23,7 @@ cd plr-tested/packages/gene-edit
 python3 -m edit_confirmation demo
 ```
 
-That runs the whole flow (Gate 0 -> whole-genome amplification -> Gate 1 -> targeted PCR -> Gate 2 -> handoff) with
+That runs the whole flow (Gate 0 -> PTA -> Gate 1 -> targeted PCR -> Gate 2 -> handoff) with
 deterministic synthetic reads and writes a dossier. A site can qualify the workflow, read
 the rubric, and train an operator before an instrument is unboxed.
 

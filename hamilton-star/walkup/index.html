@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ampseq walk-up runner</title>
+<title>Targeted PCR walk-up runner</title>
 <style>
 :root{
   color-scheme: light;
@@ -130,14 +130,14 @@ code{font-family:ui-monospace,monospace;font-size:11.5px}
 
   <div class="top">
     <div>
-      <p class="lab">amplicon-seq &middot; hamilton star + odtc &middot; starpi</p>
+      <p class="lab">targeted PCR &middot; Hamilton STAR + ODTC &middot; local runner</p>
       <h1>walk-up<span class="d">.</span></h1>
     </div>
     <div class="live"><i></i> live &middot; drives the arm</div>
   </div>
 
   <div class="note warn" style="margin-top:16px">
-    <b>This is not the simulator.</b> The sibling pages <code>ampseq-run-app*.html</code> are
+    <b>This is not the simulator.</b> The sibling pages <code>targeted_pcr-run-app*.html</code> are
     badged SIMULATION and cannot reach the Pi. This one really moves metal. A human stays at
     the deck with a hand near the E-stop for the whole run. Nothing here changes that.
   </div>
@@ -145,7 +145,7 @@ code{font-family:ui-monospace,monospace;font-size:11.5px}
   <!-- 1. BUILD + TAG PIN -->
   <div class="card">
     <h2>1 <span class="n">&middot; pick the build</span></h2>
-    <p class="sub">Only builds that have passed on hardware are offered.</p>
+    <p class="sub">Only builds supplied by the validated local build registry are offered.</p>
     <div class="builds" id="builds"></div>
     <div id="tagbox"></div>
   </div>
@@ -182,8 +182,8 @@ code{font-family:ui-monospace,monospace;font-size:11.5px}
     <button class="run" id="run" disabled>
       <span class="fill" id="fill"></span><span id="runlabel">hold to run</span>
     </button>
-    <p class="sub" style="margin:9px 0 0;font-size:11.5px">Hold the button for 2 seconds. That
-    hold replaces typing <code>--confirm RUN_AMPSEQ_ODTC_LIDDED_FULL</code>. It is deliberate.</p>
+    <p class="sub" style="margin:9px 0 0;font-size:11.5px">Hold the button for 2 seconds.
+    The configured confirmation token is released only after every server-side gate passes.</p>
   </div>
 
   <!-- LIVE -->
@@ -213,17 +213,27 @@ code{font-family:ui-monospace,monospace;font-size:11.5px}
 
 <script>
 const $ = s => document.querySelector(s);
-let S = null, build = "1col", deckOn = new Set(), holdT = null, holdStart = 0, running = false;
+let S = null, build = null, deckOn = new Set(), holdT = null, holdStart = 0, running = false;
 
 async function load(){
   S = await (await fetch("/api/state")).json();
-  build = build in S.builds ? build : Object.keys(S.builds)[0];
+  const keys = Object.keys(S.builds || {});
+  build = build && build in S.builds ? build : (keys[0] || null);
   paintBuilds(); paintDeck(); paintHist(); refreshGates();
   if(S.run.active){ running = true; $("#livecard").style.display="block"; }
 }
 
 function paintBuilds(){
   const el = $("#builds"); el.innerHTML = "";
+  if(!build){
+    const note = document.createElement("div");
+    note.className = "note warn";
+    note.textContent = (S.build_config && S.build_config.status)
+      || "No authorized local builds are configured.";
+    el.appendChild(note);
+    $("#tagbox").innerHTML = "";
+    return;
+  }
   for(const [k,b] of Object.entries(S.builds)){
     const d = document.createElement("button");
     d.className = "b" + (k===build ? " on" : "");
@@ -237,7 +247,9 @@ function paintBuilds(){
 }
 
 function paintTag(){
-  const b = S.builds[build], t = b.tag_status, el = $("#tagbox");
+  const el = $("#tagbox");
+  if(!build || !(build in S.builds)){ el.innerHTML = ""; return; }
+  const b = S.builds[build], t = b.tag_status;
   if(t.ok){
     const d = t.main_drift || {drifted:false, files:[]};
     el.innerHTML = `<div class="tag"><b>PINNED</b> &middot; ${t.tag} @ ${t.sha}
@@ -283,9 +295,16 @@ function gate(ok, label, wait){
 }
 
 function refreshGates(){
+  const present = $("#present").checked;
+  $("#presentrow").classList.toggle("on", present);
+  if(!build || !(build in S.builds)){
+    $("#gates").innerHTML = gate(false, "no authorized local build configured");
+    $("#run").disabled = true;
+    $("#runlabel").textContent = "no build configured";
+    return;
+  }
   const t = S.builds[build].tag_status;
   const deckOK = deckOn.size === S.deck.length;
-  const present = $("#present").checked;
   const ok = t.ok && deckOK && present && !running;
   $("#gates").innerHTML =
     gate(t.ok, t.ok ? "tag pinned" : "tag drifted, blocked") +
@@ -295,7 +314,6 @@ function refreshGates(){
   $("#run").disabled = !ok;
   $("#runlabel").textContent = running ? "run in flight"
     : (!t.ok ? "blocked: check out the tag" : (ok ? "hold to run" : "complete the gates above"));
-  $("#presentrow").classList.toggle("on", present);
 }
 $("#present").onchange = refreshGates;
 
@@ -318,6 +336,7 @@ $("#run").addEventListener("mouseleave",()=>up(false));
 $("#run").addEventListener("touchend",()=>up(false));
 
 async function go(){
+  if(!build || !(build in S.builds)) return;
   $("#fill").style.width="0";
   const samples = $("#samples").value.split(",").map(s=>s.trim()).filter(Boolean);
   const r = await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},
@@ -362,7 +381,8 @@ es.onmessage = e => {
     // are NOT 1 per leg: STEP 1 and STEP 7 print none at all, while the STEP 5
     // cleanup prints one per sub-action (8 actions + a rollup). An earlier cut
     // divided by a guessed success count and would have read "20 / 13".
-    const legs = S.builds[build].legs || 13;
+    const info = S.builds[build];
+    const legs = info ? info.legs : 1;
     const p = Math.min(100, Math.round(100*m.steps/legs));
     $("#prog").style.width = p+"%";
     // ASCII only: this is textContent, so an HTML entity would render literally.

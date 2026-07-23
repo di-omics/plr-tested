@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pta-targeted_pcr-app"
+version = "0.2.1"
+description = "Planning-only local bench app for the combined PTA and Targeted PCR dry workflow"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "di-omics" }]
+dependencies = []
+
+[project.scripts]
+pta-targeted_pcr-app = "pta_targeted_pcr_app.server:main"
+
+[tool.setuptools]
+packages = ["pta_targeted_pcr_app"]
+
+[tool.setuptools.package-data]
+pta_targeted_pcr_app = [
+  "data/*.json",
+  "data/releases/*.json",
+  "data/releases/*.txt",
+  "static/*.html",
+]

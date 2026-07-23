@@ -11,7 +11,7 @@ their failure modes are different. They get their own tree.
 ## What is here
 
 `odtc/` - Inheco ODTC (On Deck Thermal Cycler), over SiLA/SOAP. The thermal programs
-of the whole-genome Single-Cell Core Kit, expressed as PyLabRobot
+of the whole-genome sequencing workflow, expressed as PyLabRobot
 protocols, plus a ladder of scripts from "is it even there" to "run a PCR program".
 
 `tecan-infinite/` - Tecan Infinite plate reader (200 PRO, and the Nano+ sibling), over
@@ -24,25 +24,25 @@ cable, not the network, so its section leans on USB and libusb rather than SiLA 
 
 The ODTC is driven end to end through PyLabRobot: connect, heat, hold, and run a full
 cycling profile, all confirmed on the instrument on 2026-07-10. The `PlateauTime`-is-
-seconds assumption is now confirmed, so the kit user guide programs are believed correct,
+seconds assumption is now confirmed, so the authorized WGS/WGA workflow source programs are believed correct,
 but none has been run at its real temperatures and durations yet, so they stay marked
 as such.
 
 | What | Result |
 | --- | --- |
-| Method XML matches the kit user guide Tables 1, 4, 5, 8, asserted against the real backend | passed, off-instrument |
+| Method XML matches authorized WGS/WGA workflow source Tables 1, 4, 5, 8, asserted against the real backend | passed, off-instrument |
 | `odtc_offline_checks.py`, 72 checks, on starpi under PyLabRobot 0.2.1 | passed, off-instrument |
 | Read-only probe: reachable, SiLA 1.2.01 confirmed, `state` is a top-level element | passed on the instrument |
 | PyLabRobot bring-up: Reset, Initialize, `startup` to `idle`, all 8 sensors read back | passed on the instrument |
 | Block+lid hold (PreMethod): block driven to 45.00 C and held dead on target | passed on the instrument |
 | Full cycling Method: pre-warm then ExecuteMethod, block to 50.00 C, completes | passed on the instrument |
 | `PlateauTime` is seconds: a 60 s step held ~56-60 s on the block trace | confirmed on the instrument |
-| `ampseq-pcr1`: 30 cycles end to end, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument, with a caveat (see below) |
-| A the kit user guide program run at real temperatures (wga, dnaprep, ...) | not yet run |
+| `targeted-pcr-round1`: 30 cycles end to end, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument, with a caveat (see below) |
+| An authorized WGS/WGA workflow source program run at real temperatures (wga, dnaprep, ...) | not yet run |
 | Door open/close/cycle | written, not yet run |
 | STAR iSWAP handoff into the ODTC | plate-move legs drafted (`hamilton-star/`), geometry not yet tuned |
 
-The `ampseq-pcr1` caveat: the 98 C denaturation sits 1 C under the ODTC's 99 C block
+The `targeted-pcr-round1` caveat: the 98 C denaturation sits 1 C under the ODTC's 99 C block
 ceiling, so on the fast ramp-in the block grazed it (peak 99.04 C) and the device logged
 91 "temperature out of specification" warnings across the 30 cycles, roughly three per
 cycle. The method completed and every setpoint was held tightly; these are warnings, not
@@ -68,7 +68,7 @@ Each rung does strictly more than the one above it. Do not skip.
 | `04_odtc_hold_block.py` | block and lid heaters | Will it hold a set point |
 | `05_odtc_run_protocol.py` | block and lid heaters | Will it run a real program |
 
-`odtc/qc/` holds the robustness QC for the targeted PCR PCR1 run: the raw instrument log,
+`odtc/qc/` holds the robustness QC for the targeted PCR round 1 run: the raw instrument log,
 a self-contained report generated from it (`odtc_qc_report.html`), and the generator that
 turns one into the other. See `odtc/qc/README.md`.
 
@@ -92,7 +92,7 @@ not in PyLabRobot and would each strand a run. All three are handled in
    on a full profile is rejected synchronously with returnCode 11, "PreMethod or
    PostHeating is required", even though the method carries `PostHeating=true`. Running
    a PreMethod to the profile's start conditions first clears it. This is the same
-   pre-warm-then-run pattern the kit user guide spells out for the WGA program ("start the
+   pre-warm-then-run pattern authorized WGS/WGA workflow source spells out for the WGA program ("start the
    program, allow the block to reach 30 C, pause"). PyLabRobot's `run_protocol()` skips
    the pre-warm, so it cannot drive this device on its own. `run_cycling_method()` adds
    it, and `05_odtc_run_protocol.py` uses that.
@@ -205,21 +205,20 @@ on lab-internal addresses. Discover it on the link, as above.
 ## Where the thermal values come from
 
 Every temperature, time, and cycle count in `odtc_protocols.py` is transcribed from a
-source protocol and cited on the line where it is used. The whole-genome sequencing programs come
-from the kit vendor document **the kit user guide, 05/2025**, "whole-genome
-Single-Cell Core Kit, 96 Reactions". The targeted PCR PCR programs come from the
-**Targeted PCR Library Prep** protocol (di-omics internal, updated 2026-05-28); only the
+source protocol and cited on the line where it is used. The WGS preparation programs come
+from an authorized WGS/WGA workflow source. The targeted PCR programs come from the
+**Targeted PCR Library Preparation** protocol (di-omics internal, updated 2026-05-28); only the
 thermal profile is encoded here, not primers or reagent volumes.
 
 | Program | Source | Lid | Reaction volume |
 | --- | --- | --- | --- |
-| `wga` | the kit user guide Table 1, DNA Amplification | 70 C | 12.0 uL |
-| `dnaprep` | the kit user guide Table 4, DNAPREP | 105 C | 6.0 uL |
-| `ferat` | the kit user guide Table 5, FERAT | 105 C | 10.0 uL |
-| `ligation` | the kit user guide page 16, section IV step 7 | 50 C | 20.0 uL |
-| `libamp` | the kit user guide Table 8, LIB-AMP | 105 C | 40.0 uL |
-| `ampseq-pcr1` | Targeted PCR Library Prep, PCR1 | 105 C (*) | 25.0 uL |
-| `ampseq-pcr2` | Targeted PCR Library Prep, PCR2 | 105 C (*) | 25.0 uL |
+| `wga` | authorized WGS/WGA workflow source Table 1, DNA Amplification | 70 C | 12.0 uL |
+| `dnaprep` | authorized WGS/WGA workflow source Table 4, DNAPREP | 105 C | 6.0 uL |
+| `ferat` | authorized WGS/WGA workflow source Table 5, FERAT | 105 C | 10.0 uL |
+| `ligation` | authorized WGS/WGA workflow source page 16, section IV step 7 | 50 C | 20.0 uL |
+| `libamp` | authorized WGS/WGA workflow source Table 8, LIB-AMP | 105 C | 40.0 uL |
+| `targeted-pcr-round1` | Targeted PCR Library Preparation, PCR1 | 105 C (*) | 25.0 uL |
+| `targeted-pcr-round2` | Targeted PCR Library Preparation, PCR2 | 105 C (*) | 25.0 uL |
 | `timecheck` | hardware exercise, not biology | 105 C | - |
 | `selftest` | hardware exercise, not biology | 105 C | - |
 
@@ -230,19 +229,19 @@ instead of two and a half hours.
 Three targeted PCR values are not pinned down by that protocol and are flagged in code:
 
 - (*) **Lid temperature.** The amplicon protocol does not state one. 105 C is the standard
-  heated-lid temperature for Q5 PCR and matches the kit user guide LIB-AMP, which is also a Q5
+  heated-lid temperature for Q5 PCR and matches authorized WGS/WGA workflow source LIB-AMP, which is also a Q5
   indexing PCR. It is a default, not a transcription.
 - **PCR1 annealing temperature** defaults to 67 C, the protocol's "~67 C". The protocol
   says to recompute Ta with the NEB Tm calculator (Q5U Hot Start) for your primer set:
-  `ampseq_pcr1(anneal_c=...)`.
+  `targeted_pcr_round1(anneal_c=...)`.
 - **PCR2 cycle count** is a range in the protocol, 8 to 10. The default is 8:
-  `ampseq_pcr2(num_cycles=...)`.
+  `targeted_pcr_round2(num_cycles=...)`.
 
-`ampseq-pcr1` ends at a 10 C hold and `ampseq-pcr2` at a 4 C hold, both as written.
-`ampseq-pcr1` runs 30 cycles, so at real durations plus ramps it is roughly a 30 to 40
+`targeted-pcr-round1` ends at a 10 C hold and `targeted-pcr-round2` at a 4 C hold, both as written.
+`targeted-pcr-round1` runs 30 cycles, so at real durations plus ramps it is roughly a 30 to 40
 minute program.
 
-Two translations were needed to get the kit user guide onto this instrument, and both are worth
+Two translations were needed to get authorized WGS/WGA workflow source onto this instrument, and both are worth
 knowing:
 
 - **A 4 C infinite hold** is a final 4 C step with `hold_seconds=0` plus

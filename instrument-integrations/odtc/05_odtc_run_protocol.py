@@ -2,7 +2,7 @@
 05_odtc_run_protocol.py - run a thermal program on the ODTC. THIS HEATS.
 
 Programs come from odtc_protocols.py, where every value is transcribed from
-the kit user guide. Nothing thermal is defined in this file.
+authorized WGS/WGA workflow source. Nothing thermal is defined in this file.
 
     wga        Table 1, DNA Amplification, lid 70 C    ~2.6 h
     dnaprep    Table 4, DNAPREP,           lid 105 C   ~10 min
@@ -145,7 +145,7 @@ async def run_live(program, args):
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="Run a the kit user guide thermal program on the ODTC. This heats."
+        description="Run an authorized WGS/WGA workflow source thermal program on the ODTC. This heats."
     )
     parser.add_argument("--program", choices=sorted(PROGRAMS), required=True)
     parser.add_argument("--ip", default=os.environ.get("ODTC_IP"))

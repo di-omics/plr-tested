@@ -82,7 +82,7 @@ BLOCK_MAX_C = 99.0
 MAX_RAMP_C_PER_S = 4.4
 
 # Highest lid temperature that appears in either the PLR ODTC notebook or in
-# the kit user guide. Above this we warn rather than refuse, because the lid
+# authorized WGS/WGA workflow source. Above this we warn rather than refuse, because the lid
 # ceiling is not documented in either source.
 DOCUMENTED_MAX_LID_C = 105.0
 
@@ -589,7 +589,7 @@ async def run_cycling_method(obj, protocol, block_max_volume_ul: float, lid_c: f
     Confirmed on the instrument: ExecuteMethod of a cycling Method is rejected
     synchronously with returnCode 11, "PreMethod or PostHeating is required", unless a
     PreMethod has first brought the block to the method's start conditions. This is the
-    same pre-warm-then-run pattern the kit user guide describes for the WGA program ("start the
+    same pre-warm-then-run pattern authorized WGS/WGA workflow source describes for the WGA program ("start the
     program, allow the block to reach 30 C, pause"). PLR's run_protocol() does not do
     the pre-warm, so it cannot drive this device on its own; this wrapper adds it.
 

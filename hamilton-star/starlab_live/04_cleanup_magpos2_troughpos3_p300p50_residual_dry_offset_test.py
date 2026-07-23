@@ -34,7 +34,7 @@ import pylabrobot.resources as plr_resources
 #   rail35 pos3 = 12-well reservoir/trough
 #
 # Reservoir map:
-#   A1 = Resolve beads / bead mimic
+#   A1 = SPRI beads / bead mimic
 #   A2 = ethanol wash 1 / ethanol mimic
 #   A3 = ethanol wash 2 / ethanol mimic
 #   A4 = elution buffer / elution mimic
@@ -136,7 +136,7 @@ class CleanupAction:
 ACTIONS = {
     "beads-add-dry": CleanupAction(
         mode="beads-add-dry",
-        label="Add Resolve beads / bead mimic",
+        label="Add SPRI beads / bead mimic",
         kind="add",
         source_well=TROUGH_BEADS,
         volume_ul=VOL_BEADS,

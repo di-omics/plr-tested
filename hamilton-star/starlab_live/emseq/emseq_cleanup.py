@@ -24,7 +24,7 @@ import pylabrobot.resources as plr_resources
 # The EM-seq v2 workflow has three NEBNext Sample Purification Bead cleanups, at three
 # different bead ratios and three different elution volumes. This is one script with a
 # --cleanup selector that picks the volume preset; the motions and the deck are the same
-# for all three. It is the targeted PCR PCR1 cleanup script (02_ampseq_pcr1_cleanup_col1_dry_v2_
+# for all three. It is the targeted PCR round 1 cleanup script (02_targeted_pcr_round1_cleanup_col1_dry_v2_
 # p50low.py) generalized to the EM-seq volumes. The mag+trough geometry is reused VERBATIM
 # from that hardware-confirmed script; only the per-cleanup volumes change.
 #
@@ -52,7 +52,7 @@ import pylabrobot.resources as plr_resources
 # added with the p50-low geometry. This script does not incubate, does not mix, and does
 # NOT model the final "transfer the clear eluate off the beads to a fresh column" step
 # (E8015 1.x.11 / M7634 3.4.9A.3): that needs a second destination plate and its own tuned
-# transfer, and is left as an operator/off-deck step exactly as in the targeted PCR cleanup. Bead
+# transfer, and is left as an operator/off-deck step exactly as in the targeted_pcr cleanup. Bead
 # ratios, ethanol volume, and elution volumes are transcribed from the two NEB manuals.
 # All geometry is inherited, not re-tuned for EM-seq, so every mode is sim-only until a
 # person tunes it on the deck.
@@ -101,7 +101,7 @@ CLEANUPS: Dict[str, Cleanup] = {
     "post-pcr": Cleanup("post-pcr", "0.8X", 72.0, 165.0, 21.0, 20.0, "NEB #E8015 Section 1.10"),
 }
 
-# Geometry reused verbatim from 02_ampseq_pcr1_cleanup_col1_dry_v2_p50low.py (mag pos2 +
+# Geometry reused verbatim from 02_targeted_pcr_round1_cleanup_col1_dry_v2_p50low.py (mag pos2 +
 # trough pos3). No EM-seq-specific tuning yet.
 P300_TROUGH_ASP_HEIGHT = [0.3] * 8
 P300_TROUGH_ASP_OFFSETS = [Coordinate(0.0, 1.5, 0.0)] * 8
@@ -274,7 +274,7 @@ async def p50_remove_residual_to_waste(lh, r, volume_ul, discard_tips, tip_col):
 
 # The cleanup motion sequence, one leg per name, in order. Each leg is a coroutine
 # factory bound to the selected cleanup's volumes. Any single leg is also a valid --mode,
-# so heights can be tuned one step at a time on hardware (the same granularity the targeted PCR
+# so heights can be tuned one step at a time on hardware (the same granularity the targeted_pcr
 # cleanup script offers).
 LEG_ORDER = [
     "beads-add", "supernatant-remove",

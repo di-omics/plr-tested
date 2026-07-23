@@ -32,7 +32,7 @@ The repo's prior HHS drop `x12 / y54.5 / z17`, marked "passed" in the root READM
 endorsed by ISWAP_HHS_RAIL27_POS2_TUNING.md, was NEVER real-plate seat-checked. Those passes
 were DRY / EMPTY sacrificial plate: they validated transfers COMPLETING and pickup-Z
 repeatability, not drop-XY nest seating. The CAMERA round trip
-(run_full_pta_hhs_return_ampseq_CAMERA.py) drops forward at y54.5 and re-picks the return at
+(run_full_pta_hhs_return_targeted_pcr_CAMERA.py) drops forward at y54.5 and re-picks the return at
 the SAME y54.5, so a constant Y bias is invisible - the plate is re-grabbed wherever it
 landed. The first real-plate mount landed ~2 rows too far +Y. Correct drop-Y is 45.5 (not
 54.5, not the demo default 47.5, not an earlier eyeball estimate of ~18.5). Keep Z=17.

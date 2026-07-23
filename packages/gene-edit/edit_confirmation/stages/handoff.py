@@ -61,7 +61,7 @@ class Handoff(Stage):
         mark = ctx.action_mark()
         samples = ctx.active_samples()
         locus = ctx.config.locus
-        quant: Dict[str, dict] = ctx.shared.get("quant_post_ampseq", {})
+        quant: Dict[str, dict] = ctx.shared.get("quant_post_targeted_pcr", {})
 
         final_bp = locus.amplicon_bp + int(INDEXING_OVERHANG_BP.value)
         dimer_ceiling_bp = int(INDEXING_OVERHANG_BP.value) + 20  # adapter-dimer scale

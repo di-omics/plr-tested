@@ -104,4 +104,4 @@ state is reconciled.
 
 Record the commit SHA, operator, date/time, terminal exit, observed result of
 each mechanical leg, and any intervention. This successful continuous dry run
-is the whole-genome amplification release evidence for the future whole-genome amplification + Targeted PCR team product.
+is the PTA release evidence for the future PTA + Targeted PCR team product.

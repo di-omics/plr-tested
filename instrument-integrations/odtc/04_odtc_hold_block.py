@@ -1,9 +1,9 @@
 """
 04_odtc_hold_block.py - hold the block and lid at a constant temperature. THIS HEATS.
 
-Used two ways in the whole-genome sequencing workflow:
+Used two ways in the WGS preparation workflow:
 
-  - the kit user guide II.17 says to start the DNA Amplification program, let the block reach
+  - authorized WGS/WGA workflow source II.17 says to start the DNA Amplification program, let the block reach
     30 C, and pause, so the plate goes into a block that is already at temperature.
     A pre-method hold is how you do that under automation.
   - As the last checkpoint before running a real program: if the block will not hold
@@ -23,7 +23,7 @@ Two reasons, both of which will burn you.
 
          lid = self._lid_target_temp if self._lid_target_temp is not None else 105.0
 
-     The whole-genome amplification hold wants a 70 C lid (the kit user guide Table 1). Call the two
+     The whole-genome amplification hold wants a 70 C lid (authorized WGS/WGA workflow source Table 1). Call the two
      setters in the wrong order and the lid silently goes to 105 C over a plate of
      single-cell lysate.
 
@@ -37,11 +37,11 @@ proceeding. Default True.
 
 Usage
 -----
-    # WGA amplification set point, the kit user guide Table 1
+    # WGA amplification set point, authorized WGS/WGA workflow source Table 1
     python 04_odtc_hold_block.py --ip $ODTC_IP --block-c 30 --lid-c 70 \
         --minutes 5 --confirm i-am-watching
 
-    # DNAPREP set point, the kit user guide Table 4
+    # DNAPREP set point, authorized WGS/WGA workflow source Table 4
     python 04_odtc_hold_block.py --ip $ODTC_IP --block-c 37 --lid-c 105 \
         --minutes 2 --confirm i-am-watching
 """
@@ -93,7 +93,7 @@ async def main():
     parser.add_argument("--block-c", type=float, required=True,
                         help=f"block set point, {BLOCK_MIN_C} to {BLOCK_MAX_C} C")
     parser.add_argument("--lid-c", type=float, required=True,
-                        help="lid set point. the kit user guide: 70 C for WGA, 105 C for the rest")
+                        help="lid set point. authorized WGS/WGA workflow source: 70 C for WGA, 105 C for the rest")
     parser.add_argument("--minutes", type=float, default=5.0,
                         help="how long to hold and poll after the pre-method finishes")
     parser.add_argument("--dynamic-time", action="store_true", default=True)

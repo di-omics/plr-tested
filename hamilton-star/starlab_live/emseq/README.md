@@ -14,7 +14,7 @@ not met the instrument says so, and stays marked that way until a run says other
 The coupled UltraShear + EM-seq v2 workflow, one 8-well column (A-H). The sample plate
 (rail35 pos0) is the single plate that moves: to the ODTC nest for each thermal program,
 to the magnet for each bead cleanup, and back. Reagents are added one per run from a
-swap-source column (rail35 pos1), the same stepwise pattern as the confirmed whole-genome sequencing and
+swap-source column (rail35 pos1), the same stepwise pattern as the confirmed PTA/WGA and
 targeted PCR work in this repo.
 
 Workflow order (this is the choreography in `run_emseq_odtc_1col_full_dry.py`):
@@ -91,7 +91,7 @@ All volumes are transcribed from the two NEB manuals, no rounding. The default p
 
 Only functional parameters (volumes, temperatures, times, bead ratios) are transcribed,
 each cited on the line where it is used in the code, the same way the whole-genome sequencing ODTC
-programs cite the kit user guide.
+programs cite authorized WGS/WGA workflow source.
 
 ## What "tested" means here (status)
 
@@ -115,11 +115,11 @@ STAR liquid handling (`hamilton-star/starlab_live/emseq`):
 | All 3 SPRI cleanups, `--mode all --dry` | passed, sim |
 | Full choreography liquid-handling legs, `--sim-lh` (14 legs, exit 0) | passed, sim |
 | Any reagent add or cleanup on the instrument | written, not yet run |
-| iSWAP handoff into the ODTC nest for the EM-seq plate | reuses ampseq-confirmed legs, not re-run for this flow |
+| iSWAP handoff into the ODTC nest for the EM-seq plate | reuses targeted PCR-confirmed legs, not re-run for this flow |
 
 Known gaps that MUST be closed on hardware before trusting a real run:
 
-- Dispense geometry is reused verbatim from the ampseq/whole-genome amplification-WGA column-1 adds, which were
+- Dispense geometry is reused verbatim from the targeted PCR/PTA-WGA column-1 adds, which were
   tuned for adding into a small (2.5-3 uL) starting volume. Several EM-seq adds go into a
   much fuller well (pcr-mm 45 uL into 40 uL; ligation-mm 31 uL into 51.5 uL). The
   near-bottom dispense height (0.5 mm) needs tuning for high-volume adds, one step at a
@@ -151,7 +151,7 @@ before any leg is marked validated, in the repo's usual sense.
 - SPRI cleanups: elution recovers the expected volume (28 / 16 / 20 uL kept) with no bead
   carryover into the eluate (carryover degrades deamination and sequencing).
 - Thermocycling: each ODTC program holds every setpoint within about +/- 0.3 C (the bar
-  the ampseq-pcr1 run met), and the PCR completes despite the 98 C / 99 C-ceiling warnings.
+  the targeted-pcr-round1 run met), and the PCR completes despite the 98 C / 99 C-ceiling warnings.
 - End to end: conversion controls show high deamination of unmethylated lambda and
   protection of methylated pUC19; the final library has the expected size distribution
   (420-620 bp) and yield on a TapeStation/Bioanalyzer; the no-template control is clean.

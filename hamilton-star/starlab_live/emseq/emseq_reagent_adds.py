@@ -18,8 +18,8 @@ import pylabrobot.resources as plr_resources
 # ------------
 # One reagent addition per --mode, into destination/work rail35 pos0 column 1, from a
 # single source column at rail35 pos1 column 1. This is the same swap-source, single-
-# column, one-add-per-run pattern as the verified whole-genome sequencing and targeted PCR master-mix scripts
-# (00_pta_wga_col1_swap_source_staged..., 01_ampseq_pcr1_mastermix_col1.py). The operator
+# column, one-add-per-run pattern as the verified PTA/WGA and targeted_pcr master-mix scripts
+# (00_pta_wga_col1_swap_source_staged..., 01_targeted_pcr_round1_mastermix_col1.py). The operator
 # loads the reagent named in each mode's PREP line into the source column, runs the mode,
 # then swaps in the next reagent. The thermocycling and the SPRI cleanups happen between
 # these adds; the STOP line of each mode says which ODTC program (if any) runs next, and
@@ -55,8 +55,8 @@ import pylabrobot.resources as plr_resources
 # Geometry provenance and its limit (read before a hardware run)
 # -------------------------------------------------------------
 # The p50 and p10 source->work offsets and heights below are reused VERBATIM from the
-# hardware-confirmed ampseq/whole-genome amplification-WGA column-1 adds (01_ampseq_pcr1_mastermix_col1.py, p50,
-# confirmed 2026-06-15; the whole-genome sequencing p10 lock 2026-05-12). No new coordinate is invented
+# hardware-confirmed targeted PCR/PTA-WGA column-1 adds (01_targeted_pcr_round1_mastermix_col1.py, p50,
+# confirmed 2026-06-15; the PTA/WGA p10 lock 2026-05-12). No new coordinate is invented
 # here. BUT those values were tuned for adding a mix INTO a small starting volume (2.5-3
 # uL). Several EM-seq adds go into a much fuller well (e.g. pcr-mm 45 uL into 40 uL;
 # ligation-mm 31 uL into 51.5 uL). Dispensing at work height 0.5 mm into a half-full well
@@ -82,7 +82,7 @@ SOURCE_96WP_POS = 1
 SOURCE_COL = 1
 DEST_COL = 1
 
-# Reused verbatim from 01_ampseq_pcr1_mastermix_col1.py (p50, confirmed 2026-06-15).
+# Reused verbatim from 01_targeted_pcr_round1_mastermix_col1.py (p50, confirmed 2026-06-15).
 P50_SOURCE_ASP_HEIGHT = [0.0] * 8
 P50_SOURCE_ASP_OFFSETS = [Coordinate(-0.65, 3.35, 0.0)] * 8
 P50_WORK_DSP_HEIGHT = [0.5] * 8
@@ -251,7 +251,7 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
     print("  rail35 pos0 = destination/work 96WP, column 1")
     print("  rail35 pos1 = source 96WP/strip, SOURCE COLUMN 1 ONLY (swap reagent between modes)")
 
-    print("\nGeometry (reused verbatim from confirmed ampseq/PTA-WGA col-1 adds; see header):")
+    print("\nGeometry (reused verbatim from confirmed targeted PCR/PTA-WGA col-1 adds; see header):")
     print(f"  P50 source asp height {P50_SOURCE_ASP_HEIGHT[0]}, work dsp height {P50_WORK_DSP_HEIGHT[0]}, "
           f"blowout {P50_BLOWOUT_AIR_VOLUME} uL")
     print(f"  P10 source asp height {P10_SOURCE_ASP_HEIGHT[0]}, work dsp height {P10_WORK_DSP_HEIGHT[0]}, "

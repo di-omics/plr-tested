@@ -8,7 +8,7 @@ A lower ratio keeps only larger fragments (drops primer dimers and adapter dimer
 higher ratio keeps more.
 
 These ratios are transcribed from the repo's own bead-clean module
-(hamilton-star/starlab_live/ampseq_bead_clean_ratio_col1.py), which is the validated
+(hamilton-star/starlab_live/targeted_pcr_bead_clean_ratio_col1.py), which is the validated
 liquid-handling implementation. The bead volume is derived from the ratio and the input
 volume, the same way that module derives it, and the derived volumes carry a "verify
 against the physical protocol" flag because a cleanup that removes the wrong size range
@@ -22,25 +22,25 @@ from dataclasses import dataclass
 from ..provenance import Sourced, transcribed, tunable
 
 
-# The two presets, from ampseq_bead_clean_ratio_col1.py.
+# The two presets, from targeted_pcr_bead_clean_ratio_col1.py.
 POST_PCR1_RATIO = transcribed(
-    0.90, "ampseq_bead_clean_ratio_col1.py, --preset anti-dimer: 0.90X of 25 uL PCR1",
+    0.90, "targeted_pcr_bead_clean_ratio_col1.py, --preset anti-dimer: 0.90X of 25 uL PCR1",
     unit="X", name="post_pcr1_spri_ratio",
 )
 POST_PCR2_RATIO = transcribed(
-    0.65, "ampseq_bead_clean_ratio_col1.py, --preset final: 0.65X of 25 uL PCR2",
+    0.65, "targeted_pcr_bead_clean_ratio_col1.py, --preset final: 0.65X of 25 uL PCR2",
     unit="X", name="post_pcr2_spri_ratio",
 )
 
 # Reaction input volume both cleans start from.
 PCR_REACTION_VOLUME_UL = transcribed(
-    25.0, "Amplicon-seq Library Prep, PCR1/PCR2 total reaction volume 25 uL",
+    25.0, "Targeted PCR Library Preparation, PCR1/PCR2 total reaction volume 25 uL",
     unit="uL", name="pcr_reaction_volume",
 )
 
 # The extra volume pulled when removing supernatant, to take all liquid off the beads.
 SUPERNATANT_MARGIN_UL = tunable(
-    10.0, "ampseq_bead_clean_ratio_col1.py SUPERNATANT_MARGIN_UL; ensures all liquid is "
+    10.0, "targeted_pcr_bead_clean_ratio_col1.py SUPERNATANT_MARGIN_UL; ensures all liquid is "
           "removed above the pellet",
     unit="uL", name="supernatant_margin",
 )
