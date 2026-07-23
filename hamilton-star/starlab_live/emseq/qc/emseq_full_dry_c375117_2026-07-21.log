@@ -27,7 +27,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=1
@@ -120,7 +120,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=1
@@ -213,7 +213,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=2
@@ -249,7 +249,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=2
@@ -464,7 +464,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=3
@@ -500,7 +500,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=3
@@ -593,7 +593,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=4
@@ -808,7 +808,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=5
@@ -901,7 +901,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=4
@@ -994,7 +994,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=6
@@ -1030,7 +1030,7 @@ Deck:
   rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY
                   (swap reagent between modes)
 
-Geometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):
+Geometry (current working targeted PCR p50 + confirmed PTA/WGA p10; see header):
   P50 source asp height 0.0, work dsp height 1.5, blowout 6.0 uL
   P10 source asp height 0.0, work dsp height 0.5, blowout 7.0 uL
 Production tip behavior: discard_tips=False; tip column=5
