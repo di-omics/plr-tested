@@ -203,7 +203,7 @@ def run_star_preflight() -> None:
 
 
 def print_deck() -> None:
-    print("COMBINED PTA + TARGETED_PCR DRY START DECK")
+    print("COMBINED PTA + TARGETED PCR DRY START DECK")
     print("  rail48 pos0  p10 filter tips; columns 1 and 2 intact")
     print("  rail48 pos1  p50 filter tips; columns 1 and 2 intact")
     print("  rail48 pos2  p300 filter tips; column 1 intact")
@@ -224,7 +224,7 @@ def print_deck() -> None:
 def print_plan(sample_count: int) -> None:
     validate_sample_count(sample_count)
     blanks = MAX_SAMPLE_COUNT - sample_count
-    print("FULL PTA/HHS -> TARGETED_PCR/ODTC ONE-COLUMN DRY PLAN")
+    print("FULL PTA/HHS -> TARGETED PCR/ODTC ONE-COLUMN DRY PLAN")
     print("  requested sample positions: {}".format(sample_count))
     print("  count policy: biological samples only; no NTC or control wells")
     print("  robot actuation: one full 8-well column (A1:H1)")

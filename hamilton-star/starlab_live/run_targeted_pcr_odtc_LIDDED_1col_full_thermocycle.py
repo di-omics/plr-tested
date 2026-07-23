@@ -301,7 +301,7 @@ def preflight_odtc(odtc_lib, odtc_ip):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="LIDDED targeted_pcr col1 full choreography with ODTC handoffs and the two "
+        description="LIDDED targeted PCR col1 full choreography with ODTC handoffs and the two "
                     "ODTC thermal programs baked in (gated behind --thermocycle)."
     )
     parser.add_argument(
@@ -401,16 +401,16 @@ def main():
 
     print("")
     if mode == "cycle":
-        print("SUCCESS: full LIDDED targeted_pcr + ODTC column-1 choreography completed WITH both")
+        print("SUCCESS: full LIDDED targeted PCR + ODTC column-1 choreography completed WITH both")
         print("thermal programs run on the cycler. Plate back on rail35 pos0, lid on pos4.")
         print("NOTE: the block holds its final temperature after a program (post_heating).")
     elif mode == "call":
-        print("SUCCESS: full LIDDED targeted_pcr + ODTC column-1 choreography completed, DRY,")
+        print("SUCCESS: full LIDDED targeted PCR + ODTC column-1 choreography completed, DRY,")
         print("with the ODTC called read-only at both thermal legs. The cycler answered")
         print("at each point it would cycle. Nothing was heated. Plate back on rail35 pos0,")
         print("lid on pos4.")
     else:
-        print("SUCCESS: full LIDDED targeted_pcr + ODTC column-1 choreography completed, DRY.")
+        print("SUCCESS: full LIDDED targeted PCR + ODTC column-1 choreography completed, DRY.")
         print("The cycler was not contacted. Plate back on rail35 pos0, lid on pos4.")
 
 

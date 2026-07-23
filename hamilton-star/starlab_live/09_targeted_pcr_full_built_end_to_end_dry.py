@@ -24,7 +24,7 @@ def run_step(label, cmd):
 def main():
     parser = argparse.ArgumentParser(
         description=(
-            "FULL targeted_pcr built dry choreography: PCR1 MM -> iSWAP to mag -> "
+            "FULL targeted PCR built dry choreography: PCR1 MM -> iSWAP to mag -> "
             "PCR1 cleanup all-dry -> iSWAP back -> PCR2 MM."
         )
     )
@@ -144,7 +144,7 @@ def main():
     )
 
     print("")
-    print("SUCCESS: FULL targeted_pcr built dry choreography completed.")
+    print("SUCCESS: FULL targeted PCR built dry choreography completed.")
     print("")
 
 

@@ -1401,7 +1401,7 @@ def validate_release(args):
 
 def print_plan():
     validate_geometry_lock()
-    print("SINGLE-HOME LIDDED TARGETED_PCR COLUMN-1 DRY PLAN")
+    print("SINGLE-HOME LIDDED TARGETED PCR COLUMN-1 DRY PLAN")
     print("One setup/home, one unified deck, 13 protocol legs, one success-only park/stop.")
     print("PCR1 -> ODTC plate/lid round trip -> magnet cleanup round trip -> PCR2")
     print("-> second ODTC plate/lid round trip -> final r35p0 return.")

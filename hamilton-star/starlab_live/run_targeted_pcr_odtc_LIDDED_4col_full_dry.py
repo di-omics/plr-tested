@@ -121,7 +121,7 @@ def run_step(label, argv):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="LIDDED targeted_pcr col1 full choreography with ODTC handoffs, dry (tips returned)."
+        description="LIDDED targeted PCR col1 full choreography with ODTC handoffs, dry (tips returned)."
     )
     parser.add_argument(
         "--confirm",
@@ -149,7 +149,7 @@ def main():
         run_step(label, argv)
 
     print("")
-    print("SUCCESS: full LIDDED targeted_pcr + ODTC choreography completed for columns 1-4 (32 reactions). Plate back on rail35 pos0, lid on pos4.")
+    print("SUCCESS: full LIDDED targeted PCR + ODTC choreography completed for columns 1-4 (32 reactions). Plate back on rail35 pos0, lid on pos4.")
 
 
 if __name__ == "__main__":

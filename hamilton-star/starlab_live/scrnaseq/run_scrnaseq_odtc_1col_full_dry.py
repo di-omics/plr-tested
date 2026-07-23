@@ -15,7 +15,7 @@ from pathlib import Path
 # the two-round cDNA cleanup). Same orchestration pattern as run_emseq_odtc_1col_full_dry.py:
 # each leg runs an already-scoped leg script by subprocess, and NO geometry is re-derived here.
 # The iSWAP plate-move legs reuse the parent starlab_live/ move scripts with the SAME confirmed
-# args the targeted_pcr/emseq choreographies used; the reagent and cleanup legs run the sibling
+# args the targeted PCR/EM-seq choreographies used; the reagent and cleanup legs run the sibling
 # scrnaseq scripts.
 #
 # As in the emseq runner, this does NOT run the ODTC thermal programs (they live in the

@@ -115,7 +115,7 @@ def main():
         run_step(label, argv)
 
     print("")
-    print("SUCCESS: full targeted_pcr + ODTC column-1 choreography completed. Plate back on rail35 pos0.")
+    print("SUCCESS: full targeted PCR + ODTC column-1 choreography completed. Plate back on rail35 pos0.")
 
 
 if __name__ == "__main__":
