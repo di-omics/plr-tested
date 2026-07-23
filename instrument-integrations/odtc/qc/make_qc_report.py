@@ -7,7 +7,7 @@ here is invented: every number comes from the block temperatures the device repo
 during the run.
 
 Usage:
-    python make_qc_report.py --log targeted_pcr_round1_2026-07-10.log --out odtc_qc_report.html
+    python make_qc_report.py --log /path/to/validation-run.log --out odtc_qc_report.html
     python make_qc_report.py --log <log> --out <html> --font manrope.woff2
 
 The report renders in any browser on a system font stack. Pass --font a Manrope variable

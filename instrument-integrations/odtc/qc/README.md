@@ -1,21 +1,21 @@
 # odtc/qc
 
-The robustness QC for the targeted PCR round 1 run on the Inheco ODTC, 2026-07-10. This is
-the plr-tested idea taken to its logical end: ship the raw instrument log *and* the report
-that judges it, from the same folder, so anyone can regenerate the second from the first.
+The robustness QC for the targeted PCR round 1 run on the Inheco ODTC,
+2026-07-10. The report is derived from the raw instrument log retained with the
+local validation record.
 
 ## What is here
 
 | File | What it is |
 | --- | --- |
-| `targeted_pcr_round1_2026-07-10.log` | The raw run output. The block temperatures in it are the ODTC's own SiLA DataEvent stream, sampled about every 5 seconds, plus the completion message with its warnings. This is the evidence; everything else is derived from it. |
+| Local validation run log | The raw run output. The block temperatures in it are the ODTC's own SiLA DataEvent stream, sampled about every 5 seconds, plus the completion message with its warnings. This is the evidence; everything else is derived from it. |
 | `make_qc_report.py` | Parses the log into setpoint-robustness metrics and renders the report. Self-contained, standard library only. |
 | `odtc_qc_report.html` | The report `make_qc_report.py` produces. Self-contained HTML, opens in any browser. |
 
 ## Regenerate
 
 ```bash
-python make_qc_report.py --log targeted_pcr_round1_2026-07-10.log --out odtc_qc_report.html
+python make_qc_report.py --log /path/to/validation-run.log --out odtc_qc_report.html
 ```
 
 That renders on a system font stack. The committed report embeds the house typeface;

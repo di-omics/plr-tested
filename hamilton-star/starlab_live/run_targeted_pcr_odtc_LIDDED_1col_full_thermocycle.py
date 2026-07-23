@@ -7,8 +7,8 @@ from pathlib import Path
 # Targeted PCR column-1 full choreography, LIDDED, with the two ODTC THERMAL PROGRAMS
 # baked into the flow.
 #
-# Copied 2026-07-16 from run_targeted_pcr_odtc_LIDDED_1col_full_dry.py (tag
-# targeted_pcr-lidded-inwellmix-2026-07-16, 13/13 clean twice). The parent marked the two
+# Copied 2026-07-16 from run_targeted_pcr_odtc_LIDDED_1col_full_dry.py using
+# the hardware validation record (13/13 clean twice). The parent marked the two
 # points where the cycler should run with a comment:
 #     "REAL RUN: ODTC PCR1 thermal program executes here with the lid sealed."
 # This variant makes those two comments real, and nothing else.
@@ -100,7 +100,7 @@ from pathlib import Path
 # NOT WET-READY EVEN WITH --thermocycle. This flow returns its tips (--return-tips) and
 # consumes no reagent. --thermocycle makes the CYCLER real, not the chemistry. A wet run
 # additionally needs: fresh tips per column, the incubation times that are coded nowhere,
-# and the operator to load actual master mix. See targeted_pcr_state_handoff.md.
+# and the operator to load actual master mix. See the local state-handoff validation record.
 #
 # CONFIRMED geometry baked into the leg calls (see each leg's own PATCH log):
 #   ODTC forward  : pickup z5, drop x2 / y36.5 / z12 at rail20 pos1     (committed)

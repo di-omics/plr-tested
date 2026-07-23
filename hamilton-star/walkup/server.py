@@ -53,7 +53,8 @@ BUILD_FIELDS = {
 BUILD_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 TAG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 TOKEN_RE = re.compile(r"^[A-Z][A-Z0-9_]{3,127}$")
-RUNNER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+PATH_COMPONENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
+RUNNER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
@@ -83,18 +84,23 @@ def _validate_build(key, value):
 
     script = value["script"]
     script_path = PurePosixPath(script)
+    script_stem = script_path.stem
     if (not script or script != script_path.as_posix() or script_path.is_absolute()
             or any(part in ("", ".", "..") for part in script_path.parts)
-            or script_path.parts[0] != "starlab_live" or script_path.suffix != ".py"):
+            or len(script_path.parts) < 2 or script_path.parts[0] != "starlab_live"
+            or any(not PATH_COMPONENT_RE.fullmatch(part)
+                   for part in script_path.parts[1:-1])
+            or script_path.name != f"{script_stem}.py"
+            or not RUNNER_RE.fullmatch(script_stem)):
         raise ValueError(
             f"build {key!r} script must be a safe starlab_live/*.py relative path")
 
     if not TOKEN_RE.fullmatch(value["token"]):
         raise ValueError(f"build {key!r} has an invalid confirmation token")
     runner = value["runner_match"]
-    if not RUNNER_RE.fullmatch(runner) or runner not in script_path.stem:
+    if not RUNNER_RE.fullmatch(runner) or runner != script_stem:
         raise ValueError(
-            f"build {key!r} runner_match must be a safe substring of the script stem")
+            f"build {key!r} runner_match must exactly equal the safe script stem")
 
     for field in ("label", "record"):
         text = value[field]
@@ -204,7 +210,7 @@ def worktree_path(key):
     # Keyed by SHA, not tag name. If a tag is force-moved, the new sha gets a new
     # path instead of silently reusing (or rebuilding) the old one, and a run
     # already launched from the old sha keeps its tree underneath it.
-    return WT_ROOT / BUILDS[key]["sha"][:12]
+    return WT_ROOT / BUILDS[key]["sha"]
 
 
 def ensure_worktree(key):
@@ -226,11 +232,11 @@ def ensure_worktree(key):
                 "detail": "Tag not in this repo. `git fetch --tags` first."}
     if sha != want:
         return {"ok": False, "reason": "tag-moved", "tag": tag,
-                "sha": sha[:7], "want": want[:7],
+                "sha": sha, "want": want,
                 "detail": ("Tag %s now resolves to %s but the validated build is %s. "
                            "A ref moved under us. Refusing to run: the code behind this "
                            "tag is no longer the code that passed on hardware."
-                           % (tag, sha[:7], want[:7]))}
+                           % (tag, sha, want))}
     wt = worktree_path(key)
 
     if wt.exists():
@@ -244,17 +250,18 @@ def ensure_worktree(key):
             dirty = [l for l in d.stdout.splitlines() if l.strip()]
             if dirty:
                 return {"ok": False, "reason": "worktree-dirty", "tag": tag,
-                        "sha": sha[:7], "path": str(wt), "dirty": dirty[:10],
+                        "sha": sha, "path": str(wt), "dirty": dirty[:10],
                         "detail": "The pinned worktree has local edits. It is meant to be "
-                                  "read-only. Delete it and it will be rebuilt from the tag."}
-            return {"ok": True, "tag": tag, "sha": sha[:7], "path": str(wt), "fresh": False}
+                                  "read-only. Delete it and it will be rebuilt from the "
+                                  "configured commit."}
+            return {"ok": True, "tag": tag, "sha": sha, "path": str(wt), "fresh": False}
         # Wrong commit: rebuild rather than try to reconcile.
         subprocess.run(["git", "-C", str(REPO), "worktree", "remove", str(wt), "--force"],
                        capture_output=True, text=True)
 
     WT_ROOT.mkdir(parents=True, exist_ok=True)
     r = subprocess.run(
-        ["git", "-C", str(REPO), "worktree", "add", "--detach", str(wt), tag],
+        ["git", "-C", str(REPO), "worktree", "add", "--detach", str(wt), want],
         capture_output=True, text=True)
     if r.returncode != 0:
         return {"ok": False, "reason": "worktree-failed", "tag": tag,
@@ -262,7 +269,19 @@ def ensure_worktree(key):
     if not (wt / "hamilton-star" / "run_on_pi.sh").exists():
         return {"ok": False, "reason": "worktree-incomplete", "tag": tag,
                 "detail": "Worktree built but run_on_pi.sh is missing from it."}
-    return {"ok": True, "tag": tag, "sha": sha[:7], "path": str(wt), "fresh": True}
+    return {"ok": True, "tag": tag, "sha": sha, "path": str(wt), "fresh": True}
+
+
+def _pkill_pattern(runner):
+    """Return an exact full-command regex for the configured Python basename.
+
+    Bracketing the first character keeps the remote pkill command from matching
+    its own shell command line while preserving an exact match for the runner.
+    """
+    if not RUNNER_RE.fullmatch(runner):
+        raise ValueError("unsafe runner basename")
+    basename = f"[{runner[0]}]{re.escape(runner[1:])}"
+    return rf"(^|/){basename}\.py([[:space:]]|$)"
 
 
 def main_drift(key):
@@ -404,7 +423,7 @@ def stop_run():
             return {"ok": False, "detail": "nothing running"}
         b = BUILDS[_run["build"]]
         _run["stopping"] = True
-    match = b["runner_match"]
+    match = _pkill_pattern(b["runner_match"])
     broadcast({"t": "stopping"})
     try:
         # Report what pkill actually DID. An earlier cut used `|| true` and then
@@ -415,7 +434,7 @@ def stop_run():
         # real exit code back: 0 = signalled something, 1 = matched nothing.
         r = subprocess.run(
             ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=6", PI,
-             f"pkill -TERM -f {shlex.quote(match)}; echo rc:$?"],
+             f"pkill -TERM -f -- {shlex.quote(match)}; echo rc:$?"],
             capture_output=True, text=True, timeout=15)
         out = (r.stdout + r.stderr).strip()
     except Exception as e:

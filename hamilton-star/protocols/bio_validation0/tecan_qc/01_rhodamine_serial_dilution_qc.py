@@ -121,8 +121,8 @@ DILUENT_PREFILL = 100.0      # diluent into cols 2-12
 DYE_COL1_VOL = 200.0         # neat dye into col 1 (seeds the chain)
 TRANSFER_VOL = 100.0         # 2-fold: transfer half the working volume
 FINAL_DISCARD_VOL = 100.0    # col 11 -> waste, leaves col 11 at 100 uL
-# IN-WELL MIX (firmware Mix), lifted from the validated targeted PCR build
-# (tag targeted_pcr-lidded-inwellmix-2026-07-16). The tip stays planted IN the well and the
+# IN-WELL MIX (firmware Mix), lifted from the targeted PCR geometry documented
+# by the 2026-07-16 hardware validation record. The tip stays planted IN the well and the
 # plunger cycles in place. A Python aspirate/dispense loop is NOT mixing: it retracts the
 # head between cycles (squirt-and-repeat). Observed on the instrument 2026-07-16 and
 # rejected by the operator for that reason. This script used that rejected loop until

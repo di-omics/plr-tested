@@ -32,7 +32,7 @@ The registry uses this schema:
   "schema_version": 1,
   "builds": {
     "targeted-pcr-one-column": {
-      "tag": "targeted-pcr-validated-local",
+      "tag": "replace-with-qualified-local-tag",
       "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "script": "starlab_live/run_targeted_pcr_odtc_LIDDED_1col_full_dry.py",
       "token": "RUN_TARGETED_PCR_ODTC_LIDDED_FULL",
@@ -57,9 +57,10 @@ Validation is strict:
 - build keys use lowercase letters, numbers, `_`, or `-`;
 - every build contains exactly the nine fields shown above;
 - `sha` is 40 lowercase hexadecimal characters;
-- `script` is a traversal-free relative Python path under `starlab_live/`;
+- `script` is a traversal-free relative Python path under `starlab_live/`
+  with safe directory components and a safe Python basename;
 - `tag`, `token`, and `runner_match` use restricted safe character sets;
-- `runner_match` is part of the script stem;
+- `runner_match` exactly equals the script stem;
 - `legs` and `minutes` are positive bounded integers;
 - `label` and `record` are non-empty bounded text.
 
@@ -77,15 +78,16 @@ The server requires all of the following:
 6. A human explicitly present at the deck.
 7. A two-second hold on the Run control.
 
-The selected worktree, SHA, samples, result, and exit status are recorded in
-`runs.jsonl`, which is ignored by Git.
+The selected worktree, full 40-character SHA, samples, result, and exit status
+are recorded in `runs.jsonl`, which is ignored by Git.
 
 ## Stop behavior
 
-Stop sends `SIGTERM` to the configured runner process on the Pi. The leg already
-in flight is expected to finish before the runner exits, so no later leg starts.
-This path requires supervised hardware qualification. Use the E-stop whenever
-motion must cease immediately, then follow the appropriate recovery procedure.
+Stop sends `SIGTERM` to the configured runner process on the Pi using an exact,
+regex-escaped Python-basename match. The leg already in flight is expected to
+finish before the runner exits, so no later leg starts. This path requires
+supervised hardware qualification. Use the E-stop whenever motion must cease
+immediately, then follow the appropriate recovery procedure.
 
 ## Environment
 
