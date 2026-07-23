@@ -1,6 +1,6 @@
 """
-odtc_protocols.py - the thermal programs of the whole-genome Single-Cell
-Core Kit, expressed as PyLabRobot Protocol objects for the Inheco ODTC.
+odtc_protocols.py - thermal programs used for whole-genome sequencing preparation,
+expressed as PyLabRobot Protocol objects for the Inheco ODTC.
 
 Every temperature, every time, and every cycle count in this file is transcribed
 from a source document. Nothing is invented and nothing is rounded. The source is
@@ -9,8 +9,7 @@ PDF without leaving the file.
 
 Primary source
 --------------
-  the kit vendor, "whole-genome Single-Cell Core Kit, 96 Reactions",
-  document the kit user guide, revision 05/2025.
+  Authorized WGS/WGA workflow source (RUO).
     Table 1  DNA Amplification   (lid 70 C)   page 11
     Table 4  DNAPREP             (lid 105 C)  page 14
     Table 5  FERAT              (lid 105 C)  page 14
@@ -52,11 +51,12 @@ Step = _plr.Step
 # See translation note 1. Encode "hold at this temperature until stopped".
 INFINITE_HOLD_SECONDS = 0
 
-# The block starts a method from wherever it happens to be. the kit user guide never specifies
+# The block starts a method from wherever it happens to be. The authorized WGS/WGA
+# workflow source never specifies
 # a start block temperature, so use the one PLR's ODTC notebook uses: room temperature.
 START_BLOCK_C_DEFAULT = 25.0
 
-# the kit user guide lid temperatures, per table.
+# Authorized WGS/WGA workflow-source lid temperatures, per table.
 LID_C_WGA = 70.0        # Table 1 caption: "lid temperature 70 C"
 LID_C_DNAPREP = 105.0   # Table 4 caption: "lid temperature 105 C"
 LID_C_FERAT = 105.0     # Table 5 caption: "lid temperature 105 C"
@@ -150,18 +150,19 @@ LIB_AMP = Protocol(stages=[
 
 
 # ===========================================================================
-# Targeted PCR library prep. A DIFFERENT protocol from the whole-genome sequencing the kit user guide
+# Targeted PCR library preparation. A DIFFERENT protocol from the authorized WGS/WGA
 # programs above.
 #
-# Source: "Targeted PCR Library Prep" protocol, di-omics internal, updated
+# Source: "Targeted PCR Library Preparation" protocol, di-omics internal, updated
 # 2026-05-28. Values are transcribed from the protocol's two PCR cycling tables the
 # same way as everything else here, and only the thermal profile is encoded; primer
 # sequences and reagent volumes live in the liquid-handling protocol, not here.
 # Enzyme is NEBNext Q5U 2X (PCR1) / Q5 2X (PCR2), 25 uL reactions.
 #
 # Three values are NOT pinned down by the protocol and are flagged at each use:
-#   - Lid temperature. The amplicon protocol does not give one. 105 C is the standard
-#     heated-lid temperature for Q5 PCR and matches the kit user guide LIB-AMP program,
+#   - Lid temperature. The targeted PCR protocol does not give one. 105 C is the standard
+#     heated-lid temperature for Q5 PCR and matches the authorized WGS/WGA
+#     library-amplification program,
 #     which is also a Q5 indexing PCR. It is a default, not a transcription. Tunable.
 #   - PCR1 annealing temperature. The protocol's default is "~67 C" and it explicitly
 #     says to recompute Ta with the NEB Tm calculator (Q5U Hot Start selected) for
@@ -172,24 +173,24 @@ LIB_AMP = Protocol(stages=[
 # The holds differ between the two PCRs, and both are transcribed as written:
 # PCR1 ends at a 10 C hold, PCR2 at a 4 C hold.
 #
-# On-instrument finding (ampseq-pcr1, 2026-07-10): the run completed all 30 cycles and
+# On-instrument finding (targeted-pcr-round1, 2026-07-10): the run completed all 30 cycles and
 # held every setpoint to a mean 0.27 C, BUT the 98 C denaturation sits only 1 C under the
 # ODTC's 99 C block ceiling, so the block grazed it on the ramp-in (peak 99.04 C) and the
 # device logged 91 "temperature out of specification" warnings, about three per cycle.
 # They are warnings, not faults, and the method finished. The program keeps 98 C because
 # that is the protocol value; an operator worried about the ceiling can pass
-# ampseq_pcr1(...) with a 97 C denaturation via a custom protocol, or soften the overshoot.
+# targeted_pcr_round1(...) with a 97 C denaturation via a custom protocol, or soften the overshoot.
 # ===========================================================================
 
-LID_C_AMPSEQ = 105.0        # NOT from the protocol. Standard Q5 PCR lid, see note above.
-AMPSEQ_ANNEAL_C = 67.0      # protocol default "~67 C", primer-dependent (NEB Tm calc).
-VOL_UL_AMPSEQ = 25.0        # PCR1 and PCR2 TOTAL reaction = 25 uL.
+LID_C_TARGETED_PCR = 105.0        # NOT from the protocol. Standard Q5 PCR lid, see note above.
+TARGETED_PCR_ANNEAL_C = 67.0      # protocol default "~67 C", primer-dependent (NEB Tm calc).
+VOL_UL_TARGETED_PCR = 25.0        # PCR1 and PCR2 TOTAL reaction = 25 uL.
 
 
-def ampseq_pcr1(anneal_c: float = AMPSEQ_ANNEAL_C, num_cycles: int = 30) -> "Protocol":
-    """Targeted PCR PCR1 (target amplification).
+def targeted_pcr_round1(anneal_c: float = TARGETED_PCR_ANNEAL_C, num_cycles: int = 30) -> "Protocol":
+    """Targeted PCR round 1 (target amplification).
 
-    Source: Targeted PCR Library Prep, PCR1 cycling table.
+    Source: Targeted PCR Library Preparation, PCR1 cycling table.
       98 C 30 s            x1
       98 C 10 s / anneal 15 s / 72 C 15 s   x30
       72 C 60 s            x1
@@ -207,10 +208,10 @@ def ampseq_pcr1(anneal_c: float = AMPSEQ_ANNEAL_C, num_cycles: int = 30) -> "Pro
     ])
 
 
-def ampseq_pcr2(anneal_c: float = AMPSEQ_ANNEAL_C, num_cycles: int = 8) -> "Protocol":
-    """Targeted PCR PCR2 (Nextera indexing).
+def targeted_pcr_round2(anneal_c: float = TARGETED_PCR_ANNEAL_C, num_cycles: int = 8) -> "Protocol":
+    """Targeted PCR round 2 (Nextera indexing).
 
-    Source: Targeted PCR Library Prep, PCR2 cycling table.
+    Source: Targeted PCR Library Preparation, PCR2 cycling table.
       98 C 30 s            x1
       98 C 10 s / anneal 15 s / 72 C 15 s   x8-10  (default 8, see note)
       72 C 60 s            x1
@@ -228,8 +229,8 @@ def ampseq_pcr2(anneal_c: float = AMPSEQ_ANNEAL_C, num_cycles: int = 8) -> "Prot
     ])
 
 
-AMPSEQ_PCR1 = ampseq_pcr1()
-AMPSEQ_PCR2 = ampseq_pcr2()
+TARGETED_PCR_ROUND1 = targeted_pcr_round1()
+TARGETED_PCR_ROUND2 = targeted_pcr_round2()
 
 
 # ===========================================================================
@@ -248,7 +249,7 @@ AMPSEQ_PCR2 = ampseq_pcr2()
 #
 # The thermal programs only. Reagent volumes and the liquid-handling map live in the
 # STAR scripts under hamilton-star/starlab_live/emseq/, not here, exactly as the
-# targeted PCR primer volumes live in the liquid-handling protocol and not in this file.
+# Targeted PCR primer volumes live in the liquid-handling protocol and not in this file.
 #
 # Two device translations, identical to the ones already used above:
 #   - "Hold at 4 C" with no time is encoded as a final 4 C step, hold_seconds=0,
@@ -266,10 +267,10 @@ AMPSEQ_PCR2 = ampseq_pcr2()
 #     (200 ng: 4-5, 50 ng: 5-6, 10 ng: 8, 1 ng: 11, 0.1 ng: 14). Encoded with a
 #     default of 8 (the 10 ng row); pass num_cycles to match the input.
 #
-# Block-ceiling caution, same as ampseq-pcr1: the EM-seq PCR denaturation is 98 C,
+# Block-ceiling caution, same as targeted-pcr-round1: the EM-seq PCR denaturation is 98 C,
 # 1 C under the ODTC's 99 C block ceiling, so the block can graze it on the ramp-in
 # and the device may log "temperature out of specification" warnings (warnings, not
-# faults; see the ampseq-pcr1 note above and the odtc README). 98 C is the protocol
+# faults; see the targeted-pcr-round1 note above and the odtc README). 98 C is the protocol
 # value and is kept; an operator worried about the ceiling can build emseq_pcr(...)
 # from a custom 97 C protocol.
 #
@@ -449,10 +450,10 @@ EMSEQ_PCR = emseq_pcr()
 #   - sc-lib-pcr cycle count. E6420 Section 1.11.3: default 8 for 1-20 ng cDNA input,
 #     input-dependent (100 pg-1 ng: 9-12, 20-100 ng: 3-6). Default 8; pass num_cycles.
 #
-# Block-ceiling caution, same as ampseq-pcr1 and emseq-pcr: both PCR programs denature
+# Block-ceiling caution, same as targeted-pcr-round1 and emseq-pcr: both PCR programs denature
 # at 98 C, 1 C under the ODTC's 99 C block ceiling, so the block can graze it on the
 # ramp-in and the device may log "temperature out of specification" warnings (warnings,
-# not faults; see the ampseq-pcr1 note above and the odtc README).
+# not faults; see the targeted-pcr-round1 note above and the odtc README).
 # ===========================================================================
 
 LID_C_SC_ANNEAL = 105.0     # E6420 Section 1.3.3: "heated lid set to 105 C".
@@ -799,19 +800,19 @@ class Program:
 
 PROGRAMS = {
     "wga": Program("wga", WGA_DNA_AMPLIFICATION, LID_C_WGA, VOL_UL_WGA,
-                   "the kit user guide Table 1, DNA Amplification"),
+                   "authorized WGS/WGA workflow source Table 1, DNA Amplification"),
     "dnaprep": Program("dnaprep", DNAPREP, LID_C_DNAPREP, VOL_UL_DNAPREP,
-                       "the kit user guide Table 4, DNAPREP"),
+                       "authorized WGS/WGA workflow source Table 4, DNAPREP"),
     "ferat": Program("ferat", FERAT, LID_C_FERAT, VOL_UL_FERAT,
-                     "the kit user guide Table 5, FERAT"),
+                     "authorized WGS/WGA workflow source Table 5, FERAT"),
     "ligation": Program("ligation", LIGATION, LID_C_LIGATION, VOL_UL_LIGATION,
-                        "the kit user guide page 16, section IV step 7"),
+                        "authorized WGS/WGA workflow source page 16, section IV step 7"),
     "libamp": Program("libamp", LIB_AMP, LID_C_LIBAMP, VOL_UL_LIBAMP,
-                      "the kit user guide Table 8, LIB-AMP"),
-    "ampseq-pcr1": Program("ampseq-pcr1", AMPSEQ_PCR1, LID_C_AMPSEQ, VOL_UL_AMPSEQ,
-                           "Amplicon-seq Library Prep (di-omics internal, 2026-05-28), PCR1"),
-    "ampseq-pcr2": Program("ampseq-pcr2", AMPSEQ_PCR2, LID_C_AMPSEQ, VOL_UL_AMPSEQ,
-                           "Amplicon-seq Library Prep (di-omics internal, 2026-05-28), PCR2"),
+                      "authorized WGS/WGA workflow source Table 8, LIB-AMP"),
+    "targeted-pcr-round1": Program("targeted-pcr-round1", TARGETED_PCR_ROUND1, LID_C_TARGETED_PCR, VOL_UL_TARGETED_PCR,
+                           "Targeted PCR Library Preparation (di-omics internal, 2026-05-28), PCR1"),
+    "targeted-pcr-round2": Program("targeted-pcr-round2", TARGETED_PCR_ROUND2, LID_C_TARGETED_PCR, VOL_UL_TARGETED_PCR,
+                           "Targeted PCR Library Preparation (di-omics internal, 2026-05-28), PCR2"),
     "emseq-shear": Program("emseq-shear", EMSEQ_SHEAR, LID_C_EMSEQ_SHEAR, VOL_UL_EMSEQ_SHEAR,
                            "NEB #M7634 UltraShear manual, Section 3.1.6 (coupled to E8015)"),
     "emseq-endprep": Program("emseq-endprep", EMSEQ_ENDPREP, LID_C_EMSEQ_ENDPREP, VOL_UL_EMSEQ_ENDPREP,

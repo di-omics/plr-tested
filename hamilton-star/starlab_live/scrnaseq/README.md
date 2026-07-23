@@ -15,7 +15,7 @@ has not met the instrument says so until a run says otherwise.
 The E6420 Section 1 workflow, one 8-well column (A-H). The sample plate (rail35 pos0) is
 the single plate that moves: to the ODTC nest for each thermal program, to the magnet for
 each bead cleanup, and back. Reagents are added one per run from a swap-source column
-(rail35 pos1), the same stepwise pattern as the confirmed whole-genome sequencing, targeted PCR, and emseq work.
+(rail35 pos1), the same stepwise pattern as the confirmed PTA/WGA, targeted PCR, and emseq work.
 
 Cells are sorted into 5 uL cold 1X Cell Lysis Buffer OFF-DECK (Section 1.2); the work
 column starts holding those lysed cells. Workflow order (the choreography in
@@ -111,11 +111,11 @@ STAR liquid handling (`hamilton-star/starlab_live/scrnaseq`):
 | All 3 SPRI cleanups (incl. the post-cdna double), `--mode all --dry` | passed, sim |
 | Full choreography liquid-handling legs, `--sim-lh` (12 legs, exit 0) | passed, sim |
 | Any reagent add or cleanup on the instrument | written, not yet run |
-| iSWAP handoff into the ODTC nest for the scRNA plate | reuses ampseq-confirmed legs, not re-run |
+| iSWAP handoff into the ODTC nest for the scRNA plate | reuses targeted-PCR-confirmed legs, not re-run |
 
 Known gaps that MUST be closed on hardware before trusting a real run:
 
-- Dispense geometry is reused verbatim from the confirmed ampseq/whole-genome amplification-WGA column-1 adds, tuned
+- Dispense geometry is reused verbatim from the confirmed targeted PCR/PTA-WGA column-1 adds, tuned
   for adding into a small starting volume. Several scRNA adds go into a fuller well and the
   near-bottom dispense height (0.5 mm) needs tuning for high-volume adds before a wet run.
 - No on-deck mixing. The manual asks for 10x pipette mixing at most steps; these scripts add

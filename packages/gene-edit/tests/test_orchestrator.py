@@ -16,7 +16,7 @@ BASE = {
     "operator": "di",
     "mode": "simulation",
     "edit": {"type": "crispr_indel"},
-    "locus": {"name": "EMX1", "amplicon_bp": 250},
+    "locus": {"name": "EMX1", "target_product_bp": 250},
     "samples": [
         {"id": "s1", "well": "A1"},
         {"id": "s2", "well": "B1"},
@@ -32,7 +32,7 @@ def _cfg(**over):
     return build_run(data)
 
 
-def test_simulation_completes_and_drops_ntc_before_ampseq():
+def test_simulation_completes_and_drops_ntc_before_targeted_pcr():
     out = run(_cfg(), timestamp="t")
     assert out.status is RunStatus.COMPLETED
     # the no-template well fails the post-whole-genome amplification yield gate and never reaches sequencing
@@ -67,7 +67,7 @@ def test_tip_column_reaches_resolved_commands():
     # adapter directly: the site-specific tip column must reach the resolved Pi command.
     from edit_confirmation.instruments.star import StarAdapter
     star = StarAdapter(RunMode.HARDWARE, tip_column=3)
-    star.add_mastermix("PCR1", 22.5, "p50", "01_ampseq_pcr1_mastermix_col1.py")
+    star.add_mastermix("PCR1", 22.5, "p50", "01_targeted_pcr_round1_mastermix_col1.py")
     assert star.run_card()
     assert any("--tip-col 3" in c for c in star.run_card())
 

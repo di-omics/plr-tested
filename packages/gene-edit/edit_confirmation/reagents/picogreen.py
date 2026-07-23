@@ -1,7 +1,7 @@
 """
 picogreen.py - dsDNA quantitation for the two yield gates.
 
-The same assay runs at two checkpoints: after whole-genome amplification (does each cell have enough amplified
+The same assay runs at two checkpoints: after PTA (does each cell have enough amplified
 genome to be worth sequencing) and after targeted PCR (is each library in the loading
 window). Quant-iT PicoGreen is a dsDNA-selective fluorophore, so it reports
 double-stranded yield and ignores the single-stranded and primer background that a

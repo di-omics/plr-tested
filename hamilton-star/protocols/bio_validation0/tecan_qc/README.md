@@ -67,7 +67,7 @@ the plate well useful volume is ~300 uL, so this is within range. Tips: one full
 **Dry-validated on the instrument 2026-07-16 (starpi). Not wet.** The full build
 ran clean end to end with the in-well firmware Mix, verified leg by leg rather
 than by exit code. The geometry is no longer an estimate for the dry case: the
-p300 heights and the ampseq-inherited XY held across plate columns 1-11 on the
+p300 heights and the targeted-PCR-derived XY held across plate columns 1-11 on the
 first clean pass. It is still motion only: empty wells, so the mix cycled air and
 no gradient was made.
 

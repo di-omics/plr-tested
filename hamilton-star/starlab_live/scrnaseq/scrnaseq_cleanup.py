@@ -54,7 +54,7 @@ import pylabrobot.resources as plr_resources
 # -----------------
 # Beads/reconstitution/50 uL elution use p300; smaller elutions and residual ethanol use p50.
 # This script does not incubate, does not mix, and does NOT model the final "transfer the clear
-# eluate off the beads to a fresh column" step (operator/off-deck, as in the ampseq/emseq
+# eluate off the beads to a fresh column" step (operator/off-deck, as in the targeted PCR and EM-seq
 # cleanups). Bead ratios, ethanol volume, and elution volumes are transcribed from E6420. All
 # geometry is inherited, not re-tuned for scRNA, so every mode is sim-only until tuned.
 

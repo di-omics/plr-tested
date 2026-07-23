@@ -70,15 +70,15 @@ class LocusTarget:
     """
 
     name: str
-    amplicon_bp: int
+    target_product_bp: int
     pcr1_anneal_c: Optional[float] = None   # override the protocol's ~67 C default
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
-    edit_position_bp: Optional[int] = None  # position of the expected edit in the amplicon
+    edit_position_bp: Optional[int] = None  # position of the expected edit in the targeted PCR product
 
     def __post_init__(self) -> None:
-        if self.amplicon_bp <= 0:
-            raise ValueError(f"locus {self.name!r} has non-positive amplicon_bp")
+        if self.target_product_bp <= 0:
+            raise ValueError(f"locus {self.name!r} has non-positive target_product_bp")
 
 
 @dataclass
@@ -140,9 +140,9 @@ class AcceptanceCriteria:
     pta_yield_min_ng: float = 100.0        # TUNABLE, see acceptance_criteria.yaml
     pta_uniformity_cv_max_percent: float = 30.0
 
-    # Gate 2: post-ampseq library concentration window (for even pooling / TapeStation).
-    ampseq_conc_min_ng_per_ul: float = 2.0
-    ampseq_conc_max_ng_per_ul: float = 60.0
+    # Gate 2: post-targeted PCR library concentration window (for even pooling / TapeStation).
+    targeted_pcr_conc_min_ng_per_ul: float = 2.0
+    targeted_pcr_conc_max_ng_per_ul: float = 60.0
 
     def lh_cv_criterion(self, volume_ul: float) -> Criterion:
         return Criterion(
@@ -171,15 +171,15 @@ class AcceptanceCriteria:
             comparison=Comparison.MIN,
             bound=self.pta_yield_min_ng,
             unit="ng",
-            source="TUNABLE: set from the whole-genome sequencing yield seen on your samples; verify",
+            source="TUNABLE: set from the whole-genome sequencing preparation yield seen on your samples; verify",
         )
 
-    def ampseq_conc_criterion(self) -> Criterion:
+    def targeted_pcr_conc_criterion(self) -> Criterion:
         return Criterion(
-            key="ampseq_conc",
-            label="post-ampseq library concentration",
+            key="targeted_pcr_conc",
+            label="post-targeted PCR library concentration",
             comparison=Comparison.RANGE,
-            bound=(self.ampseq_conc_min_ng_per_ul, self.ampseq_conc_max_ng_per_ul),
+            bound=(self.targeted_pcr_conc_min_ng_per_ul, self.targeted_pcr_conc_max_ng_per_ul),
             unit="ng/uL",
             source="TUNABLE: loading window for TapeStation and the sequencer; verify",
         )

@@ -15,11 +15,12 @@ says otherwise.
 
 - [`hamilton-star/`](hamilton-star) - protocols and validation scripts for a
   Hamilton Microlab STAR driven by PyLabRobot from a dedicated Raspberry Pi.
-  whole-genome sequencing and targeted PCR liquid handling, iSWAP plate moves, and
+  Whole-genome sequencing preparation (PTA/WGA) and targeted PCR liquid handling,
+  iSWAP plate moves, and
   heater-shaker handoffs.
 - [`instrument-integrations/`](instrument-integrations) - the instruments the
   STAR hands plates to, driven from the same Pi. The Inheco ODTC (On Deck Thermal
-  Cycler) over SiLA/SOAP: the whole-genome sequencing thermal programs as PyLabRobot protocols,
+  Cycler) over SiLA/SOAP: the whole-genome sequencing preparation thermal programs as PyLabRobot protocols,
   and a ladder of scripts from reachability to a PCR run, run on the instrument.
   And the Tecan Infinite plate reader over USB: the library-QC endpoint, a plan and
   a script ladder from a USB probe to a Rhodamine-B fluorescence read, not yet run.
@@ -30,7 +31,7 @@ says otherwise.
   - [`immunoassay-automation/`](packages/immunoassay-automation) - ELISpot and plate-
     immunoassay automation across a BioTek EL406 washer, an Opentrons Flex, and a spot
     imager. See its [WALKTHROUGH.md](packages/immunoassay-automation/WALKTHROUGH.md).
-  - [`gene-edit/`](packages/gene-edit) - QC-gated whole-genome amplification + targeted PCR for confirming
+  - [`gene-edit/`](packages/gene-edit) - QC-gated PTA + targeted PCR for confirming
     gene edits.
   - [`emseq/`](packages/emseq) - QC-gated NEBNext EM-seq v2 with UltraShear: sparse
     manifest to a sourced 24-step plan, deterministic simulation, conversion-control
@@ -62,14 +63,14 @@ Inheco ODTC:
 
 | What | Result |
 |---|---|
-| ODTC method XML matches the kit user guide Tables 1, 4, 5, 8, asserted against the real PyLabRobot backend | passed, off-instrument |
+| ODTC method XML matches authorized WGS/WGA workflow source Tables 1, 4, 5, 8, asserted against the real PyLabRobot backend | passed, off-instrument |
 | `odtc_offline_checks.py`, 72 checks, on the Pi under PyLabRobot 0.2.1 | passed, off-instrument |
 | Bring-up, block hold to 45.00 C, full cycling profile to 50.00 C, `PlateauTime` = seconds | passed on the instrument |
-| `ampseq-pcr1`: 30 real PCR cycles, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument (98 C denaturation grazes the 99 C ceiling; see odtc README) |
+| `targeted-pcr-round1`: 30 real PCR cycles, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument (98 C denaturation grazes the 99 C ceiling; see odtc README) |
 | Full lidded targeted PCR choreography with the ODTC **called live** at both thermal legs: 13 motion legs, 22 SUCCESS, 0 failures, deck self-returned | passed on the instrument |
 | ODTC Reset + Initialize with a plate and lid seated in the nest | benign, proven on the instrument |
 | The two thermal programs run **inside** the choreography (`--thermocycle`) | written, reached STEP 2t clean, stopped in pre-warm on purpose; not yet run to completion |
-| A the kit user guide program run at real temperatures; ODTC door move | written, not yet run |
+| An authorized WGS/WGA workflow source program run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | plate-move legs drafted, geometry not yet tuned on hardware |
 
 Tecan Infinite 200 PRO (first contact 2026-07-11 read-only; stage first moved 2026-07-16
@@ -85,8 +86,8 @@ from `starpi2`, the second Pi, which is where the reader now lives):
 | Rhodamine-B fluorescence ladder read | written, not yet run |
 | STAR iSWAP handoff into the reader tray | not started |
 
-Reagent volumes are sourced from the whole-genome Single-Cell Core
-Kit user guide (the kit user guide): Lysis Mix 3.0 uL per reaction, Reaction Mix 6.0 uL
+Reagent volumes are sourced from an authorized WGS/WGA workflow source (RUO):
+Lysis Mix 3.0 uL per reaction, Reaction Mix 6.0 uL
 per reaction. The 7.0 uL p10 blowout is air, not liquid. It exists to expel the
 full volume onto the well wall and does not change what is delivered. The ODTC
 thermal programs come from the same document, Tables 1, 4, 5, and 8.

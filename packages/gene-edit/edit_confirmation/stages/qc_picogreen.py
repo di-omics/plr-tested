@@ -1,13 +1,13 @@
 """
 stages/qc_picogreen.py - the yield gates, at two checkpoints, from one stage.
 
-The same PicoGreen quant runs after whole-genome amplification and after targeted PCR; only the acceptance
+The same PicoGreen quant runs after PTA and after targeted PCR; only the acceptance
 criterion differs. So this is one stage parameterized by checkpoint:
 
   POST_PTA     per-well dsDNA yield must clear a floor, and the passing wells must be
                reasonably uniform (a run-level CV). A well that did not amplify does not
                go into a library. -> PROCEED_SUBSET on the wells that passed.
-  POST_AMPSEQ  per-well library concentration must sit inside the loading window for
+  Post-targeted PCR: per-well library concentration must sit inside the loading window for
                even pooling and TapeStation. -> PROCEED_SUBSET on the wells in window.
 
 The assay itself: a Lambda dsDNA standard curve is read on the same plate, its linearity
@@ -38,7 +38,7 @@ from ..reagents.picogreen import (
 from ..simulation import (
     PICOGREEN_MODEL,
     det_rng,
-    simulate_ampseq_library_conc_ng_per_ml,
+    simulate_targeted_pcr_library_conc_ng_per_ml,
     simulate_pta_yield_conc_ng_per_ml,
 )
 from .base import Stage, StageContext, StageResult, StageStatus
@@ -46,7 +46,7 @@ from .base import Stage, StageContext, StageResult, StageStatus
 
 class Checkpoint(str, Enum):
     POST_PTA = "post_pta"
-    POST_AMPSEQ = "post_ampseq"
+    POST_TARGETED_PCR = "post_targeted_pcr"
 
 
 # Assay dilutions: high-yield product read in the curve's range. Operator-set, verify.
@@ -54,18 +54,18 @@ PTA_ASSAY_DILUTION = tunable(
     50.0, "dilute PTA product ~50x into the PicoGreen high-range curve; verify per yield",
     unit="x", name="pta_assay_dilution",
 )
-AMPSEQ_ASSAY_DILUTION = tunable(
+TARGETED_PCR_ASSAY_DILUTION = tunable(
     40.0, "dilute the library ~40x into the PicoGreen high-range curve; verify",
-    unit="x", name="ampseq_assay_dilution",
+    unit="x", name="targeted_pcr_assay_dilution",
 )
 # Volume the post-whole-genome amplification yield mass is computed over: the WGA reaction volume.
 PTA_PRODUCT_VOLUME_UL = transcribed(
-    12.0, "odtc_protocols.py VOL_UL_WGA (the kit user guide): 12 uL WGA reaction",
+    12.0, "odtc_protocols.py VOL_UL_WGA (authorized WGS/WGA workflow source): 12 uL WGA reaction",
     unit="uL", name="pta_product_volume",
 )
-AMPSEQ_LIBRARY_VOLUME_UL = tunable(
+TARGETED_PCR_LIBRARY_VOLUME_UL = tunable(
     25.0, "nominal cleaned-library elution volume for mass reporting; verify",
-    unit="uL", name="ampseq_library_volume",
+    unit="uL", name="targeted_pcr_library_volume",
 )
 
 
@@ -76,8 +76,8 @@ class PicoGreenQC(Stage):
             self.name = "qc_post_pta"
             self.title = "Gate 1 - post-PTA dsDNA yield (PicoGreen)"
         else:
-            self.name = "qc_post_ampseq"
-            self.title = "Gate 2 - post-ampseq library concentration (PicoGreen)"
+            self.name = "qc_post_targeted_pcr"
+            self.title = "Gate 2 - post-targeted PCR library concentration (PicoGreen)"
 
     # -- assay ---------------------------------------------------------------
 
@@ -100,8 +100,8 @@ class PicoGreenQC(Stage):
             neat = simulate_pta_yield_conc_ng_per_ml(ctx.config.run_id, sample)
             dilution = float(PTA_ASSAY_DILUTION.value)
         else:
-            neat = simulate_ampseq_library_conc_ng_per_ml(ctx.config.run_id, sample)
-            dilution = float(AMPSEQ_ASSAY_DILUTION.value)
+            neat = simulate_targeted_pcr_library_conc_ng_per_ml(ctx.config.run_id, sample)
+            dilution = float(TARGETED_PCR_ASSAY_DILUTION.value)
         diluted = neat / dilution
         rng = det_rng(ctx.config.run_id, self.checkpoint.value, "sample", well)
         return PICOGREEN_MODEL.signal(diluted, rng)
@@ -110,7 +110,7 @@ class PicoGreenQC(Stage):
 
     def run(self, ctx: StageContext) -> StageResult:
         mark = ctx.action_mark()
-        ctx.guard.add(PTA_ASSAY_DILUTION, AMPSEQ_ASSAY_DILUTION)
+        ctx.guard.add(PTA_ASSAY_DILUTION, TARGETED_PCR_ASSAY_DILUTION)
 
         curve = self._read_standard_curve(ctx)
         curve_crit = ctx.config.acceptance.curve_criterion(self.checkpoint.value)
@@ -118,9 +118,9 @@ class PicoGreenQC(Stage):
 
         samples = ctx.active_samples()
         dilution = (float(PTA_ASSAY_DILUTION.value) if self.checkpoint is Checkpoint.POST_PTA
-                    else float(AMPSEQ_ASSAY_DILUTION.value))
+                    else float(TARGETED_PCR_ASSAY_DILUTION.value))
         assay_volume = (float(PTA_PRODUCT_VOLUME_UL.value) if self.checkpoint is Checkpoint.POST_PTA
-                        else float(AMPSEQ_LIBRARY_VOLUME_UL.value))
+                        else float(TARGETED_PCR_LIBRARY_VOLUME_UL.value))
 
         # One read of all sample wells.
         truth = {s.well: self._sample_truth_signal(ctx, s.well, s) for s in samples}
@@ -139,7 +139,7 @@ class PicoGreenQC(Stage):
                 crit = ctx.config.acceptance.pta_yield_criterion()
                 outcome = check(crit, wq.mass_ng)
             else:
-                crit = ctx.config.acceptance.ampseq_conc_criterion()
+                crit = ctx.config.acceptance.targeted_pcr_conc_criterion()
                 outcome = check(crit, conc_ng_per_ul)
 
             note = "" if wq.in_curve_range else "signal outside standard curve; re-read at a new dilution"

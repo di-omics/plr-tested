@@ -21,7 +21,7 @@ import pylabrobot.resources as plr_resources
 #     diluent 11/11, dye 1/1, serial 10/10, in-well mix 10/10 (50 cycles), discard 1/1,
 #     0 faults, 0 Z errors.
 #   That means the geometry below is no longer an estimate for the DRY case: the p300
-#   heights (asp/dsp 1.5) and the ampseq-inherited XY (-0.68, 3.22) held across plate
+#   heights (asp/dsp 1.5) and the targeted-PCR-derived XY (-0.68, 3.22) held across plate
 #   columns 1-11 with the tip planted at mix Z +0.5 mm, first clean pass.
 #   The first attempt that day died at serial step 8 with NoTipError on all three
 #   channels: the tip plan advanced rack column 3 -> 12 but the physical p300 rack at
@@ -121,12 +121,12 @@ DILUENT_PREFILL = 100.0      # diluent into cols 2-12
 DYE_COL1_VOL = 200.0         # neat dye into col 1 (seeds the chain)
 TRANSFER_VOL = 100.0         # 2-fold: transfer half the working volume
 FINAL_DISCARD_VOL = 100.0    # col 11 -> waste, leaves col 11 at 100 uL
-# IN-WELL MIX (firmware Mix), lifted from the validated targeted PCR build
-# (tag ampseq-lidded-inwellmix-2026-07-16). The tip stays planted IN the well and the
+# IN-WELL MIX (firmware Mix), following the 2026-07-16 hardware-validated
+# targeted PCR one-column build. The tip stays planted IN the well and the
 # plunger cycles in place. A Python aspirate/dispense loop is NOT mixing: it retracts the
 # head between cycles (squirt-and-repeat). Observed on the instrument 2026-07-16 and
 # rejected by the operator for that reason. This script used that rejected loop until
-# 2026-07-16; it is now the same firmware Mix the targeted PCR build proved.
+# 2026-07-16; this uses the same firmware Mix proven by that validation record.
 #
 # THE SIGN IS PROVEN, DO NOT GUESS IT AGAIN. test_mix_position_sign_SAFE.py ran on the
 # instrument 2026-07-16. mix_position_from_liquid_surface is a DEPTH measured DOWNWARD:

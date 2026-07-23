@@ -1,6 +1,6 @@
 # walk-up runner
 
-A gated front end for the validated targeted PCR + ODTC choreography, so a person who
+A gated front end for validated targeted PCR + ODTC choreography, so a person who
 does not use a terminal can start a run. Local, stdlib only, no dependencies.
 
 ```bash
@@ -17,24 +17,13 @@ the fixes are verified locally. One serious issue is NOT fixed (see below), the
 launch and abort paths have **never driven the arm**, and the Pi was unreachable
 from this machine when it was written, so nothing here has met hardware.
 
-Use the command line for tomorrow, and for anything that matters, until this has
-had a supervised shakeout:
-
-```bash
-cd /Users/DiLoaner/Downloads/plr-tested
-git checkout ampseq-lidded-inwellmix-2026-07-16
-cd hamilton-star
-./run_on_pi.sh starlab_live/run_ampseq_odtc_LIDDED_1col_full_dry.py \
-  --confirm RUN_AMPSEQ_ODTC_LIDDED_FULL
-cd .. && git checkout main
-```
-
-That command is the thing this app automates. It has four clean passes behind it.
-The app has none.
+Use the established command-line procedure for any consequential run until this
+app has had a supervised shakeout. The walk-up page stays blocked unless a local,
+operator-approved build configuration is present.
 
 ## This is not a simulator
 
-`hamilton-star/ampseq-run-app*.html` are visual sims: badged SIMULATION, cannot
+`hamilton-star/targeted_pcr-run-app*.html` are visual sims: badged SIMULATION, cannot
 reach the Pi, safe to publish. **This one really drives the arm.** It binds to
 127.0.0.1 on purpose. Do not expose it, do not publish it, do not port-forward it.
 A published page must never be able to fire a robot.
@@ -47,8 +36,8 @@ overnight on 07-15/16 without anyone touching it. One of those commits would hav
 driven 8 tips into the plate.
 
 The app does not ask you to check out a tag and remember to go back. It creates a
-detached git worktree parked on the tag under
-`~/.cache/ampseq-walkup/worktrees/<tag>/` and invokes `run_on_pi.sh` from inside
+detached git worktree parked on the pinned commit under
+`~/.cache/targeted-pcr-walkup/worktrees/<sha>/` and invokes `run_on_pi.sh` from inside
 it. rsync therefore ships the tagged tree byte for byte. Your checkout is never
 touched, never consulted, and parallel sessions can keep landing on main mid-run
 without reaching the robot. The sha that ran is written to the history.
@@ -70,7 +59,7 @@ just JavaScript and a POST can be sent by hand, so the gate that counts is in
 | deck staged | all six physical items confirmed by a human who looked |
 | present | explicit affirmation, plus a 2 second hold on the button |
 
-The confirm token `--confirm RUN_AMPSEQ_ODTC_LIDDED_FULL` is **not** auto-filled
+The confirm token `--confirm RUN_TARGETED_PCR_ODTC_LIDDED_FULL` is **not** auto-filled
 into a one-click button. It is released only once all four pass. The 2 second
 hold is what replaces typing it. The friction was re-expressed, not removed.
 
@@ -153,11 +142,32 @@ the warning in `main()` is the mitigation, which is not a mitigation.
 **Also open:** a dropped ssh makes the server declare the run finished while the
 arm may still be moving, which also disarms Stop. Same root cause.
 
-## Adding a build
+## Configuring validated builds
 
-`BUILDS` in `server.py`. Adding an entry is a claim that the build is validated on
-hardware. Do not add speculatively: the point of the list is that everything in it
-has a record.
+Build records are local and are not stored in this public repository. Set
+`WALKUP_BUILDS_FILE` or create `~/.config/plr-walkup/builds.json`. Every entry must
+pin a full commit SHA and a tag that resolves to that exact SHA.
+
+```json
+{
+  "builds": {
+    "one-column": {
+      "tag": "targeted-pcr-validated-YYYY-MM-DD",
+      "sha": "<40-character-commit-sha>",
+      "script": "starlab_live/run_targeted_pcr_odtc_LIDDED_1col_full_dry.py",
+      "token": "RUN_TARGETED_PCR_ODTC_LIDDED_FULL",
+      "runner_match": "run_targeted_pcr_odtc_LIDDED_1col_full_dry",
+      "label": "1 column - 8 reactions",
+      "legs": 13,
+      "record": "supervised hardware validation record",
+      "minutes": 18
+    }
+  }
+}
+```
+
+The server validates the whole file at startup and offers no builds if any field
+is missing or unsafe. Add an entry only after supervised hardware validation.
 
 ## Requirements
 

@@ -22,8 +22,8 @@ import pylabrobot.resources as plr_resources
 # ------------
 # One reagent addition per --mode, into destination/work rail35 pos0 column 1, from a
 # single source column at rail35 pos1 column 1. This is the same swap-source, single-
-# column, one-add-per-run pattern as the verified whole-genome sequencing and targeted PCR master-mix scripts
-# (00_pta_wga_col1_swap_source_staged..., 01_ampseq_pcr1_mastermix_col1.py). The operator
+# column, one-add-per-run pattern as the verified PTA/WGA and targeted PCR master-mix scripts
+# (00_pta_wga_col1_swap_source_staged..., 01_targeted_pcr_round1_mastermix_col1.py). The operator
 # loads the reagent named in each mode's PREP line into the source column, runs the mode,
 # then swaps in the next reagent. The thermocycling and the SPRI cleanups happen between
 # these adds; the STOP line of each mode says which ODTC program (if any) runs next, and
@@ -264,7 +264,7 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
     print("  rail35 pos1 = CellTreat_96_wellplate_350ul_Fb source plate/strip, SOURCE COLUMN 1 ONLY")
     print("                  (swap reagent between modes)")
 
-    print("\nGeometry (current working AmpSeq p50 + confirmed PTA/WGA p10; see header):")
+    print("\nGeometry (current working Targeted PCR p50 + confirmed PTA/WGA p10; see header):")
     print(f"  P50 source asp height {P50_SOURCE_ASP_HEIGHT[0]}, work dsp height {P50_WORK_DSP_HEIGHT[0]}, "
           f"blowout {P50_BLOWOUT_AIR_VOLUME} uL")
     print(f"  P10 source asp height {P10_SOURCE_ASP_HEIGHT[0]}, work dsp height {P10_WORK_DSP_HEIGHT[0]}, "

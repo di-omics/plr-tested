@@ -13,7 +13,7 @@ numbers off a screen. Three artifacts:
     even coverage. This is computed from the Gate 2 concentrations, which is the
     returning data feeding forward into the next decision.
   - an Illumina sample sheet: one row per surviving library, carrying the locus, the
-    expected amplicon size, and the edit the analysis is meant to confirm, so the
+    expected targeted PCR product size, and the edit the analysis is meant to confirm, so the
     downstream variant calling knows what it is looking for.
 
 This stage runs on the survivors of Gate 2 only, so a dropped well never reaches a
@@ -30,9 +30,9 @@ from ..config import EditType
 from ..provenance import tunable
 from .base import Stage, StageContext, StageResult, StageStatus
 
-# Length added to the PCR1 amplicon by the PCR2 indexing primers (adapters + indices).
+# Length added to the PCR1 targeted PCR product by the PCR2 indexing primers (adapters + indices).
 INDEXING_OVERHANG_BP = tunable(
-    120, "approximate length the Nextera-style indexing PCR adds to the amplicon "
+    120, "approximate length the Nextera-style indexing PCR adds to the targeted PCR product "
          "(adapters + i5 + i7); confirm for your index kit",
     unit="bp", name="indexing_overhang_bp",
 )
@@ -61,9 +61,9 @@ class Handoff(Stage):
         mark = ctx.action_mark()
         samples = ctx.active_samples()
         locus = ctx.config.locus
-        quant: Dict[str, dict] = ctx.shared.get("quant_post_ampseq", {})
+        quant: Dict[str, dict] = ctx.shared.get("quant_post_targeted_pcr", {})
 
-        final_bp = locus.amplicon_bp + int(INDEXING_OVERHANG_BP.value)
+        final_bp = locus.target_product_bp + int(INDEXING_OVERHANG_BP.value)
         dimer_ceiling_bp = int(INDEXING_OVERHANG_BP.value) + 20  # adapter-dimer scale
 
         tapestation_rows: List[dict] = []
@@ -94,7 +94,7 @@ class Handoff(Stage):
                 "Sample_Well": s.well,
                 "Sample_Type": s.sample_type.value,
                 "Locus": locus.name,
-                "Amplicon_bp": locus.amplicon_bp,
+                "Targeted PCR product_bp": locus.target_product_bp,
                 "Expected_Library_bp": final_bp,
                 "I7_Index_ID": "TODO_assign_index",
                 "I5_Index_ID": "TODO_assign_index",

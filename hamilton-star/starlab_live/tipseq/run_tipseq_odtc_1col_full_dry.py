@@ -14,7 +14,7 @@ from pathlib import Path
 # for each thermal program, and four magnet + SPRI cleanup out/backs. Same orchestration pattern as
 # the emseq/scrnaseq runners: each leg runs an already-scoped leg script by subprocess, and NO
 # geometry is re-derived here. The iSWAP plate-move legs reuse the parent starlab_live/ move scripts
-# with the SAME confirmed args the ampseq/emseq choreographies used.
+# with the SAME confirmed args the targeted PCR and EM-seq choreographies used.
 #
 # The CUT&Tag front end (conA beads, antibody, pA-Tn5 tagmentation) and, for single cell / sciTIP,
 # FACS sorting are OFF-DECK; the plate enters here holding 8 uL of SPRI-purified tagmented gDNA +
@@ -41,7 +41,7 @@ from pathlib import Path
 # The magnet MUST be at rail35 pos2 and the ODTC nest empty. Deck-check every position, human at
 # the E-stop. tip-ivt ties up the ODTC overnight.
 #
-# Confirmed iSWAP geometry baked into the leg args (from run_ampseq_odtc_1col_full_dry.py,
+# Confirmed iSWAP geometry baked into the leg args (from run_targeted_pcr_odtc_1col_full_dry.py,
 # gripped clean on hardware 2026-07-12; NOT re-derived here):
 #   ODTC forward : pickup z5, drop x2 / y36.5 / z12 at rail20 pos1
 #   ODTC return  : pickup z0, drop z8.5

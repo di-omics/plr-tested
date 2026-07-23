@@ -15,7 +15,7 @@ from pathlib import Path
 # the two-round cDNA cleanup). Same orchestration pattern as run_emseq_odtc_1col_full_dry.py:
 # each leg runs an already-scoped leg script by subprocess, and NO geometry is re-derived here.
 # The iSWAP plate-move legs reuse the parent starlab_live/ move scripts with the SAME confirmed
-# args the ampseq/emseq choreographies used; the reagent and cleanup legs run the sibling
+# args the targeted PCR and EM-seq choreographies used; the reagent and cleanup legs run the sibling
 # scrnaseq scripts.
 #
 # As in the emseq runner, this does NOT run the ODTC thermal programs (they live in the
@@ -44,7 +44,7 @@ from pathlib import Path
 # replenishment for a real wet run. The magnet MUST be at rail35 pos2 and the ODTC nest empty,
 # or an iSWAP releases the plate into open space. Deck-check every position, human at the E-stop.
 #
-# Confirmed iSWAP geometry baked into the leg args (from run_ampseq_odtc_1col_full_dry.py,
+# Confirmed iSWAP geometry baked into the leg args (from run_targeted_pcr_odtc_1col_full_dry.py,
 # gripped clean on hardware 2026-07-12; NOT re-derived here):
 #   ODTC forward : pickup z5, drop x2 / y36.5 / z12 at rail20 pos1
 #   ODTC return  : pickup z0, drop z8.5

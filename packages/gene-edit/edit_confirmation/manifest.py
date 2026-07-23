@@ -97,10 +97,10 @@ def _parse_locus(raw: Any) -> LocusTarget:
     if not isinstance(raw, dict):
         raise ManifestError("`locus` must be a mapping")
     name = str(_require(raw, "name", "locus"))
-    amplicon_bp = int(_require(raw, "amplicon_bp", "locus"))
+    target_product_bp = int(_require(raw, "target_product_bp", "locus"))
     return LocusTarget(
         name=name,
-        amplicon_bp=amplicon_bp,
+        target_product_bp=target_product_bp,
         pcr1_anneal_c=(float(raw["pcr1_anneal_c"]) if "pcr1_anneal_c" in raw else None),
         primer_f=(str(raw["primer_f"]) if raw.get("primer_f") else None),
         primer_r=(str(raw["primer_r"]) if raw.get("primer_r") else None),

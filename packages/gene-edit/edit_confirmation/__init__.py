@@ -1,5 +1,5 @@
 """
-edit_confirmation - a QC-gated whole-genome amplification + targeted PCR package for confirming gene edits.
+edit_confirmation - a QC-gated PTA + targeted PCR package for confirming gene edits.
 
 Sparse input (which samples, which locus, simulation or hardware) in; a qualified,
 gated, auditable run out. The public surface is small on purpose:

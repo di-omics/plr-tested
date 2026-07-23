@@ -2,7 +2,7 @@
 iSWAP forward leg: rail35 pos0 -> ODTC plate nest.
 
 di-omics / plr-tested
-Part of the targeted PCR / whole-genome amplification-WGA workflow ODTC integration. This is the plate-move
+Part of the targeted PCR / PTA-WGA workflow ODTC integration. This is the plate-move
 leg ONLY. It does not trigger any thermal program (that lives separately in
 instrument-integrations/odtc via the PLR ExperimentalODTCBackend).
 

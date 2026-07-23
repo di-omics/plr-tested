@@ -24,7 +24,7 @@ import pylabrobot.resources as plr_resources
 # The EM-seq v2 workflow has three NEBNext Sample Purification Bead cleanups, at three
 # different bead ratios and three different elution volumes. This is one script with a
 # --cleanup selector that picks the volume preset; the motions and the deck are the same
-# for all three. It is the targeted PCR PCR1 cleanup script (02_ampseq_pcr1_cleanup_col1_dry_v2_
+# for all three. It is the targeted PCR round 1 cleanup script (02_targeted_pcr_round1_cleanup_col1_dry_v2_
 # p50low.py) generalized to the EM-seq volumes. The mag+trough geometry is reused VERBATIM
 # from that hardware-confirmed script; only the per-cleanup volumes change.
 #
@@ -101,7 +101,7 @@ CLEANUPS: Dict[str, Cleanup] = {
     "post-pcr": Cleanup("post-pcr", "0.8X", 72.0, 165.0, 21.0, 20.0, "NEB #E8015 Section 1.10"),
 }
 
-# Geometry reused verbatim from 02_ampseq_pcr1_cleanup_col1_dry_v2_p50low.py (mag pos2 +
+# Geometry reused verbatim from 02_targeted_pcr_round1_cleanup_col1_dry_v2_p50low.py (mag pos2 +
 # trough pos3). The physical and liquid-handling plate is the same CellTreat 350 uL work
 # plate as the current working Targeted PCR playbook. The separate iSWAP subprocesses retain
 # the hardware-proven Cor command stand-in intentionally; wet cleanup heights still

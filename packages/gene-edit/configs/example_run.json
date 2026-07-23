@@ -3,7 +3,7 @@
   "operator": "di",
   "mode": "simulation",
   "edit": { "type": "crispr_indel" },
-  "locus": { "name": "EMX1_site1", "amplicon_bp": 250, "edit_position_bp": 125 },
+  "locus": { "name": "EMX1_site1", "target_product_bp": 250, "edit_position_bp": 125 },
   "samples": [
     { "id": "embryo_01", "well": "A1" },
     { "id": "embryo_02", "well": "B1" },

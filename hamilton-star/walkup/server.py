@@ -10,14 +10,14 @@ WHAT THIS IS
   into gates that cannot be skipped.
 
 WHAT THIS IS NOT
-  Not a simulator. The sibling files hamilton-star/ampseq-run-app*.html are
+  Not a simulator. The sibling targeted-PCR run-app HTML files are
   visual sims badged SIMULATION and cannot reach the Pi. This one really drives
   the arm. Do not publish it, do not expose it off localhost, and do not let the
   SIMULATION habit carry over: when this says RUNNING, metal is moving.
 
 THE FRICTION IS THE FEATURE
   Every gate below exists because something went wrong once. The confirm token
-  --confirm RUN_AMPSEQ_ODTC_LIDDED_FULL is not auto-filled into a Run button.
+  --confirm RUN_TARGETED_PCR_ODTC_LIDDED_FULL is not auto-filled into a Run button.
   It is released only after four gates pass:
     0. SAME ORIGIN  the POST came from this page, not some other browser tab.
     1. SHA PIN      the validated commit, materialized to its own worktree.
@@ -77,7 +77,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 HERE = Path(__file__).resolve().parent
 HAMILTON = HERE.parent
@@ -90,38 +90,86 @@ PI = os.environ.get("PI", "starpi")
 # noise in anyone's git status, and so a stray `git clean` cannot eat them.
 WT_ROOT = Path(os.environ.get(
     "WALKUP_WORKTREES",
-    str(Path.home() / ".cache" / "ampseq-walkup" / "worktrees")))
+    str(Path.home() / ".cache" / "targeted-pcr-walkup" / "worktrees")))
+BUILDS_FILE = Path(os.environ.get(
+    "WALKUP_BUILDS_FILE",
+    str(Path.home() / ".config" / "plr-walkup" / "builds.json"))).expanduser()
 
-# The two builds that have actually passed on hardware. Nothing else is offered.
-# Adding an entry here is a claim that it is validated; do not add speculatively.
-BUILDS = {
-    "1col": {
-        "tag": "ampseq-lidded-inwellmix-2026-07-16",
-        # The tag NAME is not the pin. A tag is a mutable ref, and this repo
-        # force-rewrites refs; a moved tag would resolve to unvalidated code and
-        # the app would cheerfully call it "validated". The sha IS the pin. If
-        # the tag stops resolving to this, the app refuses rather than guesses.
-        "sha": "2bd1b00695b17786566d5049fac87e5ebed1fc1d",
-        "script": "starlab_live/run_ampseq_odtc_LIDDED_1col_full_dry.py",
-        "token": "RUN_AMPSEQ_ODTC_LIDDED_FULL",
-        "runner_match": "run_ampseq_odtc_LIDDED_1col_full_dry",
-        "label": "1 column - 8 reactions",
-        "legs": 13,   # the runner's STEPS list. progress divides by this.
-        "record": "13/13 clean, twice",
-        "minutes": 18,
-    },
-    "4col": {
-        "tag": "ampseq-lidded-4col-dry-2026-07-16",
-        "sha": "6998eb46e262f31052fbae72fa8a2cffb71ee347",
-        "script": "starlab_live/run_ampseq_odtc_LIDDED_4col_full_dry.py",
-        "token": "RUN_AMPSEQ_ODTC_LIDDED_4COL",
-        "runner_match": "run_ampseq_odtc_LIDDED_4col_full_dry",
-        "label": "4 columns - 32 reactions",
-        "legs": 13,   # the runner's STEPS list. progress divides by this.
-        "record": "50 SUCCESS / 0 fail, twice",
-        "minutes": 42,
-    },
+_BUILD_FIELDS = {
+    "tag": str,
+    "sha": str,
+    "script": str,
+    "token": str,
+    "runner_match": str,
+    "label": str,
+    "legs": int,
+    "record": str,
+    "minutes": int,
 }
+
+
+def _load_builds(path):
+    """Load operator-approved hardware builds, failing closed on any error."""
+    try:
+        raw = json.loads(path.read_text())
+    except FileNotFoundError:
+        return {}, "No local build configuration is present."
+    except (OSError, json.JSONDecodeError) as exc:
+        return {}, "The local build configuration is unreadable: %s" % exc
+
+    if not isinstance(raw, dict) or set(raw) != {"builds"}:
+        return {}, "The local build configuration must contain only a builds object."
+    entries = raw["builds"]
+    if not isinstance(entries, dict):
+        return {}, "The builds value must be an object."
+
+    checked = {}
+    for key, item in entries.items():
+        if not isinstance(key, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", key):
+            return {}, "Every build key must be a short alphanumeric identifier."
+        if not isinstance(item, dict) or set(item) != set(_BUILD_FIELDS):
+            return {}, "Build %s does not have the required fields." % key
+        for field, expected in _BUILD_FIELDS.items():
+            value = item[field]
+            if expected is int:
+                valid = type(value) is int
+            else:
+                valid = isinstance(value, expected)
+            if not valid:
+                return {}, "Build %s has an invalid %s value." % (key, field)
+
+        tag = item["tag"]
+        script_text = item["script"]
+        script = PurePosixPath(script_text)
+        if (not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,199}", tag)
+                or ".." in tag or "//" in tag or tag.endswith(("/", ".lock"))):
+            return {}, "Build %s has an invalid tag." % key
+        if not re.fullmatch(r"[0-9a-fA-F]{40}", item["sha"]):
+            return {}, "Build %s must pin a full 40-character commit SHA." % key
+        if (not re.fullmatch(
+                r"starlab_live/(?:[A-Za-z0-9][A-Za-z0-9_-]*/)*"
+                r"[A-Za-z0-9][A-Za-z0-9_-]*\.py",
+                script_text)
+                or script.is_absolute() or ".." in script_text
+                or ".." in script.parts or script.suffix != ".py"):
+            return {}, "Build %s has an unsafe script path." % key
+        if (not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", item["runner_match"])
+                or item["runner_match"] != script.stem):
+            return {}, "Build %s runner_match must equal the script filename stem." % key
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", item["token"]):
+            return {}, "Build %s has an invalid confirmation token." % key
+        if not item["label"].strip() or len(item["label"]) > 160:
+            return {}, "Build %s has an invalid label." % key
+        if not item["record"].strip() or len(item["record"]) > 240:
+            return {}, "Build %s has an invalid validation record." % key
+        if item["legs"] <= 0 or item["minutes"] <= 0:
+            return {}, "Build %s legs and minutes must be positive." % key
+        checked[key] = dict(item)
+        checked[key]["sha"] = item["sha"].lower()
+    return checked, None
+
+
+BUILDS, BUILDS_ERROR = _load_builds(BUILDS_FILE)
 
 # Physical items. Get these wrong and an iSWAP releases into open space.
 # Order matches the deck, left to right, so the human's eye can sweep once.
@@ -190,7 +238,7 @@ def worktree_path(key):
     # Keyed by SHA, not tag name. If a tag is force-moved, the new sha gets a new
     # path instead of silently reusing (or rebuilding) the old one, and a run
     # already launched from the old sha keeps its tree underneath it.
-    return WT_ROOT / BUILDS[key]["sha"][:12]
+    return WT_ROOT / BUILDS[key]["sha"]
 
 
 def ensure_worktree(key):
@@ -230,17 +278,17 @@ def ensure_worktree(key):
             dirty = [l for l in d.stdout.splitlines() if l.strip()]
             if dirty:
                 return {"ok": False, "reason": "worktree-dirty", "tag": tag,
-                        "sha": sha[:7], "path": str(wt), "dirty": dirty[:10],
+                        "sha": sha, "path": str(wt), "dirty": dirty[:10],
                         "detail": "The pinned worktree has local edits. It is meant to be "
                                   "read-only. Delete it and it will be rebuilt from the tag."}
-            return {"ok": True, "tag": tag, "sha": sha[:7], "path": str(wt), "fresh": False}
+            return {"ok": True, "tag": tag, "sha": sha, "path": str(wt), "fresh": False}
         # Wrong commit: rebuild rather than try to reconcile.
         subprocess.run(["git", "-C", str(REPO), "worktree", "remove", str(wt), "--force"],
                        capture_output=True, text=True)
 
     WT_ROOT.mkdir(parents=True, exist_ok=True)
     r = subprocess.run(
-        ["git", "-C", str(REPO), "worktree", "add", "--detach", str(wt), tag],
+        ["git", "-C", str(REPO), "worktree", "add", "--detach", str(wt), want],
         capture_output=True, text=True)
     if r.returncode != 0:
         return {"ok": False, "reason": "worktree-failed", "tag": tag,
@@ -248,21 +296,21 @@ def ensure_worktree(key):
     if not (wt / "hamilton-star" / "run_on_pi.sh").exists():
         return {"ok": False, "reason": "worktree-incomplete", "tag": tag,
                 "detail": "Worktree built but run_on_pi.sh is missing from it."}
-    return {"ok": True, "tag": tag, "sha": sha[:7], "path": str(wt), "fresh": True}
+    return {"ok": True, "tag": tag, "sha": sha, "path": str(wt), "fresh": True}
 
 
 def main_drift(key):
-    """Informational only. How far your main checkout has wandered from the tag.
+    """Informational only. How far the checkout has wandered from the pinned SHA.
 
     Deliberately NOT a gate. What runs comes from the pinned worktree, so this
     cannot affect the robot. It is surfaced because it is the thing that used to
     be dangerous, and it is worth being able to see it is now inert.
     """
-    tag = BUILDS[key]["tag"]
-    rc, _, _ = git("diff", "--quiet", tag, "--", "hamilton-star/")
+    commit = BUILDS[key]["sha"]
+    rc, _, _ = git("diff", "--quiet", commit, "--", "hamilton-star/")
     if rc == 0:
         return {"drifted": False, "files": []}
-    _, out, _ = git("diff", "--name-only", tag, "--", "hamilton-star/")
+    _, out, _ = git("diff", "--name-only", commit, "--", "hamilton-star/")
     return {"drifted": True, "files": [l for l in out.splitlines() if l.strip()]}
 
 
@@ -391,6 +439,7 @@ def stop_run():
         b = BUILDS[_run["build"]]
         _run["stopping"] = True
     match = b["runner_match"]
+    pattern = r"(^|/)" + re.escape(match) + r"\.py([[:space:]]|$)"
     broadcast({"t": "stopping"})
     try:
         # Report what pkill actually DID. An earlier cut used `|| true` and then
@@ -401,7 +450,7 @@ def stop_run():
         # real exit code back: 0 = signalled something, 1 = matched nothing.
         r = subprocess.run(
             ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=6", PI,
-             f"pkill -TERM -f {shlex.quote(match)}; echo rc:$?"],
+             f"pkill -TERM -f -- {shlex.quote(pattern)}; echo rc:$?"],
             capture_output=True, text=True, timeout=15)
         out = (r.stdout + r.stderr).strip()
     except Exception as e:
@@ -472,12 +521,16 @@ class H(BaseHTTPRequestHandler):
                 }
             builds = {}
             for k in BUILDS:
-                builds[k] = {**{kk: vv for kk, vv in BUILDS[k].items()
-                                if kk not in ("proc",)},
+                builds[k] = {**{kk: BUILDS[k][kk] for kk in (
+                                    "tag", "label", "legs", "record", "minutes")},
                              "tag_status": tag_status(k)}
             return self._send(200, json.dumps({
                 "run": snap,
                 "builds": builds,
+                "build_config": {
+                    "path": str(BUILDS_FILE),
+                    "error": BUILDS_ERROR,
+                },
                 "deck": [{"key": k, "label": l, "why": w} for k, l, w in DECK_ITEMS],
                 "pi": PI,
                 "history": history(),
@@ -526,7 +579,7 @@ class H(BaseHTTPRequestHandler):
         # which is a CORS *simple request*: no preflight, the browser sends it,
         # and gates 3 and 4 happily read `deck` and `present` out of a body that
         # no human ever filled in. The arm starts with nobody at the E-stop.
-        # Worst of all, the sibling ampseq-run-app*.html sims are documented as
+        # Worst of all, the sibling targeted-PCR simulator pages are documented as
         # safe to publish: publish one, open it while this is running, and it
         # fires the real STAR. Found by adversarial review 2026-07-16.
         #
@@ -644,6 +697,9 @@ def main():
     print("  walk-up runner  ->  http://127.0.0.1:%d" % PORT)
     print("  repo: %s" % REPO)
     print("  pi:   %s" % PI)
+    print("  builds: %s" % BUILDS_FILE)
+    if BUILDS_ERROR:
+        print("  build config: %s" % BUILDS_ERROR)
     print("")
     print("  This drives the real arm. Bound to localhost only. Do not expose it.")
     print("  A human stays at the deck, hand near the E-stop.")

@@ -102,7 +102,7 @@ def cmd_plan(args) -> int:
     print(f"operator   : {cfg.operator}")
     print(f"mode       : {cfg.mode.value}")
     print(f"edit_type  : {cfg.edit_type.value}")
-    print(f"locus      : {cfg.locus.name}  amplicon {cfg.locus.amplicon_bp} bp"
+    print(f"locus      : {cfg.locus.name}  targeted PCR product {cfg.locus.target_product_bp} bp"
           + (f"  anneal {cfg.locus.pcr1_anneal_c} C" if cfg.locus.pcr1_anneal_c else ""))
     print(f"deck       : {cfg.deck.name}")
     print(f"pcr2_cycles: {cfg.pcr2_cycles}")
@@ -115,8 +115,8 @@ def cmd_plan(args) -> int:
     print(f"  standard curve R-squared      >= {ac.curve_r2_min}")
     print(f"  Gate 1 post-PTA yield         >= {ac.pta_yield_min_ng} ng  "
           f"(uniformity CV <= {ac.pta_uniformity_cv_max_percent} %)")
-    print(f"  Gate 2 post-ampseq conc       {ac.ampseq_conc_min_ng_per_ul} to "
-          f"{ac.ampseq_conc_max_ng_per_ul} ng/uL")
+    print(f"  Gate 2 post-targeted PCR conc       {ac.targeted_pcr_conc_min_ng_per_ul} to "
+          f"{ac.targeted_pcr_conc_max_ng_per_ul} ng/uL")
     return 0
 
 
@@ -143,7 +143,7 @@ def cmd_demo(args) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="edit-confirm",
-                                description="QC-gated PTA + amplicon-seq for gene-edit confirmation")
+                                description="QC-gated PTA + targeted PCR for gene-edit confirmation")
     p.add_argument("--version", action="version", version=f"edit-confirm {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 

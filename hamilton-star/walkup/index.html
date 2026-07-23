@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>targeted PCR walk-up runner</title>
+<title>Targeted PCR walk-up runner</title>
 <style>
 :root{
   color-scheme: light;
@@ -137,7 +137,7 @@ code{font-family:ui-monospace,monospace;font-size:11.5px}
   </div>
 
   <div class="note warn" style="margin-top:16px">
-    <b>This is not the simulator.</b> The sibling pages <code>ampseq-run-app*.html</code> are
+    <b>This is not the simulator.</b> The sibling targeted-PCR run-app pages are
     badged SIMULATION and cannot reach the Pi. This one really moves metal. A human stays at
     the deck with a hand near the E-stop for the whole run. Nothing here changes that.
   </div>
@@ -182,8 +182,8 @@ code{font-family:ui-monospace,monospace;font-size:11.5px}
     <button class="run" id="run" disabled>
       <span class="fill" id="fill"></span><span id="runlabel">hold to run</span>
     </button>
-    <p class="sub" style="margin:9px 0 0;font-size:11.5px">Hold the button for 2 seconds. That
-    hold replaces typing <code>--confirm RUN_AMPSEQ_ODTC_LIDDED_FULL</code>. It is deliberate.</p>
+    <p class="sub" style="margin:9px 0 0;font-size:11.5px">Hold the button for 2 seconds.
+    The hold supplies the locally configured confirmation token only after every gate passes.</p>
   </div>
 
   <!-- LIVE -->
@@ -217,19 +217,46 @@ let S = null, build = "1col", deckOn = new Set(), holdT = null, holdStart = 0, r
 
 async function load(){
   S = await (await fetch("/api/state")).json();
-  build = build in S.builds ? build : Object.keys(S.builds)[0];
+  const keys = Object.keys(S.builds);
+  if(S.run.active && S.run.build in S.builds) build = S.run.build;
+  else build = build in S.builds ? build : (keys[0] || null);
+  running = Boolean(S.run.active);
   paintBuilds(); paintDeck(); paintHist(); refreshGates();
-  if(S.run.active){ running = true; $("#livecard").style.display="block"; }
+  if(running) $("#livecard").style.display="block";
 }
 
 function paintBuilds(){
   const el = $("#builds"); el.innerHTML = "";
+  if(!build){
+    const note = document.createElement("div");
+    note.className = "note warn";
+    const message = document.createElement("div");
+    message.textContent =
+      "No validated builds are configured. Add a local build configuration after supervised validation.";
+    note.appendChild(message);
+    if(S.build_config && S.build_config.path){
+      const path = document.createElement("code");
+      path.textContent = S.build_config.path;
+      note.appendChild(document.createElement("br"));
+      note.appendChild(path);
+    }
+    if(S.build_config && S.build_config.error){
+      const error = document.createElement("div");
+      error.style.marginTop = "6px";
+      error.textContent = S.build_config.error;
+      note.appendChild(error);
+    }
+    el.appendChild(note);
+    paintTag();
+    return;
+  }
   for(const [k,b] of Object.entries(S.builds)){
+    const parts = b.label.split(" - ", 2);
     const d = document.createElement("button");
     d.className = "b" + (k===build ? " on" : "");
-    d.innerHTML = `<div class="t">${b.label.split(" - ")[0]}</div>
-      <div class="m">${b.label.split(" - ")[1]} &middot; ~${b.minutes} min</div>
-      <div class="rec">${b.record}</div>`;
+    d.innerHTML = `<div class="t">${esc(parts[0])}</div>
+      <div class="m">${esc(parts[1] || "")} &middot; ~${esc(b.minutes)} min</div>
+      <div class="rec">${esc(b.record)}</div>`;
     d.onclick = () => { build = k; paintBuilds(); refreshGates(); };
     el.appendChild(d);
   }
@@ -237,26 +264,29 @@ function paintBuilds(){
 }
 
 function paintTag(){
-  const b = S.builds[build], t = b.tag_status, el = $("#tagbox");
+  const el = $("#tagbox");
+  el.innerHTML = "";
+  if(!build || !(build in S.builds)) return;
+  const b = S.builds[build], t = b.tag_status;
   if(t.ok){
     const d = t.main_drift || {drifted:false, files:[]};
-    el.innerHTML = `<div class="tag"><b>PINNED</b> &middot; ${t.tag} @ ${t.sha}
+    el.innerHTML = `<div class="tag"><b>PINNED</b> &middot; ${esc(t.tag)} @ ${esc(t.sha)}
       <br>This run is launched from a worktree parked on that tag, so the tagged code is
       what reaches the robot. Your checkout is not consulted and does not need changing.</div>`
       + (d.drifted ? `<div class="note" style="margin-top:8px;font-size:11.5px">
           Your main checkout currently differs from this tag by ${d.files.length} file(s),
-          including <code>run_on_pi.sh</code>. That used to be the hazard. It is now inert:
-          the pinned worktree is what runs. Nothing for you to do.
+          including <code>run_on_pi.sh</code>. The pinned worktree is what runs.
         </div>` : "");
   } else if(t.reason === "tag-missing"){
-    el.innerHTML = `<div class="tag bad"><b>TAG MISSING</b> &middot; ${t.tag}<br>${t.detail}</div>`;
+    el.innerHTML = `<div class="tag bad"><b>TAG MISSING</b> &middot; ${esc(t.tag)}
+      <br>${esc(t.detail)}</div>`;
   } else if(t.reason === "worktree-dirty"){
     el.innerHTML = `<div class="tag bad"><b>BLOCKED &middot; PINNED WORKTREE HAS EDITS</b>
-      &middot; ${t.tag} @ ${t.sha}<br>${t.detail}<br><code>rm -rf ${t.path}</code></div>
-      <ul class="drift">${(t.dirty||[]).map(f=>`<li>${f}</li>`).join("")}</ul>`;
+      &middot; ${esc(t.tag)} @ ${esc(t.sha)}<br>${esc(t.detail)}
+      <ul class="drift">${(t.dirty||[]).map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`;
   } else {
     el.innerHTML = `<div class="tag bad"><b>BLOCKED &middot; CANNOT PIN THE TAG</b>
-      &middot; ${t.tag}<br>${t.detail||t.reason}<br><br>
+      &middot; ${esc(t.tag)}<br>${esc(t.detail||t.reason)}<br><br>
       Refusing to launch: without a pin there is no guarantee the validated build runs.</div>`;
   }
 }
@@ -283,9 +313,20 @@ function gate(ok, label, wait){
 }
 
 function refreshGates(){
-  const t = S.builds[build].tag_status;
   const deckOK = deckOn.size === S.deck.length;
   const present = $("#present").checked;
+  if(!build || !(build in S.builds)){
+    $("#gates").innerHTML =
+      gate(false, "no validated build configured") +
+      gate(deckOK, `deck confirmed ${deckOn.size}/${S.deck.length}`) +
+      gate(present, present ? "human at the deck" : "nobody has confirmed presence") +
+      gate(!running, running ? "a run is already in flight" : "star free (checked at launch)");
+    $("#run").disabled = true;
+    $("#runlabel").textContent = "blocked: configure a build";
+    $("#presentrow").classList.toggle("on", present);
+    return;
+  }
+  const t = S.builds[build].tag_status;
   const ok = t.ok && deckOK && present && !running;
   $("#gates").innerHTML =
     gate(t.ok, t.ok ? "tag pinned" : "tag drifted, blocked") +
@@ -319,6 +360,7 @@ $("#run").addEventListener("touchend",()=>up(false));
 
 async function go(){
   $("#fill").style.width="0";
+  if(!build || !(build in S.builds)) return;
   const samples = $("#samples").value.split(",").map(s=>s.trim()).filter(Boolean);
   const r = await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},
     body: JSON.stringify({build, deck:[...deckOn], present:true, samples, note:$("#note").value})});
@@ -329,7 +371,7 @@ async function go(){
     await load(); return;
   }
   running = true; $("#term").innerHTML=""; $("#livecard").style.display="block";
-  $("#runmeta").textContent = "&middot; " + S.builds[build].tag;
+  $("#runmeta").textContent = "· " + S.builds[build].tag;
   refreshGates();
   $("#livecard").scrollIntoView({behavior:"smooth"});
 }
@@ -362,7 +404,7 @@ es.onmessage = e => {
     // are NOT 1 per leg: STEP 1 and STEP 7 print none at all, while the STEP 5
     // cleanup prints one per sub-action (8 actions + a rollup). An earlier cut
     // divided by a guessed success count and would have read "20 / 13".
-    const legs = S.builds[build].legs || 13;
+    const legs = (S.builds[build] && S.builds[build].legs) || 13;
     const p = Math.min(100, Math.round(100*m.steps/legs));
     $("#prog").style.width = p+"%";
     // ASCII only: this is textContent, so an HTML entity would render literally.

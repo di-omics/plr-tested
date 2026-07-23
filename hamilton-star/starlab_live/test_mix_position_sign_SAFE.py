@@ -12,7 +12,7 @@ WHY THIS EXISTS
   disabled (mc00 / mp000), so the source cannot settle this. Only the machine can.
 
 WHY IT MATTERS
-  01_ampseq_pcr1_mastermix_col1.py, 03_ampseq_pcr2_mastermix_col1.py and the V2
+  01_targeted_pcr_round1_mastermix_col1.py, 03_targeted_pcr_round2_mastermix_col1.py and the V2
   single-home runner all pass:
       liquid_height = 1.5, mix_position_from_liquid_surface = 2.0
   lld_mode is never passed and defaults to LLDMode.OFF, so PLR models the surface as
@@ -55,8 +55,8 @@ HOW TO READ THE RESULT
 
   Either way, report the observation and STOP. Do not re-run the targeted PCR mastermix
   build until MIX_POSITION_FROM_SURFACE is corrected in all three call sites:
-    01_ampseq_pcr1_mastermix_col1.py, 03_ampseq_pcr2_mastermix_col1.py,
-    run_ampseq_odtc_LIDDED_1col_full_v2_singlehome_dry.py
+    01_targeted_pcr_round1_mastermix_col1.py, 03_targeted_pcr_round2_mastermix_col1.py,
+    run_targeted_pcr_odtc_LIDDED_1col_full_v2_singlehome_dry.py
 
 NOTE ON --mode deck
   lh.setup() runs BEFORE the mode check, so --mode deck DOES home the channels and the
@@ -109,7 +109,7 @@ TARGET_COL = 12
 # Reused verbatim from the validated mastermix geometry.
 P50_WORK_DSP_OFFSETS = [Coordinate(-0.68, 3.22, 0.0)] * 8
 
-# Reused verbatim from 01_ampseq_pcr1_mastermix_col1.py:85. Factory names vary by PLR
+# Reused verbatim from 01_targeted_pcr_round1_mastermix_col1.py:85. Factory names vary by PLR
 # build, so probe rather than hardcode.
 P50_TIP_FACTORY_CANDIDATES = ["hamilton_96_tiprack_50uL_filter", "hamilton_96_tiprack_50ul_filter"]
 

@@ -103,7 +103,7 @@ def _simulation_selftest() -> tuple:
         cfg = build_run({
             "run_id": "DOCTOR", "operator": "doctor", "mode": "simulation",
             "edit": {"type": "unknown"},
-            "locus": {"name": "L", "amplicon_bp": 200},
+            "locus": {"name": "L", "target_product_bp": 200},
             "samples": [{"id": "a", "well": "A1"}, {"id": "ntc", "well": "H1", "type": "ntc"}],
         })
         out = run(cfg, timestamp="doctor")

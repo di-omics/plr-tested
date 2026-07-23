@@ -16,8 +16,8 @@ edit:
 
 locus:
   name: EMX1_site1
-  amplicon_bp: 250          # expected PCR1 amplicon around the edit
-  edit_position_bp: 125     # where the edit sits in the amplicon (optional)
+  target_product_bp: 250          # expected PCR1 targeted PCR product around the edit
+  edit_position_bp: 125     # where the edit sits in the targeted PCR product (optional)
   # pcr1_anneal_c: 67       # optional; recompute for your primers (NEB Tm calc, Q5U)
 
 # tip_column: 1             # site-specific: which tip-rack column to start from
