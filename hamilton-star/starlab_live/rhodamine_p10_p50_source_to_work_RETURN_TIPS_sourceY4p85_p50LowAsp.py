@@ -1,3 +1,14 @@
+from pathlib import Path as _MethodPath
+import sys as _method_sys
+
+_METHOD_ROOT = next(
+    parent for parent in _MethodPath(__file__).resolve().parents
+    if parent.name == "hamilton-star"
+)
+if str(_METHOD_ROOT) not in _method_sys.path:
+    _method_sys.path.insert(0, str(_METHOD_ROOT))
+from operator_parameters import required_nonnegative, required_positive
+
 import argparse
 import asyncio
 from typing import Dict, List
@@ -14,7 +25,7 @@ from pylabrobot.resources import (
 import pylabrobot.resources as plr_resources
 
 # -----------------------------------------------------------------------------
-# whole-genome sequencing PTA - p10 + p50 source-to-work RHODAMINE / LH geometry script
+# whole-genome sequencing WGS preparation - p10 + p50 source-to-work RHODAMINE / LH geometry script
 # Hamilton STAR + PyLabRobot on starpi
 #
 # Purpose:
@@ -82,32 +93,32 @@ MIX_FLOW_RATE = 80
 # whole-genome sequencing preparation source 96DW layout.
 SRC_LYSIS_COL = 1
 SRC_REACTION_COL = 2
-SRC_DNAPREP_COL = 3
-SRC_FERAT_COL = 4
+SRC_DNA_FRAGMENTATION_COL = 3
+SRC_END_REPAIR_COL = 4
 SRC_ADAPTER_COL = 5
-SRC_LP2L_COL = 6
-SRC_LIBAMP_COL = 7
+SRC_LIGATION_MIX_COL = 6
+SRC_LIBRARY_PCR_COL = 7
 
 # Protocol volumes.
-VOL_LYSIS = 3.0
-VOL_REACTION = 6.0
-VOL_DNAPREP = 3.0
-VOL_FERAT = 4.0
-VOL_ADAPTER = 5.0
-VOL_LP2L = 5.0
-VOL_LIBAMP = 20.0
+VOL_LYSIS = required_positive("wgs.stage_1_volume_ul")
+VOL_REACTION = required_positive("wgs.stage_2_volume_ul")
+VOL_DNA_FRAGMENTATION = required_positive("wgs.stage_3_volume_ul")
+VOL_END_REPAIR = required_positive("wgs.stage_4_volume_ul")
+VOL_ADAPTER = required_positive("wgs.stage_5_volume_ul")
+VOL_LIGATION_MIX = required_positive("wgs.stage_6_volume_ul")
+VOL_LIBRARY_PCR = required_positive("wgs.stage_7_volume_ul")
 
 P10_STEPS = [
-    (SRC_LYSIS_COL, VOL_LYSIS, "Lysis Mix / rhodamine source col 1"),
-    (SRC_REACTION_COL, VOL_REACTION, "Reaction Mix / rhodamine source col 2"),
-    (SRC_DNAPREP_COL, VOL_DNAPREP, "DNA Prep Master Mix / rhodamine source col 3"),
-    (SRC_FERAT_COL, VOL_FERAT, "FERAT Master Mix / rhodamine source col 4"),
+    (SRC_LYSIS_COL, VOL_LYSIS, "lysis reagent mix / rhodamine source col 1"),
+    (SRC_REACTION_COL, VOL_REACTION, "WGS preparation reaction mix / rhodamine source col 2"),
+    (SRC_DNA_FRAGMENTATION_COL, VOL_DNA_FRAGMENTATION, "DNA fragmentation master mix / rhodamine source col 3"),
+    (SRC_END_REPAIR_COL, VOL_END_REPAIR, "end-repair master mix / rhodamine source col 4"),
     (SRC_ADAPTER_COL, VOL_ADAPTER, "UDI Adapters / rhodamine source col 5"),
-    (SRC_LP2L_COL, VOL_LP2L, "LP2L / rhodamine source col 6"),
+    (SRC_LIGATION_MIX_COL, VOL_LIGATION_MIX, "ligation master mix / rhodamine source col 6"),
 ]
 
 P50_STEPS = [
-    (SRC_LIBAMP_COL, VOL_LIBAMP, "Amplification Master Mix / rhodamine source col 7"),
+    (SRC_LIBRARY_PCR_COL, VOL_LIBRARY_PCR, "library PCR master mix / rhodamine source col 7"),
 ]
 
 P10_TIP_FACTORY_CANDIDATES = [

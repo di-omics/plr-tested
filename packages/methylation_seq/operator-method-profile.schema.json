@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/plr-tested/methylation-sequencing-operator-profile.schema.json",
+  "title": "Private methylation-sequencing operator profile",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "method_name",
+    "qualified_volumes_ul",
+    "acceptance"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "method_name": {"type": "string", "minLength": 1},
+    "water_only": {"const": false},
+    "qualified_volumes_ul": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "number", "exclusiveMinimum": 0}
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lh_cv_max_percent", "sample_rules", "blank_rules"],
+      "properties": {
+        "lh_cv_max_percent": {"type": "number", "exclusiveMinimum": 0},
+        "sample_rules": {"$ref": "#/$defs/rules"},
+        "blank_rules": {"$ref": "#/$defs/rules"}
+      }
+    }
+  },
+  "$defs": {
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metric"],
+        "anyOf": [
+          {"required": ["minimum"]},
+          {"required": ["maximum"]}
+        ],
+        "properties": {
+          "metric": {"type": "string", "minLength": 1},
+          "label": {"type": "string"},
+          "unit": {"type": "string"},
+          "minimum": {"type": "number"},
+          "maximum": {"type": "number"}
+        }
+      }
+    }
+  }
+}

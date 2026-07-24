@@ -1,0 +1,16 @@
+# Acceptance-criteria field template.
+#
+# This repository does not supply biological assay thresholds. Copy these keys
+# into the run manifest's `acceptance` block and replace every null with the
+# site's approved validation criteria. The public example manifest contains
+# synthetic demonstration gates only.
+
+acceptance:
+  lh_cv_max_percent: null
+  lh_recovery_tolerance_percent: null
+  lh_qualified_volumes_ul: null
+  curve_r2_min: null
+  wgs_prep_yield_min_ng: null
+  wgs_prep_uniformity_cv_max_percent: null
+  pcr_enrichment_conc_min_ng_per_ul: null
+  pcr_enrichment_conc_max_ng_per_ul: null

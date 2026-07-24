@@ -1,0 +1,49 @@
+{
+  "run_id": "SEQ-2026-07-11-run01",
+  "operator": "di",
+  "mode": "simulation",
+  "assay": { "type": "variant_detection" },
+  "target": { "name": "target_region_01", "target_product_bp": 250, "position_of_interest_bp": 125 },
+  "method": {
+    "profile_kind": "synthetic_water",
+    "parameter_source": "public example; synthetic water motion only",
+    "wgs_input_preparation_ul": 10,
+    "wgs_reaction_mix_ul": 10,
+    "wgs_odtc_profile": "wgs_prep",
+    "pcr1_mastermix_ul": 10,
+    "pcr2_mastermix_ul": 10,
+    "pcr_reaction_volume_ul": 20,
+    "post_pcr1_cleanup_ratio": 1,
+    "post_pcr2_cleanup_ratio": 1,
+    "supernatant_margin_ul": 0,
+    "pcr1_anneal_c": 40,
+    "pcr2_cycles": 2,
+    "pcr1_odtc_profile": "pcr-enrichment-round1",
+    "pcr2_odtc_profile": "pcr-enrichment-round2",
+    "wgs_qc_dilution": 1,
+    "pcr_qc_dilution": 1,
+    "wgs_product_volume_ul": 20,
+    "pcr_library_volume_ul": 20,
+    "fluorescent_dsdna_excitation_nm": 400,
+    "fluorescent_dsdna_emission_nm": 500,
+    "fluorescent_dsdna_standards_ng_per_ml": [0, 1, 2, 3]
+  },
+  "acceptance": {
+    "lh_cv_max_percent": 5,
+    "lh_recovery_tolerance_percent": 20,
+    "lh_qualified_volumes_ul": [10, 20, 50, 100],
+    "curve_r2_min": 0.95,
+    "wgs_prep_yield_min_ng": 50,
+    "wgs_prep_uniformity_cv_max_percent": 50,
+    "pcr_enrichment_conc_min_ng_per_ul": 1,
+    "pcr_enrichment_conc_max_ng_per_ul": 100
+  },
+  "samples": [
+    { "id": "sample_01", "well": "A1" },
+    { "id": "sample_02", "well": "B1" },
+    { "id": "sample_03", "well": "C1" },
+    { "id": "pos_ctrl",  "well": "F1", "type": "pos_ctrl" },
+    { "id": "neg_ctrl",  "well": "G1", "type": "neg_ctrl" },
+    { "id": "ntc",       "well": "H1", "type": "ntc" }
+  ]
+}

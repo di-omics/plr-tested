@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sequencing-validation"
+version = "0.1.0"
+description = "QC-gated WGS preparation and PCR enrichment for portable sequencing-assay validation"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "di-omics" }]
+license = { text = "MIT" }
+# Core is standard-library only, on purpose: it runs in any lab with any Python.
+dependencies = []
+
+[project.optional-dependencies]
+# YAML manifests (JSON works without this). Hardware backends need the di-omics
+# PyLabRobot fork and are installed on the Pi, not here.
+yaml = ["pyyaml>=5.4"]
+test = ["pytest>=7"]
+
+[project.scripts]
+seq-validate = "sequencing_validation.cli:main"
+
+[tool.setuptools]
+packages = [
+    "sequencing_validation",
+    "sequencing_validation.stages",
+    "sequencing_validation.instruments",
+    "sequencing_validation.reagents",
+    "sequencing_validation.reporting",
+]

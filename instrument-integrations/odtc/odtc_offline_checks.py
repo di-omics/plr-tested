@@ -1,23 +1,13 @@
-"""
-odtc_offline_checks.py - device-free checks for the ODTC integration.
+"""Device-free checks for the ODTC integration.
 
-No ODTC. No STAR. No network. Every check runs against the real PyLabRobot backend,
-because the point is to assert things about PLR's actual behaviour, not about a
-reimplementation of it.
+No ODTC, STAR, or network connection is required.  These checks exercise the
+real PyLabRobot backend so changes in method XML generation are caught before a
+live hardware session.
 
-Run it before every live session and after every PyLabRobot upgrade:
-
-    python odtc_offline_checks.py
-
-Three things it pins down:
-
-  1. The method XML the ODTC will actually be sent matches authorized WGS/WGA workflow source, element by
-     element. Cycle loops, lid temperatures, hold times, fluid quantity.
-  2. PLR's `_recursive_find_key` really does blow up on a string sibling, so nobody
-     deletes odtc_compat.find_key() thinking it is redundant.
-  3. `Thermocycler.run_pcr_profile()` really is unusable with this backend.
-
-Exit code 0 means every check passed.
+Public generic assay names intentionally resolve to one synthetic water-only
+motion profile.  The checks pin that safety boundary without treating the
+profile as a biological method.  TIP-seq entries remain user-owned methods and
+are checked only for registry/ODTC compatibility here.
 """
 
 import asyncio
@@ -33,12 +23,28 @@ from odtc_compat import (
     import_plr,
     validate_protocol,
 )
-from odtc_protocols import PROGRAMS, START_BLOCK_C_DEFAULT
+from odtc_protocols import (
+    GENERIC_PUBLIC_PROGRAM_NAMES,
+    PROGRAMS,
+    START_BLOCK_C_DEFAULT,
+)
 
 _plr = import_plr()
 
 _PASSED = 0
 _FAILED = 0
+
+TIP_PROGRAM_NAMES = (
+    "tip-gapfill",
+    "tip-ivt",
+    "tip-rt-anneal",
+    "tip-rt",
+    "tip-rnaseh",
+    "tip-ss-anneal",
+    "tip-ss",
+    "tip-tag",
+    "tip-pcr",
+)
 
 
 def check(label, condition, detail=""):
@@ -52,13 +58,18 @@ def check(label, condition, detail=""):
 
 
 def method_xml_for(program, start_block_c=START_BLOCK_C_DEFAULT):
-    """Generate the method XML with the real backend. 192.0.2.0/24 is TEST-NET-1,
-    so nothing resolves and no socket is opened: passing client_ip explicitly stops
-    InhecoSiLAInterface from calling _get_local_ip()."""
-    backend = _plr.ExperimentalODTCBackend(ip="192.0.2.1", client_ip="192.0.2.2")
+    """Generate XML with the real backend without opening a socket."""
+    backend = _plr.ExperimentalODTCBackend(
+        ip="192.0.2.1",
+        client_ip="192.0.2.2",
+    )
     xml_text, name = backend._generate_method_xml(
-        program.protocol, program.block_max_volume_ul,
-        start_block_c, program.lid_c, True, method_name="OFFLINE_CHECK",
+        program.protocol,
+        program.block_max_volume_ul,
+        start_block_c,
+        program.lid_c,
+        True,
+        method_name="OFFLINE_CHECK",
     )
     return ET.fromstring(xml_text), name
 
@@ -73,61 +84,62 @@ def text_of(element, tag):
     return node.text if node is not None else None
 
 
-# ---------------------------------------------------------------------------
-
-
 def check_parser_bug():
-    """PLR's _recursive_find_key mistakes str for an ElementTree node."""
-    print("\n[1] PLR's _recursive_find_key vs odtc_compat.find_key")
+    """Pin the backend parser condition handled by odtc_compat.find_key()."""
+    print("\n[1] backend recursive lookup vs odtc_compat.find_key")
 
     if _plr.layout == "0.2.1":
         from pylabrobot.thermocycling.inheco.odtc_backend import _recursive_find_key
     else:
         from pylabrobot.legacy.thermocycling.inheco.odtc_backend import _recursive_find_key
 
-    # 'state' is a direct child: the dict lookup short circuits and both work.
-    shallow = {"GetStatusResponse": {
-        "GetStatusResult": {"returnCode": 1, "message": "Success"},
-        "state": "idle",
-    }}
-    check("shallow: PLR finds 'idle'", _recursive_find_key(shallow, "state") == "idle")
-    check("shallow: find_key finds 'idle'", find_key(shallow, "state") == "idle")
+    shallow = {
+        "GetStatusResponse": {
+            "GetStatusResult": {"returnCode": 1, "message": "Success"},
+            "state": "idle",
+        }
+    }
+    check("shallow backend lookup returns idle", _recursive_find_key(shallow, "state") == "idle")
+    check("shallow compatibility lookup returns idle", find_key(shallow, "state") == "idle")
 
-    # 'state' one level deeper, behind the string "Success". PLR walks into the str,
-    # calls str.find(".//state") -> -1, then evaluates (-1).text.
-    nested = {"GetStatusResponse": {
-        "GetStatusResult": {"returnCode": 1, "message": "Success"},
-        "deviceStatus": {"state": "idle"},
-    }}
+    nested = {
+        "GetStatusResponse": {
+            "GetStatusResult": {"returnCode": 1, "message": "Success"},
+            "deviceStatus": {"state": "idle"},
+        }
+    }
     try:
         _recursive_find_key(nested, "state")
-        check("nested: PLR raises AttributeError", False,
-              "it did not raise. PLR may have been fixed upstream; re-read this module.")
+        check(
+            "nested backend lookup raises AttributeError",
+            False,
+            "backend behavior changed; re-evaluate odtc_compat.find_key",
+        )
     except AttributeError:
-        check("nested: PLR raises AttributeError (the bug this module works around)", True)
+        check("nested backend lookup raises AttributeError", True)
 
-    check("nested: find_key still returns 'idle'", find_key(nested, "state") == "idle")
-    check("root cause: 'Success'.find('.//state') == -1, and -1 is not None",
-          "Success".find(".//state") == -1)
+    check("compatibility lookup still returns idle", find_key(nested, "state") == "idle")
 
-    # The async sensor path hands back an ElementTree Element, which both handle.
     element = ET.fromstring(
         '<ParameterSet><Parameter name="T"><String>'
         "&lt;Temperatures&gt;&lt;Mount&gt;2500&lt;/Mount&gt;&lt;/Temperatures&gt;"
         "</String></Parameter></ParameterSet>"
     )
-    check("ElementTree path: find_key extracts the embedded document",
-          find_key(element, "String") == "<Temperatures><Mount>2500</Mount></Temperatures>")
+    check(
+        "ElementTree path extracts embedded document",
+        find_key(element, "String")
+        == "<Temperatures><Mount>2500</Mount></Temperatures>",
+    )
 
 
 def check_run_pcr_profile_is_unusable():
-    """Document, executably, why nothing here calls run_pcr_profile()."""
-    print("\n[2] Thermocycler.run_pcr_profile() cannot drive this backend")
+    """Document why the integration uses generated methods directly."""
+    print("\n[2] Thermocycler.run_pcr_profile backend limitation")
 
-    backend = _plr.ExperimentalODTCBackend(ip="192.0.2.1", client_ip="192.0.2.2")
-
-    check("NotImplementedError is a subclass of RuntimeError",
-          issubclass(NotImplementedError, RuntimeError))
+    backend = _plr.ExperimentalODTCBackend(
+        ip="192.0.2.1",
+        client_ip="192.0.2.2",
+    )
 
     async def raises(coroutine):
         try:
@@ -136,19 +148,18 @@ def check_run_pcr_profile_is_unusable():
         except NotImplementedError:
             return True
 
-    check("get_lid_target_temperature() raises NotImplementedError",
-          asyncio.run(raises(backend.get_lid_target_temperature())))
-    check("get_lid_status() raises NotImplementedError",
-          asyncio.run(raises(backend.get_lid_status())))
-
-    # wait_for_lid() catches RuntimeError around get_lid_target_temperature(), which
-    # therefore swallows the NotImplementedError and sets targets=None. It then falls
-    # through to get_lid_status(), which raises the same exception uncaught.
-    check("so run_pcr_profile() -> wait_for_lid() -> get_lid_status() escapes", True)
+    check(
+        "get_lid_target_temperature raises NotImplementedError",
+        asyncio.run(raises(backend.get_lid_target_temperature())),
+    )
+    check(
+        "get_lid_status raises NotImplementedError",
+        asyncio.run(raises(backend.get_lid_status())),
+    )
 
 
 def check_validation():
-    print("\n[3] validate_protocol() refuses what the ODTC cannot do")
+    print("\n[3] validate_protocol enforces the ODTC envelope")
 
     Protocol, Stage, Step = _plr.Protocol, _plr.Stage, _plr.Step
 
@@ -159,213 +170,135 @@ def check_validation():
         except ValueError:
             return True
 
-    too_cold = Protocol(stages=[Stage(steps=[Step(temperature=[3.9], hold_seconds=10)], repeats=1)])
-    too_hot = Protocol(stages=[Stage(steps=[Step(temperature=[99.1], hold_seconds=10)], repeats=1)])
-    fast = Protocol(stages=[Stage(steps=[Step(temperature=[60.0], hold_seconds=10, rate=5.0)], repeats=1)])
-    ok = Protocol(stages=[Stage(steps=[Step(temperature=[60.0], hold_seconds=10, rate=4.4)], repeats=1)])
+    too_cold = Protocol(
+        stages=[Stage(steps=[Step(temperature=[3.9], hold_seconds=10)], repeats=1)]
+    )
+    too_hot = Protocol(
+        stages=[Stage(steps=[Step(temperature=[99.1], hold_seconds=10)], repeats=1)]
+    )
+    too_fast = Protocol(
+        stages=[
+            Stage(
+                steps=[Step(temperature=[60.0], hold_seconds=10, rate=5.0)],
+                repeats=1,
+            )
+        ]
+    )
+    valid = Protocol(
+        stages=[
+            Stage(
+                steps=[Step(temperature=[60.0], hold_seconds=10, rate=4.4)],
+                repeats=1,
+            )
+        ]
+    )
 
-    check(f"rejects 3.9 C (below {BLOCK_MIN_C} C)", rejects(too_cold))
-    check(f"rejects 99.1 C (above {BLOCK_MAX_C} C)", rejects(too_hot))
-    check("rejects a 5.0 C/s ramp (above 4.4 C/s)", rejects(fast))
-    check("accepts 60 C at 4.4 C/s", not rejects(ok))
+    check(f"rejects temperatures below {BLOCK_MIN_C} C", rejects(too_cold))
+    check(f"rejects temperatures above {BLOCK_MAX_C} C", rejects(too_hot))
+    check("rejects ramps above 4.4 C/s", rejects(too_fast))
+    check("accepts the ODTC ramp limit", not rejects(valid))
 
     for name, program in sorted(PROGRAMS.items()):
         try:
             validate_protocol(program.protocol, program.lid_c)
-            check(f"{name}: every step is inside the ODTC's envelope", True)
+            check(f"{name}: inside ODTC envelope", True)
         except ValueError as exc:
-            check(f"{name}: every step is inside the ODTC's envelope", False, str(exc))
+            check(f"{name}: inside ODTC envelope", False, str(exc))
 
 
-def check_method_xml():
-    print("\n[4] generated method XML matches authorized WGS/WGA workflow source")
+def check_public_water_boundary():
+    print("\n[4] public generic entries are synthetic water-only profiles")
 
-    # ---- WGA, Table 1: 30 C 2.5 h, 65 C 3 min, 4 C infinite, lid 70 C
-    root, _ = method_xml_for(PROGRAMS["wga"])
+    profiles = [PROGRAMS[name] for name in GENERIC_PUBLIC_PROGRAM_NAMES]
+    check(
+        "all generic names are registered",
+        len(profiles) == len(GENERIC_PUBLIC_PROGRAM_NAMES),
+    )
+    check("all generic entries require water only", all(p.water_only for p in profiles))
+    check("no generic entry is marked biology", all(not p.is_biology for p in profiles))
+    check(
+        "all generic entries share one synthetic protocol",
+        len({id(p.protocol) for p in profiles}) == 1,
+    )
+    check(
+        "all generic entries carry a water-only source label",
+        all("water-only" in p.source for p in profiles),
+    )
+
+    root, _ = method_xml_for(profiles[0])
     method, steps = steps_of(root)
-    check("wga: 3 steps", len(steps) == 3, f"got {len(steps)}")
-    check("wga: 30 C for 9000 s (2.5 h)",
-          (text_of(steps[0], "PlateauTemperature"), text_of(steps[0], "PlateauTime")) == ("30", "9000"))
-    check("wga: 65 C for 180 s (3 min)",
-          (text_of(steps[1], "PlateauTemperature"), text_of(steps[1], "PlateauTime")) == ("65", "180"))
-    check("wga: 4 C, PlateauTime 0, held by PostHeating",
-          (text_of(steps[2], "PlateauTemperature"), text_of(steps[2], "PlateauTime")) == ("4", "0"))
-    check("wga: PostHeating true (this is what makes the 4 C hold infinite)",
-          text_of(method, "PostHeating") == "true")
-    check("wga: lid 70 C on every step (Table 1 caption)",
-          all(text_of(s, "LidTemp") == "70" for s in steps))
-    check("wga: StartLidTemperature 70", text_of(method, "StartLidTemperature") == "70")
-    check("wga: FluidQuantity 0 (12.0 uL reaction)", text_of(method, "FluidQuantity") == "0")
-    check("wga: no step loops", all(text_of(s, "LoopNumber") == "0" for s in steps))
+    observed = [
+        (text_of(step, "PlateauTemperature"), text_of(step, "PlateauTime"))
+        for step in steps
+    ]
+    check("synthetic profile has three generated steps", len(steps) == 3)
+    check(
+        "synthetic profile is 30 C/30 s, 40 C/30 s, 25 C hold",
+        observed == [("30", "30"), ("40", "30"), ("25", "0")],
+        f"got {observed}",
+    )
+    check("synthetic profile loops the first two steps once", text_of(steps[1], "GotoNumber") == "1")
+    check("synthetic profile performs two total passes", text_of(steps[1], "LoopNumber") == "1")
+    check(
+        "synthetic profile has no other loop",
+        text_of(steps[0], "LoopNumber") == "0"
+        and text_of(steps[2], "LoopNumber") == "0",
+    )
+    check("synthetic profile holds through PostHeating", text_of(method, "PostHeating") == "true")
+    check("synthetic profile uses a 45 C lid", all(text_of(s, "LidTemp") == "45" for s in steps))
+    check("synthetic 20 uL volume maps to FluidQuantity 0", text_of(method, "FluidQuantity") == "0")
 
-    # ---- DNAPREP, Table 4: 37 C 10 min, 4 C infinite, lid 105 C
-    root, _ = method_xml_for(PROGRAMS["dnaprep"])
-    method, steps = steps_of(root)
-    check("dnaprep: 2 steps", len(steps) == 2)
-    check("dnaprep: 37 C for 600 s",
-          (text_of(steps[0], "PlateauTemperature"), text_of(steps[0], "PlateauTime")) == ("37", "600"))
-    check("dnaprep: lid 105 C", all(text_of(s, "LidTemp") == "105" for s in steps))
 
-    # ---- FERAT, Table 5: 4 C 30 s, 30 C 5 min, 65 C 30 min, 4 C infinite
-    root, _ = method_xml_for(PROGRAMS["ferat"])
-    method, steps = steps_of(root)
-    check("ferat: 4 steps", len(steps) == 4)
-    check("ferat: 4 C 30 s, 30 C 300 s, 65 C 1800 s, 4 C 0 s",
-          [(text_of(s, "PlateauTemperature"), text_of(s, "PlateauTime")) for s in steps]
-          == [("4", "30"), ("30", "300"), ("65", "1800"), ("4", "0")])
+def check_tip_programs_preserved():
+    print("\n[5] TIP-seq registry entries remain biological methods")
+    check(
+        "all TIP-seq names are registered",
+        all(name in PROGRAMS for name in TIP_PROGRAM_NAMES),
+    )
+    for name in TIP_PROGRAM_NAMES:
+        program = PROGRAMS[name]
+        check(f"{name}: marked biology", program.is_biology)
+        check(f"{name}: not marked water-only", not program.water_only)
+        check(f"{name}: source identifies TIP-seq", "TIP-seq" in program.source)
 
-    # ---- Ligation, page 16 IV.7: 20 C 15 min, lid 50 C
-    root, _ = method_xml_for(PROGRAMS["ligation"])
-    method, steps = steps_of(root)
-    check("ligation: one step, 20 C for 900 s",
-          [(text_of(s, "PlateauTemperature"), text_of(s, "PlateauTime")) for s in steps]
-          == [("20", "900")])
-    check("ligation: lid 50 C (the backend cannot disable the lid)",
-          text_of(steps[0], "LidTemp") == "50")
 
-    # ---- LIB-AMP, Table 8: hot start, 8 cycles of 3, final extension, 4 C hold
-    root, _ = method_xml_for(PROGRAMS["libamp"])
-    method, steps = steps_of(root)
-    check("libamp: 6 steps (1 + 3 + 1 + 1)", len(steps) == 6, f"got {len(steps)}")
-    check("libamp: 98 C 45 s hot start",
-          (text_of(steps[0], "PlateauTemperature"), text_of(steps[0], "PlateauTime")) == ("98", "45"))
-    check("libamp: cycle body is 98/15, 60/30, 72/45",
-          [(text_of(s, "PlateauTemperature"), text_of(s, "PlateauTime")) for s in steps[1:4]]
-          == [("98", "15"), ("60", "30"), ("72", "45")])
-    check("libamp: 72 C 60 s final extension",
-          (text_of(steps[4], "PlateauTemperature"), text_of(steps[4], "PlateauTime")) == ("72", "60"))
-    check("libamp: 4 C hold via PostHeating",
-          (text_of(steps[5], "PlateauTemperature"), text_of(steps[5], "PlateauTime")) == ("4", "0"))
-    # The loop lives on the LAST step of the cycled stage and jumps back to its first.
-    # LoopNumber is repeats-1 = 7, because the first pass is not a loop iteration.
-    check("libamp: step 4 jumps back to step 2 (GotoNumber 2)",
-          text_of(steps[3], "GotoNumber") == "2", f"got {text_of(steps[3], 'GotoNumber')}")
-    check("libamp: LoopNumber 7 == 8 cycles - 1",
-          text_of(steps[3], "LoopNumber") == "7", f"got {text_of(steps[3], 'LoopNumber')}")
-    check("libamp: no other step loops",
-          all(text_of(s, "LoopNumber") == "0" for i, s in enumerate(steps) if i != 3))
-    check("libamp: FluidQuantity 1 (40.0 uL reaction, 30 <= v < 75)",
-          text_of(method, "FluidQuantity") == "1")
-    check("libamp: lid 105 C", all(text_of(s, "LidTemp") == "105" for s in steps))
-
-    # ---- Targeted PCR round 1: 98/30 x1, (98/10, 67/15, 72/15) x30, 72/60 x1, 10 C hold
-    root, _ = method_xml_for(PROGRAMS["targeted-pcr-round1"])
-    method, steps = steps_of(root)
-    check("targeted-pcr-round1: 6 steps (1 + 3 + 1 + 1)", len(steps) == 6, f"got {len(steps)}")
-    check("targeted-pcr-round1: 98 C 30 s initial denaturation",
-          (text_of(steps[0], "PlateauTemperature"), text_of(steps[0], "PlateauTime")) == ("98", "30"))
-    check("targeted-pcr-round1: cycle body is 98/10, 67/15, 72/15 (anneal 67 C default)",
-          [(text_of(s, "PlateauTemperature"), text_of(s, "PlateauTime")) for s in steps[1:4]]
-          == [("98", "10"), ("67", "15"), ("72", "15")])
-    check("targeted-pcr-round1: 72 C 60 s final extension",
-          (text_of(steps[4], "PlateauTemperature"), text_of(steps[4], "PlateauTime")) == ("72", "60"))
-    check("targeted-pcr-round1: 10 C hold (this protocol holds at 10 C, not 4 C)",
-          (text_of(steps[5], "PlateauTemperature"), text_of(steps[5], "PlateauTime")) == ("10", "0"))
-    check("targeted-pcr-round1: step 4 loops back to step 2 (GotoNumber 2)",
-          text_of(steps[3], "GotoNumber") == "2", f"got {text_of(steps[3], 'GotoNumber')}")
-    check("targeted-pcr-round1: LoopNumber 29 == 30 cycles - 1",
-          text_of(steps[3], "LoopNumber") == "29", f"got {text_of(steps[3], 'LoopNumber')}")
-    check("targeted-pcr-round1: FluidQuantity 0 (25 uL reaction)",
-          text_of(method, "FluidQuantity") == "0")
-    check("targeted-pcr-round1: lid 105 C (standard Q5 lid, not from the protocol)",
-          all(text_of(s, "LidTemp") == "105" for s in steps))
-
-    # ---- Targeted PCR round 2: same shape, default 8 cycles, 4 C hold
-    root, _ = method_xml_for(PROGRAMS["targeted-pcr-round2"])
-    method, steps = steps_of(root)
-    check("targeted-pcr-round2: 6 steps", len(steps) == 6, f"got {len(steps)}")
-    check("targeted-pcr-round2: LoopNumber 7 == 8 cycles - 1 (default)",
-          text_of(steps[3], "LoopNumber") == "7", f"got {text_of(steps[3], 'LoopNumber')}")
-    check("targeted-pcr-round2: 4 C hold",
-          (text_of(steps[5], "PlateauTemperature"), text_of(steps[5], "PlateauTime")) == ("4", "0"))
-
-    # ---- targeted PCR round 2 cycle count is settable, and the loop tracks it
-    from odtc_protocols import targeted_pcr_round2
-    backend = _plr.ExperimentalODTCBackend(ip="192.0.2.1", client_ip="192.0.2.2")
-    xml10, _ = backend._generate_method_xml(targeted_pcr_round2(num_cycles=10), 25.0, 25.0, 105.0, True,
-                                            method_name="OFFLINE_CHECK")
-    steps10 = ET.fromstring(xml10).find("Method").findall("Step")
-    check("targeted-pcr-round2(num_cycles=10): LoopNumber 9",
-          text_of(steps10[3], "LoopNumber") == "9", f"got {text_of(steps10[3], 'LoopNumber')}")
-
-    # ---- EM-seq shear: 3 steps, 30 min at 37 C default, 15 min at 65 C, 4 C hold, lid 75
-    root, _ = method_xml_for(PROGRAMS["emseq-shear"])
-    method, steps = steps_of(root)
-    check("emseq-shear: 3 steps", len(steps) == 3, f"got {len(steps)}")
-    check("emseq-shear: 37 C 1800 s (30 min default)",
-          (text_of(steps[0], "PlateauTemperature"), text_of(steps[0], "PlateauTime")) == ("37", "1800"))
-    check("emseq-shear: 65 C 900 s",
-          (text_of(steps[1], "PlateauTemperature"), text_of(steps[1], "PlateauTime")) == ("65", "900"))
-    check("emseq-shear: 4 C hold via PostHeating",
-          (text_of(steps[2], "PlateauTemperature"), text_of(steps[2], "PlateauTime")) == ("4", "0"))
-    check("emseq-shear: lid 75 C", all(text_of(s, "LidTemp") == "75" for s in steps))
-
-    # ---- EM-seq shear time is settable
-    from odtc_protocols import emseq_shear
-    backend = _plr.ExperimentalODTCBackend(ip="192.0.2.1", client_ip="192.0.2.2")
-    xml25, _ = backend._generate_method_xml(emseq_shear(shear_minutes=25), 44.0, 25.0, 75.0, True,
-                                            method_name="OFFLINE_CHECK")
-    steps25 = ET.fromstring(xml25).find("Method").findall("Step")
-    check("emseq-shear(shear_minutes=25): 37 C 1500 s",
-          text_of(steps25[0], "PlateauTime") == "1500", f"got {text_of(steps25[0], 'PlateauTime')}")
-
-    # ---- EM-seq PCR: 5 steps, 8-cycle loop, 65 C final extension, 4 C hold, lid 105
-    root, _ = method_xml_for(PROGRAMS["emseq-pcr"])
-    method, steps = steps_of(root)
-    check("emseq-pcr: 6 steps (1 + 3 + 1 + 1)", len(steps) == 6, f"got {len(steps)}")
-    check("emseq-pcr: 4 C hold via PostHeating",
-          (text_of(steps[5], "PlateauTemperature"), text_of(steps[5], "PlateauTime")) == ("4", "0"))
-    check("emseq-pcr: cycle body is 98/10, 62/30, 65/60",
-          [(text_of(s, "PlateauTemperature"), text_of(s, "PlateauTime")) for s in steps[1:4]]
-          == [("98", "10"), ("62", "30"), ("65", "60")])
-    check("emseq-pcr: step 4 loops back to step 2 (GotoNumber 2)",
-          text_of(steps[3], "GotoNumber") == "2", f"got {text_of(steps[3], 'GotoNumber')}")
-    check("emseq-pcr: LoopNumber 7 == 8 cycles - 1 (default)",
-          text_of(steps[3], "LoopNumber") == "7", f"got {text_of(steps[3], 'LoopNumber')}")
-    check("emseq-pcr: 65 C 300 s final extension (not 72 C)",
-          (text_of(steps[4], "PlateauTemperature"), text_of(steps[4], "PlateauTime")) == ("65", "300"))
-    check("emseq-pcr: FluidQuantity 2 (90.0 uL reaction)",
-          text_of(method, "FluidQuantity") == "2", f"got {text_of(method, 'FluidQuantity')}")
-    check("emseq-pcr: lid 105 C", all(text_of(s, "LidTemp") == "105" for s in steps))
-
-    # ---- EM-seq ligation: manual "lid off" resolved to lid 50, FluidQuantity 2 (82.5 uL)
-    root, _ = method_xml_for(PROGRAMS["emseq-ligation"])
-    method, steps = steps_of(root)
-    check("emseq-ligation: lid 50 C (manual says lid off; backend cannot disable)",
-          all(text_of(s, "LidTemp") == "50" for s in steps))
-    check("emseq-ligation: FluidQuantity 2 (82.5 uL reaction)",
-          text_of(method, "FluidQuantity") == "2", f"got {text_of(method, 'FluidQuantity')}")
-
-    # ---- step numbering is 1-based and contiguous across every program
+def check_method_xml_invariants():
+    print("\n[6] generated XML invariants")
     for name, program in sorted(PROGRAMS.items()):
         root, _ = method_xml_for(program)
-        _, steps = steps_of(root)
-        numbers = [text_of(s, "Number") for s in steps]
-        check(f"{name}: Number is 1..{len(steps)}",
-              numbers == [str(i + 1) for i in range(len(steps))], f"got {numbers}")
-
-
-def check_fluid_quantity_mirror():
-    print("\n[5] fluid_quantity_for() agrees with the backend's own bucketing")
-    for name, program in sorted(PROGRAMS.items()):
-        root, _ = method_xml_for(program)
-        emitted = text_of(root.find("Method"), "FluidQuantity")
+        method, steps = steps_of(root)
+        numbers = [text_of(step, "Number") for step in steps]
+        check(
+            f"{name}: step numbering is contiguous",
+            numbers == [str(index + 1) for index in range(len(steps))],
+            f"got {numbers}",
+        )
+        emitted = text_of(method, "FluidQuantity")
         mirrored = fluid_quantity_for(program.block_max_volume_ul)
-        check(f"{name}: {program.block_max_volume_ul} uL -> FluidQuantity {emitted}",
-              emitted == mirrored, f"backend said {emitted}, mirror said {mirrored}")
+        check(
+            f"{name}: fluid-volume bucket mirrors backend",
+            emitted == mirrored,
+            f"backend={emitted}, mirror={mirrored}",
+        )
 
-    check("boundary: 29.9 uL -> 0", fluid_quantity_for(29.9) == "0")
-    check("boundary: 30.0 uL -> 1", fluid_quantity_for(30.0) == "1")
-    check("boundary: 74.9 uL -> 1", fluid_quantity_for(74.9) == "1")
-    check("boundary: 75.0 uL -> 2", fluid_quantity_for(75.0) == "2")
+    check("boundary: 29.9 uL maps to 0", fluid_quantity_for(29.9) == "0")
+    check("boundary: 30.0 uL maps to 1", fluid_quantity_for(30.0) == "1")
+    check("boundary: 74.9 uL maps to 1", fluid_quantity_for(74.9) == "1")
+    check("boundary: 75.0 uL maps to 2", fluid_quantity_for(75.0) == "2")
 
 
 def check_descriptions_render():
-    print("\n[6] describe_protocol() renders every program")
+    print("\n[7] describe_protocol renders every program")
     for name, program in sorted(PROGRAMS.items()):
-        text = describe_protocol(program.protocol, program.block_max_volume_ul, program.lid_c)
-        check(f"{name}: renders and is ASCII",
-              bool(text) and all(ord(c) < 128 for c in text))
+        description = describe_protocol(
+            program.protocol,
+            program.block_max_volume_ul,
+            program.lid_c,
+        )
+        check(
+            f"{name}: description renders as ASCII",
+            bool(description) and all(ord(character) < 128 for character in description),
+        )
 
 
 def main():
@@ -373,8 +306,9 @@ def main():
     check_parser_bug()
     check_run_pcr_profile_is_unusable()
     check_validation()
-    check_method_xml()
-    check_fluid_quantity_mirror()
+    check_public_water_boundary()
+    check_tip_programs_preserved()
+    check_method_xml_invariants()
     check_descriptions_render()
 
     print(f"\n{_PASSED} passed, {_FAILED} failed")

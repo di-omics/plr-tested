@@ -1,19 +1,19 @@
 # Hamilton STAR / PyLabRobot
 
-Protocols and validation scripts for the Preventive Medicine Hamilton Microlab STAR controlled by PyLabRobot on `starpi`.
+Protocols and validation scripts for a Hamilton Microlab STAR controlled by PyLabRobot on `starpi`.
 
 ## Repository layout
 
 - `setup/` - STARPI setup, SSH, USB, and safe startup notes.
 - `protocols/whole_genome_seq/` - earlier whole-genome sequencing preparation protocol scripts.
-- `protocols/bio_validation0/pta_wga/` - current Bio Validation 0 PTA/WGA runners.
-- `protocols/bio_validation0/targeted_pcr/` - current Bio Validation 0 targeted PCR scripts.
+- `protocols/validation/wgs_prep/` - current sequencing validation WGS preparation runners.
+- `protocols/validation/pcr_enrichment/` - current PCR-enrichment hardware-validation scripts.
 - `tests/liquid_handling/` - generic STAR liquid-handling validation scripts.
 - `tests/whole_genome_seq/` - whole-genome sequencing preparation-specific focused tests.
 - `tests/movement/` - movement, lid, and iSWAP tests.
 - `archive/` - preserved debugging checkpoints.
 
-## Current active deck: Bio Validation 0 / rail35-48 layout
+## Current active deck: sequencing validation / rail35-48 layout
 
 ```text
 rail48 pos0 = p10 tips
@@ -31,48 +31,52 @@ rail35 pos3 = trough/reservoir
 
 ## Current whole-genome sequencing entrypoints
 
-- `protocols/bio_validation0/pta_wga/run_pta_wga_dry_e2e.sh`
+- `protocols/validation/wgs_prep/run_wgs_prep_dry_e2e.sh`
   - Dry observation only.
   - Uses `--return-tips`.
-  - Deck check -> lysis add -> manual lysis handoff -> reaction add -> thermocycler handoff.
+  - Deck check -> operator-defined stage 1 -> manual handoff -> operator-defined stage 2.
 
-- `protocols/bio_validation0/pta_wga/run_pta_wga_REAL_DISCARD_TIPS_e2e.sh`
+- `protocols/validation/wgs_prep/run_wgs_prep_REAL_DISCARD_TIPS_e2e.sh`
   - Real whole-genome sequencing runtime template.
   - Does not use `--return-tips`.
-  - Requires typed confirmations before real lysis and reaction additions.
+  - Requires typed confirmations before operator-defined wet additions.
 
-## Current targeted PCR entrypoints
+## Current PCR-enrichment entrypoints
 
-- `protocols/bio_validation0/targeted_pcr/01_targeted_pcr_round1_mastermix_col1.py`
+Wet-method volumes, ratios, sample assignments, and thermal settings are required
+operator parameters loaded from `PLR_METHOD_PARAMETERS_FILE`. Public runs and examples
+are synthetic and water-only.
+
+- `protocols/validation/pcr_enrichment/01_pcr_enrichment_round1_mastermix_col1.py`
   - Validated dry.
-  - p50 transfer: 22.5 uL x8 complete PCR1 master mix.
+  - p50 transfer volume is required from the operator profile.
   - Source rail35 pos1 col1 -> destination rail35 pos0 col1.
 
-- `protocols/bio_validation0/targeted_pcr/03_targeted_pcr_round2_mastermix_col1.py`
+- `protocols/validation/pcr_enrichment/03_pcr_enrichment_round2_mastermix_col1.py`
   - Validated dry.
-  - p50 transfer: 20.5 uL x8 common PCR2 master mix.
+  - p50 transfer volume is required from the operator profile.
   - Source rail35 pos1 col1 -> destination rail35 pos0 col1.
 
-- `protocols/bio_validation0/targeted_pcr/02_targeted_pcr_round1_cleanup_col1_dry_v2_p50low.py`
+- `protocols/validation/pcr_enrichment/02_pcr_enrichment_round1_cleanup_col1_dry_v2_p50low.py`
   - Validated first dry p50-low cleanup motion.
   - Intended next work: mock-liquid bead clean validation.
 
-## EM-seq entrypoint (UltraShear + EM-seq v2)
+## Methylation-sequencing entrypoint
 
-- `starlab_live/emseq/` - end-to-end NEBNext Enzymatic Methyl-seq v2 with UltraShear
-  fragmentation, single column, on the 35/48 deck. Reagent adds, ODTC thermal handoffs,
-  and three SPRI cleanups. See `starlab_live/emseq/README.md`.
-  - `run_emseq_odtc_1col_full_dry.py --print` shows the full 36-leg plan.
-  - `run_emseq_odtc_1col_full_dry.py --sim-lh` runs the liquid-handling legs on the
+- `starlab_live/methylation_seq/` - end-to-end methylation-sequencing workflow with fragmentation
+  in a single column on the 35/48 deck. Reagent adds, ODTC thermal handoffs, and three
+  SPRI cleanups. See `starlab_live/methylation_seq/README.md`.
+  - `run_methylation_seq_odtc_1col_full_dry.py --print` shows the full 36-leg plan.
+  - `run_methylation_seq_odtc_1col_full_dry.py --sim-lh` runs the liquid-handling legs on the
     chatterbox (no hardware).
-  - ODTC programs (`emseq-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
+  - ODTC programs (`methylation_seq-*`) live in `instrument-integrations/odtc/odtc_protocols.py`.
   - Status: written, simulation-first, not yet run on the instrument.
 
-## scRNA-seq entrypoint (NEBNext Single Cell / Low Input RNA, E6420)
+## scRNA-seq entrypoint
 
-- `starlab_live/scrnaseq/` - end-to-end NEBNext Single Cell/Low Input RNA library prep
-  (E6420 Section 1), single column, on the 35/48 deck. RT + template switching, cDNA
-  amplification, fragment/ligate/enrich, with a two-round cDNA cleanup. See
+- `starlab_live/scrnaseq/` - end-to-end scRNA-seq library-preparation motion
+  scaffold, single column, on the 35/48 deck. Biological stage identities and
+  optional second cleanup-stage settings come from operator-owned profiles. See
   `starlab_live/scrnaseq/README.md`.
   - `run_scrnaseq_odtc_1col_full_dry.py --print` shows the full 32-leg plan.
   - `run_scrnaseq_odtc_1col_full_dry.py --sim-lh` runs the liquid-handling legs on the
@@ -93,6 +97,6 @@ rail35 pos3 = trough/reservoir
 
 ## Current priorities
 
-1. Hamilton bead clean for targeted PCR.
-2. Embryo sample biovalidation: PTA, Viaflow/manual vs Hamilton.
-3. Embryo sample biovalidation: targeted PCR, Viaflow/manual vs Hamilton.
+1. Hamilton bead clean for PCR enrichment.
+2. Low-input sample assay validation: WGS preparation, Viaflow/manual vs Hamilton.
+3. Low-input sample assay validation: PCR enrichment, Viaflow/manual vs Hamilton.

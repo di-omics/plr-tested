@@ -1,3 +1,14 @@
+from pathlib import Path as _MethodPath
+import sys as _method_sys
+
+_METHOD_ROOT = next(
+    parent for parent in _MethodPath(__file__).resolve().parents
+    if parent.name == "hamilton-star"
+)
+if str(_METHOD_ROOT) not in _method_sys.path:
+    _method_sys.path.insert(0, str(_METHOD_ROOT))
+from operator_parameters import required_integer, required_nonnegative, required_positive
+
 import asyncio
 
 from pylabrobot.liquid_handling import LiquidHandler
@@ -30,9 +41,10 @@ TROUGH_ETOH1 = "A2"
 TROUGH_ETOH2 = "A3"
 TROUGH_ELUTION = "A4"
 
-VOL_BEADS = 30
-VOL_ETOH = 200
-VOL_ELUTION = 42
+VOL_BEADS = required_positive("wgs.cleanup.bead_volume_ul")
+VOL_ETOH = required_positive("wgs.cleanup.wash_add_ul")
+VOL_ELUTION = required_positive("wgs.cleanup.elution_ul")
+WASH_COUNT = required_integer("wgs.cleanup.wash_count", minimum=1, maximum=2)
 
 P1000_ASP_HEIGHT = [1.5] * 8
 P1000_ASP_OFFSETS = [Coordinate(0.0, 1.5, 0.0)] * 8
@@ -140,18 +152,19 @@ async def main():
                 trough[TROUGH_ETOH1][0],
                 targets,
                 VOL_ETOH,
-                f"{TROUGH_ETOH1} (80% EtOH wash 1)",
+                f"{TROUGH_ETOH1} (operator-approved wash 1)",
                 do_mix=False,
             )
 
-            await transfer_from_trough(
-                lh,
-                trough[TROUGH_ETOH2][0],
-                targets,
-                VOL_ETOH,
-                f"{TROUGH_ETOH2} (80% EtOH wash 2)",
-                do_mix=False,
-            )
+            if WASH_COUNT == 2:
+                await transfer_from_trough(
+                    lh,
+                    trough[TROUGH_ETOH2][0],
+                    targets,
+                    VOL_ETOH,
+                    f"{TROUGH_ETOH2} (operator-approved wash 2)",
+                    do_mix=False,
+                )
 
             # Elution: mix.
             await transfer_from_trough(

@@ -7,7 +7,7 @@ here is invented: every number comes from the block temperatures the device repo
 during the run.
 
 Usage:
-    python make_qc_report.py --log targeted_pcr_round1_2026-07-10.log --out odtc_qc_report.html
+    python make_qc_report.py --log pcr_enrichment_round1_2026-07-10.log --out odtc_qc_report.html
     python make_qc_report.py --log <log> --out <html> --font manrope.woff2
 
 The report renders in any browser on a system font stack. Pass --font a Manrope variable
@@ -155,7 +155,7 @@ def render(d, font_b64=None):
         ("Block hold", "PreMethod drove the block to 45.00&deg;C and held on target"),
         ("Cycling method", "pre-warm then ExecuteMethod, block to 50.00&deg;C, completes"),
         ("PlateauTime unit", "a 60&nbsp;s step held ~56 to 60&nbsp;s: durations are in seconds"),
-        ("Targeted PCR round 1", "30 cycles end to end, 36.6&nbsp;min, every setpoint held"),
+        ("PCR enrichment round 1", "30 cycles end to end, 36.6&nbsp;min, every setpoint held"),
     ]
     check_svg = "".join(
         f'<div class="pn"><div class="idx">{i:02d}</div><div class="rule"></div>'
@@ -169,7 +169,7 @@ def render(d, font_b64=None):
     peak, wall, oos, peaks = d["block_max"], d["wall_min"], d["oos_warnings"], d["denature_peaks"]
     prewarm_min, profile_min = d["prewarm_seconds"] / 60, d["profile_seconds"] / 60
 
-    return f"""<title>ODTC Targeted PCR round 1 &middot; Robustness QC</title>
+    return f"""<title>ODTC PCR enrichment round 1 &middot; Robustness QC</title>
 <style>
 {face}
 :root{{
@@ -307,14 +307,14 @@ td.mut{{color:var(--mut); font-weight:500; font-size:13px;}}
   </div>
   <div class="meta">
     <div>Instrument &nbsp; <b>Inheco ODTC</b></div>
-    <div>Method &nbsp; <b>targeted PCR1</b></div>
+    <div>Method &nbsp; <b>PCR enrichment1</b></div>
     <div>Run &nbsp; <b>2026&#8209;07&#8209;10</b></div>
   </div>
 
   <div class="hero">
     <div class="eyebrow">Thermocycler robustness &middot; on the block</div>
     <h1>Thirty cycles,<br><b>held to a quarter&#8209;degree.</b></h1>
-    <p class="sub">The targeted PCR1 program ran end to end on the Inheco ODTC,
+    <p class="sub">The PCR enrichment1 program ran end to end on the Inheco ODTC,
     driven through PyLabRobot from the lab Raspberry Pi. Across all 30 cycles the block
     tracked every setpoint to a <span class="em">mean {ov['mean_abs']:.2f}&deg;C</span>
     deviation. One caveat, logged not hidden: the 98&deg;C denaturation grazes the

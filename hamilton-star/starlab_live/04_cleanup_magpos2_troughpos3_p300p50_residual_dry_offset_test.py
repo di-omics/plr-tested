@@ -1,3 +1,14 @@
+from pathlib import Path as _MethodPath
+import sys as _method_sys
+
+_METHOD_ROOT = next(
+    parent for parent in _MethodPath(__file__).resolve().parents
+    if parent.name == "hamilton-star"
+)
+if str(_METHOD_ROOT) not in _method_sys.path:
+    _method_sys.path.insert(0, str(_METHOD_ROOT))
+from operator_parameters import required_integer, required_nonnegative, required_positive
+
 import argparse
 import asyncio
 from dataclasses import dataclass
@@ -14,7 +25,7 @@ from pylabrobot.resources import (
 )
 import pylabrobot.resources as plr_resources
 
-# whole-genome sequencing preparation Bio Validation 0
+# whole-genome sequencing preparation sequencing validation
 # 04 dry bead-clean / ethanol-wash offset test
 # TUNING V2:
 # - Mag-position p300 add/remove moved slightly left and lower after dry observation.
@@ -22,7 +33,7 @@ import pylabrobot.resources as plr_resources
 #
 #
 # Purpose:
-# - Dry/air-move test the cleanup geometry for the new Bio Validation 0 rail35 layout.
+# - Dry/air-move test the cleanup geometry for the new sequencing validation rail35 layout.
 # - Magnetic rack / cleanup plate site is rail35 pos2.
 # - 12-well reservoir/trough source is rail35 pos3.
 # - This is for visual offset tuning before real bead/ethanol liquid tests.
@@ -78,12 +89,13 @@ TROUGH_ETOH2 = "A3"
 TROUGH_ELUTION = "A4"
 TROUGH_WASTE = "A12"
 
-VOL_BEADS = 30.0
-VOL_SUPERNATANT_REMOVE = 70.0
-VOL_ETHANOL_ADD = 200.0
-VOL_ETHANOL_REMOVE = 180.0
-VOL_ELUTION = 42.0
-VOL_RESIDUAL_ETHANOL_REMOVE = 20.0
+VOL_BEADS = required_positive("wgs.cleanup.bead_volume_ul")
+VOL_SUPERNATANT_REMOVE = required_positive("wgs.cleanup.supernatant_remove_ul")
+VOL_ETHANOL_ADD = required_positive("wgs.cleanup.wash_add_ul")
+VOL_ETHANOL_REMOVE = required_positive("wgs.cleanup.wash_remove_ul")
+WASH_COUNT = required_integer("wgs.cleanup.wash_count", minimum=1, maximum=2)
+VOL_ELUTION = required_positive("wgs.cleanup.elution_ul")
+VOL_RESIDUAL_ETHANOL_REMOVE = required_positive("wgs.cleanup.residual_remove_ul")
 
 # Existing tuned p300 reservoir geometry.
 P300_TROUGH_ASP_HEIGHT = [10.0] * 8
@@ -217,7 +229,7 @@ def wells_for_column(plate, col: int):
 
 
 async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
-    print("Assigning Bio Validation 0 cleanup dry-offset deck: mag pos2 + trough pos3...")
+    print("Assigning sequencing validation cleanup dry-offset deck: mag pos2 + trough pos3...")
 
     tip_carrier = TIP_CAR_480_A00(name="tip_car_rail48")
     labware_carrier = PLT_CAR_L5AC_A00(name="labware_car_rail35")
@@ -409,20 +421,22 @@ async def run_action(lh: LiquidHandler, r: Dict[str, object], action: CleanupAct
 
 
 async def run_ethanol_cycle(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool):
-    print("\n=== ETHANOL CYCLE DRY: add/remove wash 1 + add/remove wash 2 ===")
+    print(f"\n=== OPERATOR-PROFILE WASH CYCLE DRY ({WASH_COUNT} CYCLE(S)) ===")
     await run_action(lh, r, ACTIONS["ethanol-add1-dry"], discard_tips, tip_col=1)
     await run_action(lh, r, ACTIONS["ethanol-remove1-dry"], discard_tips, tip_col=2 if discard_tips else 1)
-    await run_action(lh, r, ACTIONS["ethanol-add2-dry"], discard_tips, tip_col=3 if discard_tips else 1)
-    await run_action(lh, r, ACTIONS["ethanol-remove2-dry"], discard_tips, tip_col=4 if discard_tips else 1)
-    print("SUCCESS: ethanol cycle dry motion completed.")
+    if WASH_COUNT == 2:
+        await run_action(lh, r, ACTIONS["ethanol-add2-dry"], discard_tips, tip_col=3 if discard_tips else 1)
+        await run_action(lh, r, ACTIONS["ethanol-remove2-dry"], discard_tips, tip_col=4 if discard_tips else 1)
+    print("SUCCESS: operator-profile wash cycle dry motion completed.")
 
 
 async def run_ethanol_cycle_with_residual(lh: LiquidHandler, r: Dict[str, object], discard_tips: bool):
     print("\n=== ETHANOL CYCLE + P50 RESIDUAL REMOVE DRY ===")
     await run_action(lh, r, ACTIONS["ethanol-add1-dry"], discard_tips, tip_col=1)
     await run_action(lh, r, ACTIONS["ethanol-remove1-dry"], discard_tips, tip_col=2 if discard_tips else 1)
-    await run_action(lh, r, ACTIONS["ethanol-add2-dry"], discard_tips, tip_col=3 if discard_tips else 1)
-    await run_action(lh, r, ACTIONS["ethanol-remove2-dry"], discard_tips, tip_col=4 if discard_tips else 1)
+    if WASH_COUNT == 2:
+        await run_action(lh, r, ACTIONS["ethanol-add2-dry"], discard_tips, tip_col=3 if discard_tips else 1)
+        await run_action(lh, r, ACTIONS["ethanol-remove2-dry"], discard_tips, tip_col=4 if discard_tips else 1)
     # p50 tip rack column 1 by default for residual ethanol removal.
     await run_action(lh, r, ACTIONS["residual-ethanol-remove-dry"], discard_tips, tip_col=1)
     print("SUCCESS: ethanol cycle + residual p50 dry motion completed.")
@@ -436,11 +450,10 @@ async def run_all_dry(lh: LiquidHandler, r: Dict[str, object], discard_tips: boo
         "supernatant-remove-dry",
         "ethanol-add1-dry",
         "ethanol-remove1-dry",
-        "ethanol-add2-dry",
-        "ethanol-remove2-dry",
-        "residual-ethanol-remove-dry",
-        "elution-add-dry",
     ]
+    if WASH_COUNT == 2:
+        sequence.extend(["ethanol-add2-dry", "ethanol-remove2-dry"])
+    sequence.extend(["residual-ethanol-remove-dry", "elution-add-dry"])
     for mode in sequence:
         await run_action(lh, r, ACTIONS[mode], discard_tips, tip_col=tip_col)
         if discard_tips:
@@ -449,7 +462,7 @@ async def run_all_dry(lh: LiquidHandler, r: Dict[str, object], discard_tips: boo
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="Bio Validation 0 cleanup dry-offset test: mag pos2 + trough pos3.")
+    parser = argparse.ArgumentParser(description="sequencing validation cleanup dry-offset test: mag pos2 + trough pos3.")
     parser.add_argument(
         "--mode",
         choices=["deck"] + list(ACTIONS.keys()) + ["ethanol-cycle-dry", "ethanol-cycle-residual-dry", "all-dry"],
@@ -459,6 +472,8 @@ async def main():
     parser.add_argument("--tip-col", type=int, default=1)
     args = parser.parse_args()
 
+    if WASH_COUNT < 2 and args.mode in {"ethanol-add2-dry", "ethanol-remove2-dry"}:
+        raise SystemExit("the operator profile does not authorize a second wash")
     if args.tip_col < 1 or args.tip_col > 12:
         raise ValueError("--tip-col must be 1..12")
 

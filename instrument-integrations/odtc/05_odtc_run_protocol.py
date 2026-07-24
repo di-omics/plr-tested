@@ -1,16 +1,12 @@
 """
 05_odtc_run_protocol.py - run a thermal program on the ODTC. THIS HEATS.
 
-Programs come from odtc_protocols.py, where every value is transcribed from
-authorized WGS/WGA workflow source. Nothing thermal is defined in this file.
-
-    wga        Table 1, DNA Amplification, lid 70 C    ~2.6 h
-    dnaprep    Table 4, DNAPREP,           lid 105 C   ~10 min
-    ferat      Table 5, FERAT,             lid 105 C   ~40 min
-    ligation   page 16 IV.7, 20 C 15 min,  lid 50 C    ~15 min
-    libamp     Table 8, LIB-AMP,           lid 105 C   ~15 min
-    timecheck  hardware exercise, one 60 s step        ~1 min
-    selftest   hardware exercise, 3 cycles             ~2 min
+Programs come from odtc_protocols.py. Generic WGS, PCR-enrichment,
+methylation-sequencing, and scRNA-seq names are public synthetic water-only
+motion profiles. TIP-seq retains its cited assay programs. ``timecheck`` and
+``selftest`` are hardware exercises. Biological methods outside TIP-seq are
+loaded at run time from an operator-owned JSON file; their values are not stored
+in this public repository.
 
 How a program runs on this firmware
 -----------------------------------
@@ -25,9 +21,8 @@ ExecuteMethod's ResponseEvent fires on method *completion*, so the run blocks fo
 whole program, pre-warm included. Long runs go detached on the Pi, per this repo's
 safety rules, so a dropped SSH session cannot take the process down mid-program.
 
-`timecheck` settled the `PlateauTime` unit: a 60 s step held the block at temperature
-for about 56 to 60 seconds, so the durations in `odtc_protocols.py` are in seconds and
-scaled correctly. Re-run it after a firmware change before trusting the long holds.
+`timecheck` settled the `PlateauTime` unit: a 60 s step held the block at
+temperature for about 56 to 60 seconds. Re-run it after a firmware change.
 
 Not run_pcr_profile()
 ---------------------
@@ -38,7 +33,8 @@ Usage
 -----
     python 05_odtc_run_protocol.py --program timecheck --print-xml --dry
     python 05_odtc_run_protocol.py --program timecheck --ip $ODTC_IP --confirm i-am-watching
-    python 05_odtc_run_protocol.py --program libamp --ip $ODTC_IP --confirm i-am-watching
+    python 05_odtc_run_protocol.py --program wgs_prep --water-only --ip $ODTC_IP --confirm i-am-watching
+    python 05_odtc_run_protocol.py --operator-profile /secure/method.json --print-xml --dry
 """
 
 import argparse
@@ -60,7 +56,7 @@ from odtc_compat import (
     setup_odtc,
     validate_protocol,
 )
-from odtc_protocols import PROGRAMS, START_BLOCK_C_DEFAULT
+from odtc_protocols import PROGRAMS, START_BLOCK_C_DEFAULT, load_operator_program
 
 CONFIRM_PHRASE = "i-am-watching"
 
@@ -145,9 +141,17 @@ async def run_live(program, args):
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="Run an authorized WGS/WGA workflow source thermal program on the ODTC. This heats."
+        description="Run a registered ODTC program. Generic public profiles are water-only."
     )
-    parser.add_argument("--program", choices=sorted(PROGRAMS), required=True)
+    method_source = parser.add_mutually_exclusive_group(required=True)
+    method_source.add_argument("--program", choices=sorted(PROGRAMS))
+    method_source.add_argument(
+        "--operator-profile",
+        help=(
+            "operator-owned JSON method profile containing explicit temperatures, "
+            "durations, cycles, lid temperature, and reaction volume"
+        ),
+    )
     parser.add_argument("--ip", default=os.environ.get("ODTC_IP"))
     parser.add_argument("--client-ip", default=None)
     parser.add_argument("--dry", action="store_true",
@@ -156,14 +160,28 @@ async def main():
                         help="print the exact ODTC method XML that would be uploaded")
     parser.add_argument("--method-name", default=None,
                         help="name of the method on the device. Default: PLR_Protocol_<timestamp>")
+    parser.add_argument(
+        "--water-only",
+        action="store_true",
+        help="acknowledge that a public generic profile may contain water only",
+    )
     parser.add_argument("--confirm", default="")
     args = parser.parse_args()
 
-    program = PROGRAMS[args.program]
+    if args.operator_profile:
+        try:
+            program = load_operator_program(args.operator_profile)
+        except ValueError as exc:
+            parser.error(str(exc))
+    else:
+        program = PROGRAMS[args.program]
 
     print(f"program: {program.name}")
     print(f"source:  {program.source}")
-    if not program.is_biology:
+    if program.water_only:
+        print("         PUBLIC SYNTHETIC PROFILE - WATER ONLY.")
+        print("         Do not load samples or biological reagents.")
+    elif not program.is_biology:
         print("         NOT a biology protocol. Temperatures and times have no")
         print("         biological meaning; this exists to exercise the hardware.")
     print()
@@ -187,15 +205,16 @@ async def main():
 
     if not args.ip:
         parser.error("no ODTC address. Pass --ip, set ODTC_IP, or use --dry.")
+    if program.water_only and not args.water_only:
+        parser.error(
+            f"{program.name} is a public synthetic motion profile. "
+            "Unload samples/reagents and pass --water-only."
+        )
     if args.confirm != CONFIRM_PHRASE:
         parser.error(
             f"this heats the block and runs {program.name} to completion. "
             f"Pass --confirm {CONFIRM_PHRASE}"
         )
-    if program.name == "wga":
-        print("\n[note] wga is a ~2.6 hour program. Launch it detached on the Pi so a")
-        print("       dropped SSH session cannot kill it mid-run.")
-
     try:
         return await run_live(program, args)
     except asyncio.TimeoutError:

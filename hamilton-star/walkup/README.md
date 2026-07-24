@@ -1,6 +1,6 @@
 # walk-up runner
 
-A gated front end for validated targeted PCR + ODTC choreography, so a person who
+A gated front end for validated PCR enrichment + ODTC choreography, so a person who
 does not use a terminal can start a run. Local, stdlib only, no dependencies.
 
 ```bash
@@ -23,7 +23,7 @@ operator-approved build configuration is present.
 
 ## This is not a simulator
 
-`hamilton-star/targeted_pcr-run-app*.html` are visual sims: badged SIMULATION, cannot
+`hamilton-star/pcr_enrichment-run-app*.html` are visual sims: badged SIMULATION, cannot
 reach the Pi, safe to publish. **This one really drives the arm.** It binds to
 127.0.0.1 on purpose. Do not expose it, do not publish it, do not port-forward it.
 A published page must never be able to fire a robot.
@@ -37,7 +37,7 @@ driven 8 tips into the plate.
 
 The app does not ask you to check out a tag and remember to go back. It creates a
 detached git worktree parked on the pinned commit under
-`~/.cache/targeted-pcr-walkup/worktrees/<sha>/` and invokes `run_on_pi.sh` from inside
+`~/.cache/pcr-enrichment-walkup/worktrees/<sha>/` and invokes `run_on_pi.sh` from inside
 it. rsync therefore ships the tagged tree byte for byte. Your checkout is never
 touched, never consulted, and parallel sessions can keep landing on main mid-run
 without reaching the robot. The sha that ran is written to the history.
@@ -59,7 +59,7 @@ just JavaScript and a POST can be sent by hand, so the gate that counts is in
 | deck staged | all six physical items confirmed by a human who looked |
 | present | explicit affirmation, plus a 2 second hold on the button |
 
-The confirm token `--confirm RUN_TARGETED_PCR_ODTC_LIDDED_FULL` is **not** auto-filled
+The confirm token `--confirm RUN_PCR_ENRICHMENT_ODTC_LIDDED_FULL` is **not** auto-filled
 into a one-click button. It is released only once all four pass. The 2 second
 hold is what replaces typing it. The friction was re-expressed, not removed.
 
@@ -152,11 +152,11 @@ pin a full commit SHA and a tag that resolves to that exact SHA.
 {
   "builds": {
     "one-column": {
-      "tag": "targeted-pcr-validated-YYYY-MM-DD",
+      "tag": "pcr-enrichment-validated-YYYY-MM-DD",
       "sha": "<40-character-commit-sha>",
-      "script": "starlab_live/run_targeted_pcr_odtc_LIDDED_1col_full_dry.py",
-      "token": "RUN_TARGETED_PCR_ODTC_LIDDED_FULL",
-      "runner_match": "run_targeted_pcr_odtc_LIDDED_1col_full_dry",
+      "script": "starlab_live/run_pcr_enrichment_odtc_LIDDED_1col_full_dry.py",
+      "token": "RUN_PCR_ENRICHMENT_ODTC_LIDDED_FULL",
+      "runner_match": "run_pcr_enrichment_odtc_LIDDED_1col_full_dry",
       "label": "1 column - 8 reactions",
       "legs": 13,
       "record": "supervised hardware validation record",

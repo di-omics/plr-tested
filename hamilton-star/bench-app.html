@@ -112,23 +112,17 @@
 
   <p class="eyebrow">di-omics &middot; hamilton star &middot; starpi</p>
   <h1 class="title">Bench App</h1>
-  <p class="lede">The two liquid-handling workflows run on the STAR, as commands you can copy straight to the Pi. Single-cell PTA/WGA and targeted PCR, dry-validated on hardware.</p>
+  <p class="lede">Whole-genome sequencing and PCR-enrichment liquid-handling workflows for the STAR, dry-validated on hardware.</p>
 
   <div class="chips">
-    <span class="chip">PTA real: lysis + reaction done</span>
-    <span class="chip">Targeted PCR dry: full choreography</span>
+    <span class="chip">Whole-genome sequencing: hardware path validated</span>
+    <span class="chip">PCR enrichment: dry choreography validated</span>
     <span class="chip">plr-tested</span>
   </div>
 
   <section id="calcsec">
-    <div class="sh"><svg viewBox="0 0 64 64"><g class="ln"><path d="M26 14h12M28 14v14L18 46a4 4 0 0 0 4 6h20a4 4 0 0 0 4-6L36 28V14"/><path d="M23 40h18"/></g></svg><h2>Prep calculator</h2><span class="tag">samples &times; scale</span></div>
-    <div class="calc" style="margin-left:43px">
-      <div class="cf"><label>Number of samples</label><input id="nsamp" type="number" min="1" max="384" value="8"></div>
-      <div class="cf"><label>Miniaturization</label><div class="seg" id="miniseg"><button data-m="1" class="on">1x</button><button data-m="0.5">1/2x</button><button data-m="0.33333">1/3x</button></div></div>
-      <div class="cf"><label>Overage</label><div class="seg" id="ovseg"><button data-o="1.1">10%</button><button data-o="1.3" class="on">30%</button></div></div>
-    </div>
-    <div class="prep" id="prep" style="margin-left:43px"></div>
-    <p class="prep-note" style="margin-left:43px"><b id="sumline"></b>. Batch = per-reaction volume &times; samples &times; overage. Miniaturization scales the per-reaction volume; the robot script must dispense the matching per-well volume.</p>
+    <div class="sh"><svg viewBox="0 0 64 64"><g class="ln"><path d="M26 14h12M28 14v14L18 46a4 4 0 0 0 4 6h20a4 4 0 0 0 4-6L36 28V14"/><path d="M23 40h18"/></g></svg><h2>Operator method profile</h2><span class="tag">required at run time</span></div>
+    <p class="snote" style="margin-left:43px">Wet-method identities, volumes, ratios, and thermal settings are intentionally not embedded in this public page. Point <code>PLR_METHOD_PARAMETERS_FILE</code> to a locally approved profile before importing a wet workflow. Public examples are synthetic and water-only.</p>
   </section>
 
   <hr class="rule">
@@ -136,26 +130,26 @@
   <section>
     <div class="sh">
       <svg viewBox="0 0 64 64"><g class="ln"><path d="M32 51 L15 27 M32 51 L23 24 M32 51 L32 22 M32 51 L41 24 M32 51 L49 27"/><path d="M15 27 Q32 12 49 27"/><path d="M30 51 q2 3 4 0"/></g></svg>
-      <h2>PTA / WGA &mdash; single cell</h2>
+      <h2>Whole-genome sequencing &mdash; single cell</h2>
       <span class="tag">discard tips</span>
     </div>
-    <p class="snote">One reagent addition per run, then stop. The 20-minute lysis incubation happens between them &mdash; never back to back. Tips discarded (carryover is fatal to single-cell).</p>
+    <p class="snote">Run one operator-defined stage at a time and follow the locally approved handoff between stages. Tips are discarded for single-cell work.</p>
 
     <div class="card">
-      <div class="steprow"><span class="pill">STEP 1</span><b>Lysis Mix</b><span class="facts"><span class="fact" id="f-lysis">3.0 uL</span><span class="fact">src1 &rarr; dst1</span><span class="fact">p10 tip1</span></span></div>
-      <div class="cmd"><button class="copy" data-c="python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py --mode deck && python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py --mode lysis --source-col 1 --dest-col 1 --tip-col 1 --confirm RUN_WET_PTA_DISCARD">Copy</button><pre><span class="cm"># deck-check (no liquid) then lysis, discards tip:</span>
-python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">--mode</span> deck
-python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">\
-  --mode</span> lysis <span class="fl">--source-col</span> 1 <span class="fl">--dest-col</span> 1 <span class="fl">--tip-col</span> 1 <span class="fl">--confirm</span> RUN_WET_PTA_DISCARD</pre></div>
-      <div class="handoff"><span><span class="lab">operator, off robot</span><b>Seal &middot; spin &middot; HHS 20 min @ 1400 rpm &middot; spin &middot; ice.</b> Plate stays on rail35 pos0.</span></div>
-      <div class="steprow"><span class="pill">STEP 2</span><b>Reaction Mix</b><span class="facts"><span class="fact" id="f-rxn">6.0 uL</span><span class="fact">src3 &rarr; dst1</span><span class="fact">p10 tip2</span></span></div>
-      <div class="cmd"><button class="copy" data-c="python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py --mode reaction --source-col 3 --dest-col 1 --tip-col 2 --confirm RUN_WET_PTA_DISCARD">Copy</button><pre>python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">\
-  --mode</span> reaction <span class="fl">--source-col</span> 3 <span class="fl">--dest-col</span> 1 <span class="fl">--tip-col</span> 2 <span class="fl">--confirm</span> RUN_WET_PTA_DISCARD</pre></div>
+      <div class="steprow"><span class="pill">STEP 1</span><b>operator-defined stage 1</b><span class="facts"><span class="fact">profile volume</span><span class="fact">src1 &rarr; dst1</span><span class="fact">p10 tip1</span></span></div>
+      <div class="cmd"><button class="copy" data-c="python 00_wgs_prep_1col_lysis_reaction_dst1_DISCARD_WET.py --mode deck && python 00_wgs_prep_1col_lysis_reaction_dst1_DISCARD_WET.py --mode lysis --source-col 1 --dest-col 1 --tip-col 1 --confirm RUN_WET_WGS_PREP_DISCARD">Copy</button><pre><span class="cm"># deck-check (no liquid) then lysis, discards tip:</span>
+python 00_wgs_prep_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">--mode</span> deck
+python 00_wgs_prep_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">\
+  --mode</span> lysis <span class="fl">--source-col</span> 1 <span class="fl">--dest-col</span> 1 <span class="fl">--tip-col</span> 1 <span class="fl">--confirm</span> RUN_WET_WGS_PREP_DISCARD</pre></div>
+      <div class="handoff"><span><span class="lab">operator, off robot</span><b>Follow the approved local method.</b> Plate stays on rail35 pos0.</span></div>
+      <div class="steprow"><span class="pill">STEP 2</span><b>operator-defined stage 2</b><span class="facts"><span class="fact">profile volume</span><span class="fact">src3 &rarr; dst1</span><span class="fact">p10 tip2</span></span></div>
+      <div class="cmd"><button class="copy" data-c="python 00_wgs_prep_1col_lysis_reaction_dst1_DISCARD_WET.py --mode reaction --source-col 3 --dest-col 1 --tip-col 2 --confirm RUN_WET_WGS_PREP_DISCARD">Copy</button><pre>python 00_wgs_prep_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">\
+  --mode</span> reaction <span class="fl">--source-col</span> 3 <span class="fl">--dest-col</span> 1 <span class="fl">--tip-col</span> 2 <span class="fl">--confirm</span> RUN_WET_WGS_PREP_DISCARD</pre></div>
     </div>
 
     <div class="deck">
       <div class="rail"><div class="rlab">rail 48 &middot; tips</div><div class="slot"><span class="pz">pos0</span>p10 filter tips (fresh col1 lysis, col2 reaction)</div></div>
-      <div class="rail"><div class="rlab">rail 35 &middot; plates</div><div class="slot"><span class="pz">pos0 work</span><b>sample</b>, cells in 3 uL cell buffer, col1</div><div class="slot"><span class="pz">pos1 source</span>Lysis col1 &middot; Reaction col3</div></div>
+      <div class="rail"><div class="rlab">rail 35 &middot; plates</div><div class="slot"><span class="pz">pos0 work</span><b>sample</b>, operator-defined input, col1</div><div class="slot"><span class="pz">pos1 source</span>stage 1 col1 &middot; stage 2 col3</div></div>
       <div class="rail"><div class="rlab">rail 27 &middot; HHS</div><div class="slot"><span class="pz">pos2</span>heater-shaker (operator carries plate)</div></div>
     </div>
   </section>
@@ -163,15 +157,15 @@ python 00_pta_wga_1col_lysis_reaction_dst1_DISCARD_WET.py <span class="fl">\
   <section>
     <div class="sh">
       <svg viewBox="0 0 64 64"><g class="ln"><path d="M11 36 C16 28 21 44 26 36 C31 28 36 44 41 36 C45 30 49 38 53 34"/><path d="M15 42 C20 35 25 49 30 42 C35 35 40 49 45 42"/></g></svg>
-      <h2>Targeted PCR &mdash; full choreography</h2>
+      <h2>PCR enrichment &mdash; full choreography</h2>
       <span class="tag">dry, return tips</span>
     </div>
-    <p class="snote">One wrapper, five steps: PCR1 mastermix, iSWAP to the magnet, bead cleanup, iSWAP back, PCR2 mastermix. The mastermix steps address all 12 destination columns; the cleanup step treats column 1.</p>
+    <p class="snote">One wrapper, five hardware steps: stage 1 addition, iSWAP to the magnet, operator-defined cleanup, iSWAP back, and stage 2 addition.</p>
 
     <div class="card">
       <div class="steprow"><span class="pill">5 STEPS</span><b>Full built dry choreography</b><span class="facts"><span class="fact">p50</span><span class="fact">iSWAP &times;2</span><span class="fact">magnet clean</span></span></div>
-      <div class="cmd"><button class="copy" data-c="python 09_targeted_pcr_full_built_end_to_end_dry.py">Copy</button><pre><span class="cm"># 12-column MM -&gt; iSWAP to magnet -&gt; column-1 cleanup -&gt; iSWAP back -&gt; 12-column MM</span>
-python 09_targeted_pcr_full_built_end_to_end_dry.py</pre></div>
+      <div class="cmd"><button class="copy" data-c="python 09_pcr_enrichment_full_built_end_to_end_dry.py">Copy</button><pre><span class="cm"># 12-column MM -&gt; iSWAP to magnet -&gt; column-1 cleanup -&gt; iSWAP back -&gt; 12-column MM</span>
+python 09_pcr_enrichment_full_built_end_to_end_dry.py</pre></div>
       <div class="handoff"><span><span class="lab">baked tuning</span>magnet return uses <b>pickup +14.0 mm, drop +8.5 mm</b>. Do not pass <b>--pause-after-*</b> when detached (they use input() and will crash).</span></div>
     </div>
 
@@ -209,7 +203,7 @@ setsid env PYTHONUNBUFFERED=1 python &lt;script&gt; <span class="fl">\
       <div class="mini"><h3>One driver on the STAR</h3><p>Gate on the STAR USB claim (vendor 08af), not a generic python check &mdash; the ODTC runs on the network at the same time.</p></div>
       <div class="mini"><h3>Never unattended</h3><p>A person watches the deck, hand near the E-stop, for every real run. Short ones included.</p></div>
       <div class="mini"><h3>Deck-check first</h3><p>Run --mode deck (no motion) before liquid. After a failure, reconcile the plate before rerunning.</p></div>
-      <div class="mini"><h3>Discard, don't return</h3><p>Real single-cell PTA discards every tip. --return-tips is water and dry rehearsals only.</p></div>
+      <div class="mini"><h3>Discard, don't return</h3><p>Real single-cell WGS preparation discards every tip. --return-tips is water and dry rehearsals only.</p></div>
     </div>
   </section>
 
@@ -219,11 +213,11 @@ setsid env PYTHONUNBUFFERED=1 python &lt;script&gt; <span class="fl">\
       <h2>Validated on the instrument</h2>
     </div>
     <table class="led">
-      <tr><td>PTA real: lysis 3.0 uL + reaction 6.0 uL, discard tips</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>PTA dry round trip, iSWAP to HHS and back, +5.0 mm pickup</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>PTA full plate + 3-loop stress, 6/6 iSWAP transfers clean</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>Targeted PCR full dry choreography, 12-column mastermix and column-1 magnet clean</td><td><span class="ok">passed</span></td></tr>
-      <tr><td>Targeted PCR / PTA on real reagents at full plate</td><td><span class="nx">next</span></td></tr>
+      <tr><td>Whole-genome sequencing stage transfers with discard tips</td><td><span class="ok">passed</span></td></tr>
+      <tr><td>Whole-genome sequencing dry round trip, iSWAP to HHS and back, +5.0 mm pickup</td><td><span class="ok">passed</span></td></tr>
+      <tr><td>Whole-genome sequencing full plate + 3-loop stress, 6/6 iSWAP transfers clean</td><td><span class="ok">passed</span></td></tr>
+      <tr><td>PCR-enrichment full dry choreography and column-1 magnet motion</td><td><span class="ok">passed</span></td></tr>
+      <tr><td>Operator-approved wet methods at full plate</td><td><span class="nx">next</span></td></tr>
     </table>
   </section>
 
@@ -244,24 +238,4 @@ setsid env PYTHONUNBUFFERED=1 python &lt;script&gt; <span class="fl">\
   });
   function fb(t){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(a);}
 
-  var RX={'PTA / WGA':[{n:'Lysis Mix',tip:'p10',c:[['L1 reagent',1.68],['L2 reagent',0.12],['L3 reagent',1.20]]},{n:'Reaction Mix',tip:'p10',c:[['R1 reagent',5.40],['R2 reagent',0.60]]}],'Targeted PCR':[{n:'PCR1 complete MM',tip:'p50',c:[['2X Q5U master mix',12.50],['F primer 10uM',0.625],['R primer 10uM',0.625],['H2O',8.75]]},{n:'PCR2 common MM',tip:'p50',c:[['2X Q5 master mix',12.50],['H2O',8.00]]}]};
-  var st={n:8,m:1,o:1.3};
-  function fmt(x){return x>=100?x.toFixed(0):x.toFixed(x<10?2:1);}
-  function setV(id,v){var e=document.getElementById(id);if(e)e.textContent=fmt(v)+' uL';}
-  function render(){
-    var host=document.getElementById('prep');host.innerHTML='';
-    Object.keys(RX).forEach(function(g){RX[g].forEach(function(r){
-      var rows='',per=0;
-      r.c.forEach(function(cp){per+=cp[1];rows+='<tr><td>'+cp[0]+'</td><td>'+fmt(cp[1]*st.m)+'</td><td>'+fmt(cp[1]*st.m*st.n*st.o)+'</td></tr>';});
-      rows+='<tr class="tot"><td>total</td><td>'+fmt(per*st.m)+'</td><td>'+fmt(per*st.m*st.n*st.o)+'</td></tr>';
-      host.insertAdjacentHTML('beforeend','<div class="rx"><div class="rx-h"><b>'+r.n+'</b><span class="t">'+g+' &middot; '+r.tip+'</span></div><table class="rxt"><thead><tr><th>component</th><th>uL/rxn</th><th>need ('+st.n+')</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
-    });});
-    setV('f-lysis',3.0*st.m);setV('f-rxn',6.0*st.m);
-    var ml=st.m===1?'1x':(st.m===0.5?'1/2x':'1/3x');
-    document.getElementById('sumline').textContent=st.n+' samples at '+ml+', '+Math.round((st.o-1)*100)+'% overage';
-  }
-  document.getElementById('nsamp').addEventListener('input',function(){st.n=Math.max(1,parseInt(this.value||'1',10));render();});
-  function seg(id,k,a){document.querySelectorAll('#'+id+' button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#'+id+' button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');st[k]=parseFloat(b.getAttribute(a));render();});});}
-  seg('miniseg','m','data-m');seg('ovseg','o','data-o');
-  render();
 </script>

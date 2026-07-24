@@ -1,0 +1,13 @@
+# Synthetic water-only demonstration rules. Biological acceptance rules belong
+# in an external operator method profile.
+lh_cv_max_percent: 5.0
+sample_rules:
+  - metric: synthetic_qc_signal
+    label: synthetic QC signal
+    minimum: 0.5
+    unit: a.u.
+blank_rules:
+  - metric: synthetic_blank_signal
+    label: synthetic blank signal
+    maximum: 0.5
+    unit: a.u.

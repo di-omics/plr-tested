@@ -1,0 +1,8 @@
+{
+  "simulated": true,
+  "liquid_handling": {"cv_percent": {"20": 2.5}},
+  "samples": {
+    "water_01": {"synthetic_qc_signal": 1.0},
+    "water_blank": {"synthetic_blank_signal": 0.0}
+  }
+}

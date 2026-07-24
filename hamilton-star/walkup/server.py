@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Walk-up runner for the targeted PCR + ODTC choreography. Local, stdlib only.
+Walk-up runner for the PCR enrichment + ODTC choreography. Local, stdlib only.
 
 WHAT THIS IS
   A gated front end for run_on_pi.sh, so a non-programmer can start a validated
@@ -10,14 +10,14 @@ WHAT THIS IS
   into gates that cannot be skipped.
 
 WHAT THIS IS NOT
-  Not a simulator. The sibling targeted-PCR run-app HTML files are
+  Not a simulator. The sibling PCR-enrichment run-app HTML files are
   visual sims badged SIMULATION and cannot reach the Pi. This one really drives
   the arm. Do not publish it, do not expose it off localhost, and do not let the
   SIMULATION habit carry over: when this says RUNNING, metal is moving.
 
 THE FRICTION IS THE FEATURE
   Every gate below exists because something went wrong once. The confirm token
-  --confirm RUN_TARGETED_PCR_ODTC_LIDDED_FULL is not auto-filled into a Run button.
+  --confirm RUN_PCR_ENRICHMENT_ODTC_LIDDED_FULL is not auto-filled into a Run button.
   It is released only after four gates pass:
     0. SAME ORIGIN  the POST came from this page, not some other browser tab.
     1. SHA PIN      the validated commit, materialized to its own worktree.
@@ -90,7 +90,7 @@ PI = os.environ.get("PI", "starpi")
 # noise in anyone's git status, and so a stray `git clean` cannot eat them.
 WT_ROOT = Path(os.environ.get(
     "WALKUP_WORKTREES",
-    str(Path.home() / ".cache" / "targeted-pcr-walkup" / "worktrees")))
+    str(Path.home() / ".cache" / "pcr-enrichment-walkup" / "worktrees")))
 BUILDS_FILE = Path(os.environ.get(
     "WALKUP_BUILDS_FILE",
     str(Path.home() / ".config" / "plr-walkup" / "builds.json"))).expanduser()
@@ -579,7 +579,7 @@ class H(BaseHTTPRequestHandler):
         # which is a CORS *simple request*: no preflight, the browser sends it,
         # and gates 3 and 4 happily read `deck` and `present` out of a body that
         # no human ever filled in. The arm starts with nobody at the E-stop.
-        # Worst of all, the sibling targeted-PCR simulator pages are documented as
+        # Worst of all, the sibling PCR-enrichment simulator pages are documented as
         # safe to publish: publish one, open it while this is running, and it
         # fires the real STAR. Found by adversarial review 2026-07-16.
         #

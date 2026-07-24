@@ -12,7 +12,7 @@
 #
 # Examples:
 #   ./run_on_pi.sh starlab_live/test_star_no_autoload.py
-#   ./run_on_pi.sh starlab_live/01_targeted_pcr_round1_mastermix_col1.py --mode deck
+#   ./run_on_pi.sh starlab_live/01_pcr_enrichment_round1_mastermix_col1.py --mode deck
 #
 # Safety: these scripts move real hardware.
 #   - Never run unattended. A person watches the deck, hand near the E-stop.
@@ -49,7 +49,7 @@ rsync -a --delete \
 
 # The ODTC thermal programs live in the sibling instrument-integrations/ tree, which this
 # script does not otherwise sync. Choreography that drives the cycler (see
-# starlab_live/run_targeted_pcr_odtc_LIDDED_1col_full_thermocycle.py) needs them ON the Pi, so
+# starlab_live/run_pcr_enrichment_odtc_LIDDED_1col_full_thermocycle.py) needs them ON the Pi, so
 # put them alongside as odtc_lib/. Additive: scripts that do not import them are unaffected,
 # and the sync above excludes odtc_lib so --delete does not fight this.
 ODTC_SRC="$(cd "$HERE/.." && pwd)/instrument-integrations/odtc"
