@@ -1,6 +1,6 @@
 """Settle the sign of STARBackend mix_position_from_liquid_surface on real hardware, safely.
 
-PATCH 2026-07-16: created after a pre-flight audit blocked the targeted PCR firmware-mix build.
+PATCH 2026-07-16: created after a pre-flight audit blocked the PCR enrichment firmware-mix build.
 
 WHY THIS EXISTS
   PyLabRobot 0.2.1 ships two contradictory docstrings for the SAME parameter:
@@ -12,7 +12,7 @@ WHY THIS EXISTS
   disabled (mc00 / mp000), so the source cannot settle this. Only the machine can.
 
 WHY IT MATTERS
-  01_targeted_pcr_round1_mastermix_col1.py, 03_targeted_pcr_round2_mastermix_col1.py and the V2
+  01_pcr_enrichment_round1_mastermix_col1.py, 03_pcr_enrichment_round2_mastermix_col1.py and the V2
   single-home runner all pass:
       liquid_height = 1.5, mix_position_from_liquid_surface = 2.0
   lld_mode is never passed and defaults to LLDMode.OFF, so PLR models the surface as
@@ -47,16 +47,16 @@ SAFE BY CONSTRUCTION
 HOW TO READ THE RESULT
   Watch the tips during the three mix cycles:
     tips sit DOWN INSIDE the well, roughly half its depth (~5 mm off the bottom)
-        -> DEPTH. Measured DOWNWARD from the surface. The targeted PCR mix Z is
+        -> DEPTH. Measured DOWNWARD from the surface. The PCR enrichment mix Z is
            well_bottom - 0.5 mm and WOULD HAVE CRUSHED all eight tips.
     tips sit UP ABOVE the plate rim (~15 mm off the bottom, clearly in open air)
-        -> RAISE. Measured UPWARD from the surface. The targeted PCR mix would have
+        -> RAISE. Measured UPWARD from the surface. The PCR enrichment mix would have
            cycled air above the meniscus and mixed nothing.
 
-  Either way, report the observation and STOP. Do not re-run the targeted PCR master mix
+  Either way, report the observation and STOP. Do not re-run the PCR enrichment master mix
   build until MIX_POSITION_FROM_SURFACE is corrected in all three call sites:
-    01_targeted_pcr_round1_mastermix_col1.py, 03_targeted_pcr_round2_mastermix_col1.py,
-    run_targeted_pcr_odtc_LIDDED_1col_full_v2_singlehome_dry.py
+    01_pcr_enrichment_round1_mastermix_col1.py, 03_pcr_enrichment_round2_mastermix_col1.py,
+    run_pcr_enrichment_odtc_LIDDED_1col_full_v2_singlehome_dry.py
 
 NOTE ON --mode deck
   lh.setup() runs BEFORE the mode check, so --mode deck DOES home the channels and the
@@ -83,7 +83,7 @@ from pylabrobot.resources import (
 from pylabrobot.resources.hamilton import STARDeck, TIP_CAR_480_A00
 import pylabrobot.resources as plr_resources
 
-# Deck geometry, identical to the validated targeted PCR master mix scripts.
+# Deck geometry, identical to the validated PCR enrichment master mix scripts.
 TIP_RAIL = 48
 LABWARE_RAIL = 35
 P50_TIP_POS = 1
@@ -109,7 +109,7 @@ TARGET_COL = 12
 # Reused verbatim from the validated mastermix geometry.
 P50_WORK_DSP_OFFSETS = [Coordinate(-0.68, 3.22, 0.0)] * 8
 
-# Reused verbatim from 01_targeted_pcr_round1_mastermix_col1.py:85. Factory names vary by PLR
+# Reused verbatim from 01_pcr_enrichment_round1_mastermix_col1.py:85. Factory names vary by PLR
 # build, so probe rather than hardcode.
 P50_TIP_FACTORY_CANDIDATES = ["hamilton_96_tiprack_50uL_filter", "hamilton_96_tiprack_50ul_filter"]
 

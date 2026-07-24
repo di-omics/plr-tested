@@ -15,12 +15,12 @@ says otherwise.
 
 - [`hamilton-star/`](hamilton-star) - protocols and validation scripts for a
   Hamilton Microlab STAR driven by PyLabRobot from a dedicated Raspberry Pi.
-  whole-genome amplification/WGA and targeted PCR liquid handling, iSWAP plate moves, and
+  Whole-genome sequencing and PCR enrichment liquid handling, iSWAP plate moves, and
   heater-shaker handoffs.
 - [`instrument-integrations/`](instrument-integrations) - the instruments the
   STAR hands plates to, driven from the same Pi. The Inheco ODTC (On Deck Thermal
-  Cycler) over SiLA/SOAP: the whole-genome sequencing thermal programs as PyLabRobot protocols,
-  and a ladder of scripts from reachability to a PCR run, run on the instrument.
+  Cycler) over SiLA/SOAP: operator-supplied thermal methods and public synthetic
+  water-only hardware profiles, plus a ladder of instrument checks.
   And the Tecan Infinite plate reader over USB: the library-QC endpoint, a plan and
   a script ladder from a USB probe to a Rhodamine-B fluorescence read, not yet run.
 - [`packages/`](packages) - self-contained, QC-gated assay products built on the
@@ -30,8 +30,8 @@ says otherwise.
   - [`immunoassay-automation/`](packages/immunoassay-automation) - ELISpot and plate-
     immunoassay automation across a BioTek EL406 washer, an Opentrons Flex, and a spot
     imager. See its [WALKTHROUGH.md](packages/immunoassay-automation/WALKTHROUGH.md).
-  - [`gene-edit/`](packages/gene-edit) - QC-gated PTA + targeted PCR for confirming
-    gene edits.
+  - [`assay-validation/`](packages/assay-validation) - QC-gated whole-genome
+    sequencing and PCR enrichment hardware validation.
   - [`iswap-move/`](packages/iswap-move) - STAR iSWAP plate-lid moves.
 
 ## What "tested" means here
@@ -48,10 +48,10 @@ Validated on the instrument:
 | What | Result |
 |---|---|
 | STAR bring-up, channels and iSWAP homed, autoload skipped | passed |
-| whole-genome sequencing single column, dry: lysis 3.0 uL source col1 to dest col1; reaction 6.0 uL source col3 to dest col1 | passed |
+| whole-genome sequencing single-column stage-transfer geometry, dry | passed |
 | iSWAP rail35 pos0 to HHS rail27 pos2, pickup +5.0 mm, drop x12.0 / y54.5 / z17.0 | passed |
 | iSWAP return, HHS rail27 pos2 to rail35 pos0, pickup x12.0 / y54.5 / z9.0, drop z8.5 | passed |
-| whole-genome sequencing full plate, dry: lysis and reaction, source col1 to dest cols 1-12, then iSWAP to HHS | passed |
+| whole-genome sequencing full plate, dry: two operator-defined stage paths, then iSWAP to HHS | passed |
 | Repeatability: 3 consecutive single-column round trips, 6 of 6 iSWAP transfers clean, pickup landed at z 0.950 every time | passed |
 | whole-genome sequencing wet single addition, discard tips | written, not yet run |
 
@@ -59,14 +59,14 @@ Inheco ODTC:
 
 | What | Result |
 |---|---|
-| ODTC method XML matches authorized WGS/WGA workflow source Tables 1, 4, 5, 8, asserted against the real PyLabRobot backend | passed, off-instrument |
+| ODTC method XML generation and safety limits asserted against the real PyLabRobot backend | passed, off-instrument |
 | `odtc_offline_checks.py`, 72 checks, on the Pi under PyLabRobot 0.2.1 | passed, off-instrument |
 | Bring-up, block hold to 45.00 C, full cycling profile to 50.00 C, `PlateauTime` = seconds | passed on the instrument |
-| `targeted-pcr-round1`: 30 real PCR cycles, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument (98 C denaturation grazes the 99 C ceiling; see odtc README) |
-| Full lidded targeted PCR choreography with the ODTC **called live** at both thermal legs: 13 motion legs, 22 SUCCESS, 0 failures, deck self-returned | passed on the instrument |
+| Supervised PCR-enrichment cycling hardware exercise | passed on the instrument; operator method values are not published |
+| Full lidded PCR-enrichment choreography with the ODTC **called live** at both thermal legs: 13 motion legs, 22 SUCCESS, 0 failures, deck self-returned | passed on the instrument |
 | ODTC Reset + Initialize with a plate and lid seated in the nest | benign, proven on the instrument |
 | The two thermal programs run **inside** the choreography (`--thermocycle`) | written, reached STEP 2t clean, stopped in pre-warm on purpose; not yet run to completion |
-| An authorized WGS/WGA workflow source program run at real temperatures; ODTC door move | written, not yet run |
+| An operator-approved whole-genome sequencing method run at real temperatures; ODTC door move | written, not yet run |
 | STAR iSWAP handoff into the ODTC | forward and return geometry tuned on hardware; passed in the full lidded choreography |
 
 Tecan Infinite 200 PRO (first contact 2026-07-11 read-only; stage first moved 2026-07-16
@@ -82,11 +82,12 @@ from `starpi2`, the second Pi, which is where the reader now lives):
 | Rhodamine-B fluorescence ladder read | written, not yet run |
 | STAR iSWAP handoff into the reader tray | not started |
 
-Reagent volumes are sourced from an authorized WGS/WGA workflow guide: Lysis Mix
-3.0 uL per reaction and Reaction Mix 6.0 uL per reaction. The 7.0 uL p10
-blowout is air, not liquid. It exists to expel the
-full volume onto the well wall and does not change what is delivered. The ODTC
-thermal programs come from the same document, Tables 1, 4, 5, and 8.
+Wet-method identities, liquid volumes, ratios, incubation settings, and thermal
+profiles are not stored in this public repository. Operators provide an approved
+local profile through `PLR_METHOD_PARAMETERS_FILE`; imports fail closed when it is
+missing. Public examples are synthetic and water-only. Hardware geometry, motion
+offsets, and calibrated air blowouts remain versioned because they describe the
+instrument rather than a biological recipe.
 
 ## Running
 
@@ -113,7 +114,7 @@ anything.
 - Never run unattended. A person watches the instrument with a hand near the
   E-stop.
 - Run `--mode deck` first. It assigns the deck and prints geometry, no motion.
-- Single-cell whole-genome amplification discards tips and never returns them. Carryover is fatal to
+- Single-cell whole-genome sequencing discards tips and never returns them. Carryover is fatal to
   single-cell work. `--return-tips` is for water and dry rehearsals only.
 - Only one process may drive an instrument at a time. Two clients racing for the
   STAR's USB interface produce `USBError: [Errno 16] Resource busy`. On the ODTC

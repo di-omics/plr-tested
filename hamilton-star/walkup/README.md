@@ -1,6 +1,6 @@
-# Targeted PCR walk-up runner
+# PCR enrichment walk-up runner
 
-Local, gated browser control for a validated targeted PCR and ODTC choreography.
+Local, gated browser control for a validated PCR enrichment and ODTC choreography.
 This server drives the real Hamilton STAR through `run_on_pi.sh`; it is not a
 simulation and must remain bound to localhost.
 
@@ -31,12 +31,12 @@ The registry uses this schema:
 {
   "schema_version": 1,
   "builds": {
-    "targeted-pcr-one-column": {
+    "pcr-enrichment-one-column": {
       "tag": "replace-with-qualified-local-tag",
       "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "script": "starlab_live/run_targeted_pcr_odtc_LIDDED_1col_full_dry.py",
-      "token": "RUN_TARGETED_PCR_ODTC_LIDDED_FULL",
-      "runner_match": "run_targeted_pcr_odtc_LIDDED_1col_full_dry",
+      "script": "starlab_live/run_pcr_enrichment_odtc_LIDDED_1col_full_dry.py",
+      "token": "RUN_PCR_ENRICHMENT_ODTC_LIDDED_FULL",
+      "runner_match": "run_pcr_enrichment_odtc_LIDDED_1col_full_dry",
       "label": "1 column - 8 reactions",
       "legs": 13,
       "record": "qualified local build",
@@ -94,7 +94,7 @@ immediately, then follow the appropriate recovery procedure.
 | Variable | Default | Purpose |
 |---|---|---|
 | `WALKUP_BUILDS_FILE` | `~/.config/plr-tested/walkup-builds.json` | external validated-build registry |
-| `WALKUP_WORKTREES` | `~/.cache/targeted-pcr-walkup/worktrees` | detached pinned worktrees |
+| `WALKUP_WORKTREES` | `~/.cache/pcr-enrichment-walkup/worktrees` | detached pinned worktrees |
 | `WALKUP_PORT` | `8765` | localhost HTTP port |
 | `PI` | `starpi` | robot-control host |
 

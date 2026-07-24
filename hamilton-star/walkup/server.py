@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local, gated walk-up runner for targeted PCR and ODTC choreography.
+"""Local, gated walk-up runner for PCR enrichment and ODTC choreography.
 
 The server binds to localhost and drives real hardware through ``run_on_pi.sh``.
 Builds are supplied only through an external local JSON file. Missing, empty, or
@@ -41,7 +41,7 @@ PI = os.environ.get("PI", "starpi")
 # noise in anyone's git status, and so a stray `git clean` cannot eat them.
 WT_ROOT = Path(os.environ.get(
     "WALKUP_WORKTREES",
-    str(Path.home() / ".cache" / "targeted-pcr-walkup" / "worktrees")))
+    str(Path.home() / ".cache" / "pcr-enrichment-walkup" / "worktrees")))
 BUILDS_FILE = Path(os.environ.get(
     "WALKUP_BUILDS_FILE",
     str(Path.home() / ".config" / "plr-tested" / "walkup-builds.json")))
@@ -564,7 +564,7 @@ class H(BaseHTTPRequestHandler):
         # which is a CORS *simple request*: no preflight, the browser sends it,
         # and gates 3 and 4 happily read `deck` and `present` out of a body that
         # no human ever filled in. The arm starts with nobody at the E-stop.
-        # Worst of all, the sibling targeted_pcr-run-app*.html sims are documented as
+        # Worst of all, the sibling pcr_enrichment-run-app*.html sims are documented as
         # safe to publish: publish one, open it while this is running, and it
         # fires the real STAR. Found by adversarial review 2026-07-16.
         #

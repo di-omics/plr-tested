@@ -33,8 +33,8 @@ import pylabrobot.resources as plr_resources
 #   post-tag       reactivation-final   2.0X binding buffer 16 uL H2O, off beads Bulk TIP-seq (DNA)
 #   post-pcr       sizeselect           0.85X fresh beads    ~21 uL, > 200 bp     Bulk TIP-seq (library)
 #
-# This is the emseq/scrnaseq cleanup script generalized: same mag+trough geometry (reused VERBATIM
-# from the hardware-confirmed targeted PCR cleanup), same standard leg set. The "bind-add" leg adds SPRI
+# This is the methylation_seq/scrnaseq cleanup script generalized: same mag+trough geometry (reused VERBATIM
+# from the hardware-confirmed PCR enrichment cleanup), same standard leg set. The "bind-add" leg adds SPRI
 # binding buffer to the retained beads for reactivation cleanups, or fresh beads for the size
 # selection. Any single leg is a valid --mode for step-by-step tuning. RNA/library runs DISCARD
 # tips (the default); --return-tips is for dry rehearsal only.
@@ -118,7 +118,7 @@ CLEANUPS: Dict[str, Cleanup] = {
                         21.0, TROUGH_TRIS, 21.0, "TIP-seq Bulk (library, left-side size select)"),
 }
 
-# Geometry reused verbatim from the confirmed targeted PCR cleanup (via emseq/scrnaseq). No TIP-seq tuning.
+# Geometry reused verbatim from the confirmed PCR enrichment cleanup (via methylation_seq/scrnaseq). No TIP-seq tuning.
 P300_TROUGH_ASP_HEIGHT = [0.3] * 8
 P300_TROUGH_ASP_OFFSETS = [Coordinate(0.0, 1.5, 0.0)] * 8
 P300_MAG_DSP_HEIGHT = [4.0] * 8

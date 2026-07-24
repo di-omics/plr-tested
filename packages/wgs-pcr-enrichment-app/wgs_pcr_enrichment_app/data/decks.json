@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "decks": {
+    "wgs_prep_pcr_enrichment_combined_dry_v1": {
+      "label": "Combined WGS preparation + HHS and PCR enrichment + ODTC one-column dry deck",
+      "mode": "dry_planning_only",
+      "items": [
+        {
+          "key": "r48p0_p10",
+          "rail": 48,
+          "position": 0,
+          "location_label": "Rail 48 · p0 (first slot)",
+          "role": "10 µL filter-tip rack (P10)",
+          "instruction": "Seat the P10 rack; tip-rack columns 1 and 2 (A1:H1 and A2:H2) must be intact.",
+          "why": "The WGS preparation dry lysis and reaction motions use these two tip columns and return them."
+        },
+        {
+          "key": "r48p1_p50",
+          "rail": 48,
+          "position": 1,
+          "location_label": "Rail 48 · p1 (second slot)",
+          "role": "50 µL filter-tip rack (P50)",
+          "instruction": "Seat the P50 rack; tip-rack columns 1 and 2 (A1:H1 and A2:H2) must be intact.",
+          "why": "The PCR enrichment1 and PCR2 dry master-mix motions use these tip-rack columns."
+        },
+        {
+          "key": "r48p2_p300",
+          "rail": 48,
+          "position": 2,
+          "location_label": "Rail 48 · p2 (third slot)",
+          "role": "300 µL filter-tip rack (P300)",
+          "instruction": "Seat the P300 rack; tip-rack column 1 (A1:H1) must be intact.",
+          "why": "The dry cleanup rehearsal uses this rack and returns tips."
+        },
+        {
+          "key": "r35p0_work",
+          "rail": 35,
+          "position": 0,
+          "location_label": "Rail 35 · p0 (first slot)",
+          "role": "CellTreat 229195 work plate",
+          "instruction": "Seat one bare, empty sacrificial work plate squarely in the site.",
+          "why": "This is the single plate moved through the HHS, magnet, and ODTC landing sites."
+        },
+        {
+          "key": "r35p1_source",
+          "rail": 35,
+          "position": 1,
+          "location_label": "Rail 35 · p1 (second slot)",
+          "role": "CellTreat 229195 dry source plate",
+          "instruction": "Seat the empty source plate; WGS preparation source columns 1 and 3 must be clear.",
+          "why": "The dry runner models WGS preparation and PCR enrichment source geometry here. No reagent is loaded."
+        },
+        {
+          "key": "r35p2_magnet",
+          "rail": 35,
+          "position": 2,
+          "location_label": "Rail 35 · p2 (third slot)",
+          "role": "aligned magnet block",
+          "instruction": "Keep the correct magnet block installed and aligned; its plate landing area must be empty (no plate or lid).",
+          "why": "The work plate is delivered here for the PCR enrichment cleanup rehearsal."
+        },
+        {
+          "key": "r35p3_trough",
+          "rail": 35,
+          "position": 3,
+          "location_label": "Rail 35 · p3 (fourth slot)",
+          "role": "CellTreat 12-well trough",
+          "instruction": "Seat the empty trough; A1, A2, A3, A4, and A12 must be empty and clear.",
+          "why": "The dry cleanup models beads, ethanol, elution, and waste at these wells."
+        },
+        {
+          "key": "r35p4_lid",
+          "rail": 35,
+          "position": 4,
+          "location_label": "Rail 35 · p4 (fifth slot)",
+          "role": "Corning 3603 park plate and lid",
+          "instruction": "Seat the park plate—the lid support, not the work/source plate—squarely with the correct lid flat, centered, and unable to rock.",
+          "why": "The iSWAP carries this lid to the HHS and ODTC plate, then returns it here."
+        },
+        {
+          "key": "r27p2_hhs",
+          "rail": 27,
+          "position": 2,
+          "location_label": "Rail 27 · p2 (HHS modeled target)",
+          "role": "HHS landing nest",
+          "instruction": "Keep the HHS installed. Confirm its landing nest is empty (contains no plate or lid), open and idle, with a clear iSWAP path.",
+          "why": "The WGS preparation plate and lid land here. The dry sequence does not heat or shake the HHS."
+        },
+        {
+          "key": "r20p1_odtc",
+          "rail": 20,
+          "position": 1,
+          "location_label": "Rail 20 · p1 (ODTC modeled target)",
+          "role": "ODTC landing nest",
+          "instruction": "Keep the ODTC installed. Confirm its landing nest is empty (contains no plate or lid), open, cool and idle, with a clear iSWAP path.",
+          "why": "The PCR enrichment plate and lid land here twice. The dry sequence does not contact or heat the ODTC."
+        }
+      ],
+      "global_checks": [
+        {
+          "key": "channels_clear",
+          "instruction": "Confirm every pipetting channel is untipped.",
+          "why": "The modeled starting state assumes clear channels."
+        },
+        {
+          "key": "iswap_clear",
+          "instruction": "Confirm the iSWAP holds nothing and every transfer path is clear.",
+          "why": "A stale plate, lid, or obstruction makes the modeled deck state false."
+        },
+        {
+          "key": "carriers_locked",
+          "instruction": "Confirm the carriers and installed HHS/ODTC modules are secured at the validated rail targets 48, 35, 27, and 20.",
+          "why": "The validated geometry is tied to these exact rail targets and modeled positions."
+        },
+        {
+          "key": "dry_only",
+          "instruction": "Confirm there are no samples, reagents, ethanol, or water on the deck.",
+          "why": "This release envelope is an empty-labware dry rehearsal only."
+        },
+        {
+          "key": "operator_present",
+          "instruction": "A trained operator remains at the deck with immediate E-stop access.",
+          "why": "No software interface replaces continuous physical observation."
+        }
+      ]
+    }
+  }
+}

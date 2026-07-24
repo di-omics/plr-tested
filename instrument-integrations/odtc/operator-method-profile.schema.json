@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/plr-tested/operator-method-profile.schema.json",
+  "title": "Operator-owned ODTC method profile",
+  "description": "Schema only. Biological method values must be supplied in a controlled file outside this public repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "method_name",
+    "lid_c",
+    "block_max_volume_ul",
+    "stages"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "method_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lid_c": {
+      "type": "number"
+    },
+    "block_max_volume_ul": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repeats",
+          "steps"
+        ],
+        "properties": {
+          "repeats": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "temperature_c",
+                "hold_seconds"
+              ],
+              "properties": {
+                "temperature_c": {
+                  "type": "number"
+                },
+                "hold_seconds": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "rate_c_per_s": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

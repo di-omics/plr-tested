@@ -1,6 +1,6 @@
 # odtc/qc
 
-The robustness QC for the targeted PCR round 1 run on the Inheco ODTC,
+The robustness QC for the PCR enrichment round 1 run on the Inheco ODTC,
 2026-07-10. The report is derived from the raw instrument log retained with the
 local validation record.
 

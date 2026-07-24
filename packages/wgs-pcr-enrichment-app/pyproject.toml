@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wgs-pcr-enrichment-app"
+version = "0.2.1"
+description = "Planning-only local bench app for the combined WGS preparation and PCR enrichment dry workflow"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "di-omics" }]
+dependencies = []
+
+[project.scripts]
+wgs-pcr-enrichment-app = "wgs_pcr_enrichment_app.server:main"
+
+[tool.setuptools]
+packages = ["wgs_pcr_enrichment_app"]
+
+[tool.setuptools.package-data]
+wgs_pcr_enrichment_app = [
+  "data/*.json",
+  "data/releases/*.json",
+  "data/releases/*.txt",
+  "static/*.html",
+]

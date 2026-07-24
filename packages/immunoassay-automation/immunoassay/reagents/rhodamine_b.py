@@ -41,11 +41,11 @@ MW_G_PER_MOL = transcribed(
     unit="g/mol", name="rhodamine_b_molar_mass",
 )
 EX_MAX_NM = transcribed(
-    554, "Rhodamine B absorption maximum in water (Sigma-Aldrich product data)",
+    554, "Rhodamine B absorption maximum in water (supplier product data)",
     unit="nm", name="rhodamine_b_ex_max",
 )
 EM_MAX_NM = transcribed(
-    627, "Rhodamine B emission maximum in water (Sigma-Aldrich product data)",
+    627, "Rhodamine B emission maximum in water (supplier product data)",
     unit="nm", name="rhodamine_b_em_max",
 )
 

@@ -3,53 +3,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-# NEBNext Single Cell / Low Input RNA library prep (scRNA-seq) column-1 full choreography,
-# with the ODTC thermocycler and SPRI cleanup handoffs in order. Single column, dry.
+# Generic scRNA-seq column-1 choreography. Public reagent and cleanup legs are
+# numbered stages, and public ODTC names are water-only motion checks. Exact
+# biological methods stay in operator-owned profiles.
 #
-# STATUS: written, simulation-first. NOT yet run on hardware. See scrnaseq/README.md.
-#
-# What this is
-# ------------
-# The whole E6420 Section 1 shape as one ordered plan: reagent adds into column 1, ODTC
-# out/back for each thermal program, and three magnet + SPRI cleanup out/backs (the first is
-# the two-round cDNA cleanup). Same orchestration pattern as run_emseq_odtc_1col_full_dry.py:
-# each leg runs an already-scoped leg script by subprocess, and NO geometry is re-derived here.
-# The iSWAP plate-move legs reuse the parent starlab_live/ move scripts with the SAME confirmed
-# args the targeted PCR/EM-seq choreographies used; the reagent and cleanup legs run the sibling
-# scrnaseq scripts.
-#
-# As in the emseq runner, this does NOT run the ODTC thermal programs (they live in the
-# instrument-integrations tree, synced to a different run dir on the Pi, and long runs launch
-# detached). At each ODTC handoff the runner prints the exact command to run there. In a real
-# run the operator pauses after the forward leg, runs the thermal detached, waits, then resumes
-# with the return leg. The dry rehearsal returns tips and moves an empty/water plate.
-#
-# Modes:
-#   --print              print the ordered plan and exit. No execution.
-#   --sim-lh             run the liquid-handling legs on the chatterbox backend (--dry);
-#                        iSWAP and ODTC legs become printed notes. Fully local, no hardware.
-#   --confirm RUN_SCRNASEQ_ODTC_FULL
-#                        run the dry rehearsal on hardware: real iSWAP motion, LH legs with
-#                        tips returned and no reagents, ODTC thermal as operator notes.
-#
-# FULL DECK required before a hardware run (all at once):
-#   rail48 pos0 = p10 tips        rail48 pos1 = p50 tips        rail48 pos2 = p300 tips
-#   rail35 pos0 = work plate (the plate that gets moved around; starts with cells lysed in
-#                5 uL 1X Cell Lysis Buffer, sorted off-deck)
-#   rail35 pos1 = reagent source (swap the reagent between reagent legs; see PREP lines)
-#   rail35 pos2 = magnet block (iSWAP target for the three cleanups)
-#   rail35 pos3 = 12-well reservoir (beads, ethanol, 0.1X TE, reconstitution buffer, 1X TE, waste)
-#   rail20 pos1 = ODTC nest, EMPTY and open to receive the plate
-# Note: the post-cdna cleanup discards 16 tip-columns, more than one p300 rack; plan a tip
-# replenishment for a real wet run. The magnet MUST be at rail35 pos2 and the ODTC nest empty,
-# or an iSWAP releases the plate into open space. Deck-check every position, human at the E-stop.
-#
-# Confirmed iSWAP geometry baked into the leg args (from run_targeted_pcr_odtc_1col_full_dry.py,
-# gripped clean on hardware 2026-07-12; NOT re-derived here):
-#   ODTC forward : pickup z5, drop x2 / y36.5 / z12 at rail20 pos1
-#   ODTC return  : pickup z0, drop z8.5
-#   Magnet fwd   : pickup z8.5, drop z18.0 (defaults)
-#   Magnet return: pickup z14.0, drop z8.5
+# The runner does not derive geometry. It reuses the scoped leg scripts and the
+# confirmed iSWAP arguments below. The magnet must be at rail35 pos2, the ODTC
+# nest must be empty, and a human must remain at the E-stop for hardware motion.
+# Confirmed motion values: ODTC forward pickup z5/drop x2,y36.5,z12; ODTC return
+# pickup z0/drop z8.5; magnet forward pickup z8.5/drop z18; magnet return pickup
+# z14/drop z8.5. These hardware constants are intentionally preserved.
 
 ROOT = Path(__file__).resolve().parent           # .../starlab_live/scrnaseq
 STARLAB = ROOT.parent                            # .../starlab_live
@@ -82,7 +45,7 @@ def build_plan(sim_lh: bool):
     def cleanup(name):
         # dry, no-reagent rehearsal: return tips (scrnaseq_cleanup defaults to discard for real runs).
         argv = [str(CLEANUP), "--cleanup", name, "--mode", "all", "--return-tips"] + lh_extra
-        return ("run", f"SPRI cleanup: {name}", argv)
+        return ("run", f"magnetic cleanup: {name}", argv)
 
     def iswap(label, script, extra):
         argv = [str(script), "--mode", "move"] + extra
@@ -113,50 +76,40 @@ def build_plan(sim_lh: bool):
 
     plan = []
     plan.append(("note", "start",
-                 "work plate at rail35 pos0 col 1 holds 5 uL of cells lysed in cold 1X Cell Lysis "
-                 "Buffer (sorted off-deck; water for a dry rehearsal)."))
+                 "Use only a water-filled rehearsal plate with the public plan. "
+                 "Biological setup belongs to the operator-approved local method."))
 
-    # cDNA synthesis
-    plan.append(reagent("primer-mix", 1))
-    plan += odtc_out_back("sc-anneal", "primer anneal")
-    plan.append(reagent("rt-mix", 1))
-    plan += odtc_out_back("sc-rt", "reverse transcription")
-    plan.append(reagent("cdna-pcr-mix", 2))
-    plan += odtc_out_back("sc-cdna-pcr", "cDNA amplification")
+    plan.append(reagent("stage-1", 1))
+    plan += odtc_out_back("scrnaseq-stage-1", "stage 1")
+    plan.append(reagent("stage-2", 1))
+    plan += odtc_out_back("scrnaseq-stage-2", "stage 2")
+    plan.append(reagent("stage-3", 2))
+    plan += odtc_out_back("scrnaseq-stage-3", "stage 3")
 
-    # cDNA cleanup (0.6X double, with reconstitution re-bind)
     plan.append(magnet_out())
-    plan.append(cleanup("post-cdna"))
+    plan.append(cleanup("cleanup-1"))
     plan.append(magnet_back())
-    plan.append(("note", "quantify + normalize cDNA (off-deck checkpoint)",
-                 "The post-cdna cleanup keeps 30 uL. Quantify the cleaned cDNA (Bioanalyzer HS, "
-                 "E6420 Section 1.7; typical 1-20 ng) and normalize to 26 uL before fragmentation. "
-                 "Use the yield to pick the sc-lib-pcr cycle count (default 8 for 1-20 ng cDNA)."))
+    plan.append(("note", "operator checkpoint",
+                 "Perform the operator-approved off-deck checkpoint before continuing."))
 
-    # Fragmentation / end prep
-    plan.append(reagent("fs-mix", 3))
-    plan += odtc_out_back("sc-fs", "fragmentation / end prep")
+    plan.append(reagent("stage-4", 3))
+    plan += odtc_out_back("scrnaseq-stage-4", "stage 4")
+    plan.append(reagent("stage-5", 2))
+    plan.append(reagent("stage-6", 4))
+    plan += odtc_out_back("scrnaseq-stage-5", "stage 5")
+    plan.append(reagent("stage-7", 3))
+    plan += odtc_out_back("scrnaseq-stage-6", "stage 6")
 
-    # Adaptor ligation + USER
-    plan.append(reagent("adaptor", 2))
-    plan.append(reagent("ligation-mm", 4))
-    plan += odtc_out_back("sc-ligation", "adaptor ligation")
-    plan.append(reagent("user-enzyme", 3))
-    plan += odtc_out_back("sc-user", "USER excision")
-
-    # Cleanup 2 (0.8X)
     plan.append(magnet_out())
-    plan.append(cleanup("post-ligation"))
+    plan.append(cleanup("cleanup-2"))
     plan.append(magnet_back())
 
-    # Library enrichment PCR (per-well index, then Q5 master mix)
-    plan.append(reagent("pcr-primer", 5))
-    plan.append(reagent("pcr-mm", 6))
-    plan += odtc_out_back("sc-lib-pcr", "library PCR")
+    plan.append(reagent("stage-8", 5))
+    plan.append(reagent("stage-9", 6))
+    plan += odtc_out_back("scrnaseq-stage-7", "stage 7")
 
-    # Cleanup 3 (0.9X)
     plan.append(magnet_out())
-    plan.append(cleanup("post-pcr"))
+    plan.append(cleanup("cleanup-3"))
     plan.append(magnet_back())
 
     return plan
@@ -164,7 +117,7 @@ def build_plan(sim_lh: bool):
 
 def print_plan(plan):
     print("")
-    print("scRNA-seq (E6420) full column-1 choreography plan")
+    print("scRNA-seq full column-1 choreography plan")
     print("=" * 88)
     n = 0
     for kind, label, payload in plan:
@@ -195,7 +148,7 @@ def run_step(kind, label, payload):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="scRNA-seq (E6420) column-1 full choreography with ODTC and SPRI handoffs, dry."
+        description="scRNA-seq column-1 full choreography with ODTC and magnetic-cleanup handoffs, dry."
     )
     parser.add_argument("--print", dest="print_only", action="store_true",
                         help="Print the ordered plan and exit. No execution.")
@@ -213,7 +166,7 @@ def main():
 
     print("")
     print("scRNA-seq FULL CHOREOGRAPHY, COLUMN 1, DRY")
-    print("Reagent adds -> ODTC out/back (x7 programs) -> 3x magnet + SPRI cleanup out/back")
+    print("Reagent adds -> ODTC out/back (x7 programs) -> 3x magnetic-cleanup out/back")
     print("(the first cleanup is the two-round cDNA cleanup).")
     print("Every leg runs its own scoped script; geometry is not re-derived here.")
     print("STATUS: written, simulation-first, NOT yet run on hardware. Tune each leg before trusting it.")
@@ -234,7 +187,7 @@ def main():
 
     print("")
     print("SUCCESS: full scRNA-seq column-1 choreography completed. Plate back on rail35 pos0.")
-    print("Final library eluate (30 uL, post-pcr cleanup) is on the beads; transfer off the magnet.")
+    print("Complete the operator-approved final transfer off the magnet.")
 
 
 if __name__ == "__main__":

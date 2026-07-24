@@ -1,6 +1,8 @@
 import argparse
 import asyncio
 from dataclasses import dataclass
+from pathlib import Path as _MethodPath
+import sys as _method_sys
 from typing import Dict, List, Tuple
 
 from pylabrobot.liquid_handling import LiquidHandler
@@ -14,8 +16,16 @@ from pylabrobot.resources import (
 )
 import pylabrobot.resources as plr_resources
 
+_METHOD_ROOT = next(
+    parent for parent in _MethodPath(__file__).resolve().parents
+    if parent.name == "hamilton-star"
+)
+if str(_METHOD_ROOT) not in _method_sys.path:
+    _method_sys.path.insert(0, str(_METHOD_ROOT))
+from operator_parameters import required_integer, required_nonnegative, required_positive
+
 # -----------------------------------------------------------------------------
-# WGS preparation V2 truth-set / biovalidation scaffold: rail35 pos1 source, pos2 mag
+# WGS preparation V2 truth-set / validation scaffold: rail35 pos1 source, pos2 mag
 #
 # KEY PORT FROM CAMERA/RAIL35 WORK:
 # - rail35 pos0 = destination/work 96WP, unchanged
@@ -56,17 +66,17 @@ ISWAP_MAG_DROPOFF_Z_MM = 40.0
 ISWAP_MAG_PICKUP_Z_MM = 42.0
 ISWAP_POS0_DROPOFF_Z_MM = 20.0
 
-# Source reagent/source-column pattern. Update labels/volumes for actual truth-set run.
+# Source-stage layout. Biological volumes come from the operator-approved profile.
 P10_STEPS: List[Tuple[int, float, str]] = [
-    (1, 3.0, "Lysis Mix / small reagent 1"),
-    (2, 6.0, "Reaction Mix / small reagent 2"),
-    (3, 3.0, "DNA Prep Master Mix / small reagent 3"),
-    (4, 4.0, "FERAT Master Mix / small reagent 4"),
-    (5, 5.0, "UDI Adapter / small reagent 5"),
-    (6, 5.0, "LP2L / small reagent 6"),
+    (1, required_positive("wgs.stage_1_volume_ul"), "operator WGS stage 1"),
+    (2, required_positive("wgs.stage_2_volume_ul"), "operator WGS stage 2"),
+    (3, required_positive("wgs.stage_3_volume_ul"), "operator WGS stage 3"),
+    (4, required_positive("wgs.stage_4_volume_ul"), "operator WGS stage 4"),
+    (5, required_positive("wgs.stage_5_volume_ul"), "operator WGS stage 5"),
+    (6, required_positive("wgs.stage_6_volume_ul"), "operator WGS stage 6"),
 ]
 P50_STEPS: List[Tuple[int, float, str]] = [
-    (7, 20.0, "Amplification Master Mix / p50 reagent"),
+    (7, required_positive("wgs.stage_7_volume_ul"), "operator WGS stage 7"),
 ]
 
 # Reservoir layout for ethanol/wash camera/cleanup module.
@@ -74,9 +84,10 @@ TROUGH_WASH1 = "A2"
 TROUGH_WASH2 = "A3"
 TROUGH_WASTE = "A12"
 
-VOL_WASH = 200.0
-VOL_REMOVE = 180.0
-WASH_INCUBATION_SECONDS = 30
+VOL_WASH = required_positive("wgs.cleanup.wash_add_ul")
+VOL_REMOVE = required_positive("wgs.cleanup.wash_remove_ul")
+WASH_INCUBATION_SECONDS = required_nonnegative("wgs.cleanup.wash_incubation_seconds")
+WASH_COUNT = required_integer("wgs.cleanup.wash_count", minimum=1, maximum=2)
 
 # -----------------------------------------------------------------------------
 # 96WP geometry shared by destination pos0 and source pos1.
@@ -447,19 +458,14 @@ async def p300_remove(lh: LiquidHandler, r: Dict[str, object], dest_cols: List[i
         await finish_tips(lh, discard_tips)
 
 
-async def run_two_washes(lh: LiquidHandler, r: Dict[str, object], dest_cols: List[int], discard_tips: bool):
-    print("\n=== TWO WASH CYCLES ON MAGNETIC RACK AT rail35 pos2 ===")
-    await p300_add(lh, r, TROUGH_WASH1, dest_cols, discard_tips)
-    print(f"Incubating on magnet for {WASH_INCUBATION_SECONDS} seconds...")
-    await asyncio.sleep(WASH_INCUBATION_SECONDS)
-    await p300_remove(lh, r, dest_cols, discard_tips)
-
-    await p300_add(lh, r, TROUGH_WASH2, dest_cols, discard_tips)
-    print(f"Incubating on magnet for {WASH_INCUBATION_SECONDS} seconds...")
-    await asyncio.sleep(WASH_INCUBATION_SECONDS)
-    await p300_remove(lh, r, dest_cols, discard_tips)
-
-    print("SUCCESS: two wash cycles completed.")
+async def run_wash_sequence(lh: LiquidHandler, r: Dict[str, object], dest_cols: List[int], discard_tips: bool):
+    print(f"\n=== OPERATOR-PROFILE WASH SEQUENCE ({WASH_COUNT} CYCLE(S)) ON MAGNETIC RACK AT rail35 pos2 ===")
+    for source_well in (TROUGH_WASH1, TROUGH_WASH2)[:WASH_COUNT]:
+        await p300_add(lh, r, source_well, dest_cols, discard_tips)
+        print(f"Incubating on magnet for {WASH_INCUBATION_SECONDS} seconds...")
+        await asyncio.sleep(WASH_INCUBATION_SECONDS)
+        await p300_remove(lh, r, dest_cols, discard_tips)
+    print("SUCCESS: operator-profile wash sequence completed.")
 
 
 async def main():
@@ -495,7 +501,7 @@ async def main():
         if args.mode == "full-v2":
             await run_source_to_work(lh, r, dest_cols, args.discard_tips)
             await move_plate_pos0_to_mag_pos2(lh, r)
-            await run_two_washes(lh, r, dest_cols, args.discard_tips)
+            await run_wash_sequence(lh, r, dest_cols, args.discard_tips)
             await move_plate_mag_pos2_to_pos0(lh, r)
             print("\nSUCCESS: full V2 truth-set scaffold completed.")
             return

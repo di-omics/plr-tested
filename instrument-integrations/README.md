@@ -10,9 +10,9 @@ their failure modes are different. They get their own tree.
 
 ## What is here
 
-`odtc/` - Inheco ODTC (On Deck Thermal Cycler), over SiLA/SOAP. The thermal programs
-of the whole-genome sequencing workflow, expressed as PyLabRobot
-protocols, plus a ladder of scripts from "is it even there" to "run a PCR program".
+`odtc/` - Inheco ODTC (On Deck Thermal Cycler), over SiLA/SOAP. Public synthetic
+water-only hardware profiles and an operator-owned method-profile loader, plus a
+ladder of scripts from "is it even there" to "run an approved thermal method".
 
 `tecan-infinite/` - Tecan Infinite plate reader (200 PRO, and the Nano+ sibling), over
 USB. The QC endpoint: it reads a plate, it does not move liquid or heat. A plan and a
@@ -24,32 +24,27 @@ cable, not the network, so its section leans on USB and libusb rather than SiLA 
 
 The ODTC is driven end to end through PyLabRobot: connect, heat, hold, and run a full
 cycling profile, all confirmed on the instrument on 2026-07-10. The `PlateauTime`-is-
-seconds assumption is now confirmed, so the authorized WGS/WGA workflow source programs are believed correct,
-but none has been run at its real temperatures and durations yet, so they stay marked
-as such.
+seconds assumption is confirmed. Wet-method values are supplied locally and are not
+published here.
 
 | What | Result |
 | --- | --- |
-| Method XML matches authorized WGS/WGA workflow source Tables 1, 4, 5, 8, asserted against the real backend | passed, off-instrument |
+| Method XML generation and safety limits asserted against the real backend | passed, off-instrument |
 | `odtc_offline_checks.py`, 72 checks, on starpi under PyLabRobot 0.2.1 | passed, off-instrument |
 | Read-only probe: reachable, SiLA 1.2.01 confirmed, `state` is a top-level element | passed on the instrument |
 | PyLabRobot bring-up: Reset, Initialize, `startup` to `idle`, all 8 sensors read back | passed on the instrument |
 | Block+lid hold (PreMethod): block driven to 45.00 C and held dead on target | passed on the instrument |
 | Full cycling Method: pre-warm then ExecuteMethod, block to 50.00 C, completes | passed on the instrument |
 | `PlateauTime` is seconds: a 60 s step held ~56-60 s on the block trace | confirmed on the instrument |
-| `targeted-pcr-round1`: 30 cycles end to end, 36.6 min, setpoints held to a mean 0.27 C | passed on the instrument, with a caveat (see below) |
-| An authorized WGS/WGA workflow source program run at real temperatures (wga, dnaprep, ...) | not yet run |
+| Supervised cycling hardware exercise with an operator-owned profile | passed on the instrument |
+| An approved whole-genome sequencing operator profile run at real temperatures | not yet run |
 | Door open/close/cycle | written, not yet run |
 | STAR iSWAP handoff into the ODTC | plate-move legs drafted (`hamilton-star/`), geometry not yet tuned |
 
-The `targeted-pcr-round1` caveat: the 98 C denaturation sits 1 C under the ODTC's 99 C block
-ceiling, so on the fast ramp-in the block grazed it (peak 99.04 C) and the device logged
-91 "temperature out of specification" warnings across the 30 cycles, roughly three per
-cycle. The method completed and every setpoint was held tightly; these are warnings, not
-faults, and 98-99 C denaturation is biologically fine. Before a real sample run, consider
-dropping the denaturation setpoint to 97 C or softening the overshoot into that step. The
-protocol as written specifies 98 C, so the program keeps 98 C and this stays a documented
-operator choice, not a silent change.
+The supervised cycling exercise approached this unit's documented block ceiling during
+a fast ramp and produced non-fatal temperature warnings. Operators must review that
+instrument trace when approving a local method profile; the public repository does not
+encode or recommend a biological setpoint.
 
 The Tecan reader had its first contact on 2026-07-11: plugged into the Pi, identified over
 USB read-only, backend brought up in an isolated venv (`connection_verified.html` captures
@@ -68,7 +63,7 @@ Each rung does strictly more than the one above it. Do not skip.
 | `04_odtc_hold_block.py` | block and lid heaters | Will it hold a set point |
 | `05_odtc_run_protocol.py` | block and lid heaters | Will it run a real program |
 
-`odtc/qc/` holds the robustness QC for the targeted PCR round 1 run: the raw instrument log,
+`odtc/qc/` holds the robustness QC for the supervised cycling hardware exercise: the raw instrument log,
 a self-contained report generated from it (`odtc_qc_report.html`), and the generator that
 turns one into the other. See `odtc/qc/README.md`.
 
@@ -92,8 +87,7 @@ not in PyLabRobot and would each strand a run. All three are handled in
    on a full profile is rejected synchronously with returnCode 11, "PreMethod or
    PostHeating is required", even though the method carries `PostHeating=true`. Running
    a PreMethod to the profile's start conditions first clears it. This is the same
-   pre-warm-then-run pattern authorized WGS/WGA workflow source spells out for the WGA program ("start the
-   program, allow the block to reach 30 C, pause"). PyLabRobot's `run_protocol()` skips
+   pre-warm-then-run pattern used by approved operator methods. PyLabRobot's `run_protocol()` skips
    the pre-warm, so it cannot drive this device on its own. `run_cycling_method()` adds
    it, and `05_odtc_run_protocol.py` uses that.
 
@@ -132,11 +126,11 @@ rather than as a surprise at the bench.
    the same thing, uncaught). Use `run_cycling_method()`, which is what
    `05_odtc_run_protocol.py` calls.
 
-4. **`set_block_temperature()` sets the lid to 105 C.** Unless a lid target was already
-   stashed on the backend instance, it defaults to 105 C. The whole-genome amplification hold wants
-   a 70 C lid. Each setter also runs its own 7 to 10 minute pre-method, so calling both
-   costs twice the wait. `odtc_compat.hold_block_and_lid()` sets both targets and runs
-   one pre-method.
+4. **`set_block_temperature()` applies a backend lid default.** Unless a lid target was
+   already stashed on the backend instance, the setter chooses one without consulting
+   the biological method. Each setter also runs its own 7 to 10 minute pre-method, so
+   calling both costs twice the wait. `odtc_compat.hold_block_and_lid()` sets both
+   operator-profile targets and runs one pre-method.
 
 ## PlateauTime is seconds (settled on the instrument)
 
@@ -202,56 +196,26 @@ Pass `--ip`, or set `ODTC_IP`, which `run_on_pi.sh` forwards. The ODTC's specifi
 link-local address and MAC are not written into this repo, per the repository's rule
 on lab-internal addresses. Discover it on the link, as above.
 
-## Where the thermal values come from
+## Where thermal values come from
 
-Every temperature, time, and cycle count in `odtc_protocols.py` is transcribed from a
-source protocol and cited on the line where it is used. The WGS preparation programs come
-from an authorized WGS/WGA workflow source. The targeted PCR programs come from the
-**Targeted PCR Library Preparation** protocol (di-omics internal, updated 2026-05-28); only the
-thermal profile is encoded here, not primers or reagent volumes.
+Biological temperatures, durations, cycle counts, lid settings, and reaction volumes
+come only from an operator-owned JSON method profile passed to
+`05_odtc_run_protocol.py --operator-profile`. The loader validates the complete shape
+and refuses incomplete profiles. They are intentionally absent from public defaults.
 
-| Program | Source | Lid | Reaction volume |
-| --- | --- | --- | --- |
-| `wga` | authorized WGS/WGA workflow source Table 1, DNA Amplification | 70 C | 12.0 uL |
-| `dnaprep` | authorized WGS/WGA workflow source Table 4, DNAPREP | 105 C | 6.0 uL |
-| `ferat` | authorized WGS/WGA workflow source Table 5, FERAT | 105 C | 10.0 uL |
-| `ligation` | authorized WGS/WGA workflow source page 16, section IV step 7 | 50 C | 20.0 uL |
-| `libamp` | authorized WGS/WGA workflow source Table 8, LIB-AMP | 105 C | 40.0 uL |
-| `targeted-pcr-round1` | Targeted PCR Library Preparation, PCR1 | 105 C (*) | 25.0 uL |
-| `targeted-pcr-round2` | Targeted PCR Library Preparation, PCR2 | 105 C (*) | 25.0 uL |
-| `timecheck` | hardware exercise, not biology | 105 C | - |
-| `selftest` | hardware exercise, not biology | 105 C | - |
+The named public programs are synthetic water-only hardware exercises. `timecheck` and
+`selftest` are also hardware exercises, not biological protocols. Their values exist
+only to exercise the device and have no biological meaning.
 
-`timecheck` and `selftest` are not protocols. Their temperatures have no biological
-meaning. They exist so that the first live run of the instrument is one minute long
-instead of two and a half hours.
-
-Three targeted PCR values are not pinned down by that protocol and are flagged in code:
-
-- (*) **Lid temperature.** The amplicon protocol does not state one. 105 C is the standard
-  heated-lid temperature for Q5 PCR and matches authorized WGS/WGA workflow source LIB-AMP, which is also a Q5
-  indexing PCR. It is a default, not a transcription.
-- **PCR1 annealing temperature** defaults to 67 C, the protocol's "~67 C". The protocol
-  says to recompute Ta with the NEB Tm calculator (Q5U Hot Start) for your primer set:
-  `targeted_pcr_round1(anneal_c=...)`.
-- **PCR2 cycle count** is a range in the protocol, 8 to 10. The default is 8:
-  `targeted_pcr_round2(num_cycles=...)`.
-
-`targeted-pcr-round1` ends at a 10 C hold and `targeted-pcr-round2` at a 4 C hold, both as written.
-`targeted-pcr-round1` runs 30 cycles, so at real durations plus ramps it is roughly a 30 to 40
-minute program.
-
-Two translations were needed to get authorized WGS/WGA workflow source onto this instrument, and both are worth
-knowing:
+Two backend translations apply to every operator-supplied method and are worth knowing:
 
 - **A 4 C infinite hold** is a final 4 C step with `hold_seconds=0` plus
   `post_heating=True`, whose backend docstring reads "keep last temperature after method
   end". The block then sits at 4 C until something stops the method. `stop_method()`, or
   a power cycle. Nothing else.
 - **Per-step lid temperatures are not supported.** The backend writes
-  `start_lid_temperature` onto every step. Each source table specifies one lid
-  temperature for the whole program anyway, so nothing is lost, but a protocol that
-  changed lid temperature mid-program could not be expressed.
+  `start_lid_temperature` onto every step. A method that changes lid temperature
+  mid-program cannot be expressed.
 
 ## Safety
 
