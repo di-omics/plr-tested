@@ -1,0 +1,11 @@
+{
+  "run_id": "METHYLATION-SEQ-WATER-DEMO",
+  "operator": "demo",
+  "mode": "simulation",
+  "profile_kind": "synthetic_water",
+  "samples": [
+    {"id": "water_01", "well": "A1"},
+    {"id": "water_blank", "well": "H1", "type": "process_blank"}
+  ],
+  "notes": "Synthetic water-only demonstration; generated measurements are not observations."
+}

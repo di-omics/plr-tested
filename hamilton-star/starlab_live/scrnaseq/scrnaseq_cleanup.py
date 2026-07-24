@@ -15,48 +15,22 @@ from pylabrobot.resources import (
 )
 import pylabrobot.resources as plr_resources
 
-# NEBNext Single Cell / Low Input RNA library prep (scRNA-seq) - SPRI bead cleanup, column 1,
-# on the magnet.
-#
-# STATUS: written, simulation-first. NOT yet run on hardware. See scrnaseq/README.md.
-#
-# What this is
-# ------------
-# The E6420 Section 1 workflow has three SPRI cleanups. Two are standard single cleanups
-# (post-ligation 0.8X, post-pcr 0.9X). The cDNA cleanup (post-cdna) is SPECIAL: a two-round
-# SPRI on the SAME beads - 0.6X bind, wash, elute in 0.1X TE, then add NEBNext Bead
-# Reconstitution Buffer to re-bind the cDNA to those beads, wash again, and elute in 1X TE
-# (E6420 Section 1.6). The manual warns that skipping the second round reduces cDNA purity.
-#
-# This is the emseq cleanup script generalized: same mag+trough geometry (reused VERBATIM from
-# the hardware-confirmed targeted PCR cleanup), same standard leg set, plus the extra reconstitution
-# round for post-cdna. Only the per-cleanup volumes change. Any single leg is a valid --mode so
-# heights can be tuned one step at a time on hardware. RNA runs DISCARD tips (the default);
-# --return-tips is for dry rehearsal only.
-#
-#   --cleanup       kind      ratio  beads  ethanol  elute            source
-#   post-cdna       double    0.6X   60 uL  2x200uL  50 then 33 uL    E6420 Section 1.6
-#   post-ligation   standard  0.8X   57 uL  2x200uL  17 -> keep 15    E6420 Section 1.10
-#   post-pcr        standard  0.9X   45 uL  2x200uL  33 -> keep 30    E6420 Section 1.12
-#
-# Deck (current 35/48 deck):
-#   rail48 pos1 = p50 tips (elution add, residual ethanol removal)
-#   rail48 pos2 = p300 tips (beads add, reconstitution add, supernatant/ethanol removal, 50 uL elute)
-#   rail35 pos2 = magnet, holding the work plate (moved here by iSWAP), column 1
-#   rail35 pos3 = 12-well reservoir/trough
-#
-# Reservoir map (rail35 pos3):
-#   A1 = NEBNext SPRI beads          A2 = 80% ethanol wash 1     A3 = 80% ethanol wash 2
-#   A4 = 0.1X TE elution buffer      A5 = NEBNext Bead Reconstitution Buffer (post-cdna only)
-#   A6 = 1X TE elution buffer (post-cdna round 2)                A12 = waste
-#
-# Scope and honesty
-# -----------------
-# Beads/reconstitution/50 uL elution use p300; smaller elutions and residual ethanol use p50.
-# This script does not incubate, does not mix, and does NOT model the final "transfer the clear
-# eluate off the beads to a fresh column" step (operator/off-deck, as in the targeted PCR/EM-seq
-# cleanups). Bead ratios, ethanol volume, and elution volumes are transcribed from E6420. All
-# geometry is inherited, not re-tuned for scRNA, so every mode is sim-only until tuned.
+from pathlib import Path as _MethodPath
+import sys as _method_sys
+
+_method_root = next(parent for parent in _MethodPath(__file__).resolve().parents if parent.name == "hamilton-star")
+if str(_method_root) not in _method_sys.path:
+    _method_sys.path.insert(0, str(_method_root))
+from operator_parameters import (
+    MethodParameterError,
+    required_nonnegative,
+    required_positive,
+    required_text,
+)
+
+# Generic scRNA-seq magnetic-cleanup motion scaffold. Stage modes, ratio
+# labels, and volumes come only from an operator-approved local profile.
+# Deck geometry and calibrated motion constants below remain unchanged.
 
 TIP_RAIL = 48
 P50_TIP_POS = 1
@@ -68,17 +42,17 @@ TROUGH_POS = 3
 
 DEST_COL = 1
 
-TROUGH_BEADS = "A1"
-TROUGH_ETOH1 = "A2"
-TROUGH_ETOH2 = "A3"
-TROUGH_ELUTION = "A4"     # 0.1X TE
-TROUGH_RECON = "A5"       # NEBNext Bead Reconstitution Buffer (post-cdna round 2)
-TROUGH_ELUTION2 = "A6"    # 1X TE (post-cdna round 2)
+TROUGH_BINDING = "A1"
+TROUGH_WASH1 = "A2"
+TROUGH_WASH2 = "A3"
+TROUGH_ELUTION = "A4"
+TROUGH_REBINDING = "A5"   # operator-specified rebinding buffer (cleanup-1 round 2)
+TROUGH_ELUTION2 = "A6"    # operator-specified elution solution
 TROUGH_WASTE = "A12"
 
-VOL_ETHANOL_ADD = 200.0
-VOL_ETHANOL_REMOVE = 200.0
-VOL_RESIDUAL_ETHANOL_REMOVE = 20.0
+VOL_WASH_ADD = required_positive("scrnaseq.cleanup.wash_add_ul")
+VOL_WASH_REMOVE = required_positive("scrnaseq.cleanup.wash_remove_ul")
+VOL_RESIDUAL_WASH_REMOVE = required_positive("scrnaseq.cleanup.residual_remove_ul")
 
 # Above this elution volume, add with p300 instead of the p50-low geometry.
 P50_ELUTION_MAX_UL = 40.0
@@ -88,35 +62,57 @@ P50_ELUTION_MAX_UL = 40.0
 class Cleanup:
     name: str
     ratio_label: str
-    kind: str                 # "standard" or "double"
+    stage_mode: str
     beads_ul: float
     supernatant_remove_ul: float
     elution_ul: float
     keep_ul: float
     source: str
-    # double (post-cdna) only:
-    recon_ul: float = 0.0
+    # double (cleanup-1) only:
+    rebinding_ul: float = 0.0
     supernatant_remove2_ul: float = 0.0
     elution2_ul: float = 0.0
     keep2_ul: float = 0.0
 
 
+def load_cleanup(name: str, key: str) -> Cleanup:
+    stage_mode = required_text(f"scrnaseq.cleanup.{key}.stage_mode")
+    if stage_mode not in {"single", "operator_defined_second_stage"}:
+        raise MethodParameterError(
+            f"scrnaseq.cleanup.{key}.stage_mode must be 'single' or "
+            "'operator_defined_second_stage'"
+        )
+    second_stage_number = (
+        required_positive
+        if stage_mode == "operator_defined_second_stage"
+        else required_nonnegative
+    )
+    return Cleanup(
+        name,
+        required_text(f"scrnaseq.cleanup.{key}.ratio_label"),
+        stage_mode,
+        required_positive(f"scrnaseq.cleanup.{key}.bead_volume_ul"),
+        required_positive(f"scrnaseq.cleanup.{key}.supernatant_remove_ul"),
+        required_positive(f"scrnaseq.cleanup.{key}.elution_ul"),
+        required_positive(f"scrnaseq.cleanup.{key}.keep_ul"),
+        "operator-approved local profile",
+        rebinding_ul=required_nonnegative(f"scrnaseq.cleanup.{key}.rebinding_ul"),
+        supernatant_remove2_ul=required_nonnegative(f"scrnaseq.cleanup.{key}.supernatant_remove_2_ul"),
+        elution2_ul=required_nonnegative(f"scrnaseq.cleanup.{key}.elution_2_ul"),
+        keep2_ul=required_nonnegative(f"scrnaseq.cleanup.{key}.keep_2_ul"),
+    )
+
+
 CLEANUPS: Dict[str, Cleanup] = {
-    # cDNA double cleanup. Round 1: 100 uL PCR + 60 uL beads (0.6X) = 160 bound; remove 165.
-    # Elute in 50 uL 0.1X TE, add 45 uL reconstitution buffer (95 uL) to re-bind; remove 100.
-    # Elute round 2 in 33 uL 1X TE, keep 30.
-    "post-cdna": Cleanup("post-cdna", "0.6X", "double", 60.0, 165.0, 50.0, 50.0,
-                         "NEB #E6420 Section 1.6",
-                         recon_ul=45.0, supernatant_remove2_ul=100.0, elution2_ul=33.0, keep2_ul=30.0),
-    # 71.5 uL post-USER ligation + 57 uL beads (0.8X) = 128.5 bound; remove 133. Elute 17, keep 15.
-    "post-ligation": Cleanup("post-ligation", "0.8X", "standard", 57.0, 133.0, 17.0, 15.0,
-                             "NEB #E6420 Section 1.10"),
-    # 50 uL PCR + 45 uL beads (0.9X) = 95 bound; remove 100. Elute 33, keep 30.
-    "post-pcr": Cleanup("post-pcr", "0.9X", "standard", 45.0, 100.0, 33.0, 30.0,
-                        "NEB #E6420 Section 1.12"),
+    name: load_cleanup(name, key)
+    for name, key in (
+        ("cleanup-1", "cleanup_1"),
+        ("cleanup-2", "cleanup_2"),
+        ("cleanup-3", "cleanup_3"),
+    )
 }
 
-# Geometry reused verbatim from the confirmed targeted PCR cleanup (via emseq_cleanup.py). No
+# Geometry reused verbatim from the confirmed PCR enrichment cleanup (via methylation_seq_cleanup.py). No
 # scRNA-specific tuning yet.
 P300_TROUGH_ASP_HEIGHT = [0.3] * 8
 P300_TROUGH_ASP_OFFSETS = [Coordinate(0.0, 1.5, 0.0)] * 8
@@ -174,7 +170,7 @@ def wells_for_column(plate, col: int):
 
 
 async def assign_deck(lh: LiquidHandler, cleanup: Cleanup) -> Dict[str, object]:
-    print(f"Assigning scRNA-seq {cleanup.name} cleanup deck ({cleanup.ratio_label}, {cleanup.kind}): "
+    print(f"Assigning scRNA-seq {cleanup.name} cleanup deck ({cleanup.ratio_label}, {cleanup.stage_mode}): "
           "mag pos2 + trough pos3...")
 
     tip_carrier = TIP_CAR_480_A00(name="tip_car_rail48")
@@ -193,27 +189,27 @@ async def assign_deck(lh: LiquidHandler, cleanup: Cleanup) -> Dict[str, object]:
     labware_carrier[TROUGH_POS] = trough
 
     print("\nDeck:")
-    print("  rail48 pos1 = p50 tips (small elution, residual ethanol)")
-    print("  rail48 pos2 = p300 tips (beads, reconstitution, supernatant/ethanol, 50 uL elute)")
+    print("  rail48 pos1 = p50 tips (small elution and residual-wash motions)")
+    print("  rail48 pos2 = p300 tips (operator-specified cleanup liquids)")
     print("  rail35 pos2 = magnet + work plate, column 1")
     print("  rail35 pos3 = 12-well reservoir/trough")
 
     print("\nReservoir map:")
-    print(f"  {TROUGH_BEADS} = SPRI beads   {TROUGH_ETOH1}/{TROUGH_ETOH2} = 80% ethanol   {TROUGH_ELUTION} = 0.1X TE")
+    print(f"  {TROUGH_BINDING} = operator-specified binding suspension   {TROUGH_WASH1}/{TROUGH_WASH2} = operator-specified wash solutions   {TROUGH_ELUTION} = operator-specified elution solution")
     if cleanup.kind == "double":
-        print(f"  {TROUGH_RECON} = Bead Reconstitution Buffer   {TROUGH_ELUTION2} = 1X TE   {TROUGH_WASTE} = waste")
+        print(f"  {TROUGH_REBINDING} = operator-specified rebinding buffer   {TROUGH_ELUTION2} = operator-specified elution solution   {TROUGH_WASTE} = waste")
     else:
         print(f"  {TROUGH_WASTE} = waste")
 
     print(f"\n{cleanup.name} volumes ({cleanup.source}):")
-    print(f"  beads add = {cleanup.beads_ul} uL x8 ({cleanup.ratio_label}), p300")
+    print(f"  binding add = {cleanup.beads_ul} uL x8 ({cleanup.ratio_label}), p300")
     print(f"  supernatant remove = {cleanup.supernatant_remove_ul} uL x8, p300")
-    print(f"  ethanol add/remove = {VOL_ETHANOL_ADD}/{VOL_ETHANOL_REMOVE} uL x8, p300 (x2 washes)")
-    print(f"  residual ethanol remove = {VOL_RESIDUAL_ETHANOL_REMOVE} uL x8, p50")
+    print(f"  wash add/remove = {VOL_WASH_ADD}/{VOL_WASH_REMOVE} uL x8, p300 (x2 washes)")
+    print(f"  residual wash remove = {VOL_RESIDUAL_WASH_REMOVE} uL x8, p50")
     if cleanup.kind == "double":
-        print(f"  elute round 1 = {cleanup.elution_ul} uL 0.1X TE (stays on beads)")
-        print(f"  reconstitution add = {cleanup.recon_ul} uL, then re-bind, wash x2, residual")
-        print(f"  elute round 2 = {cleanup.elution2_ul} uL 1X TE; keep {cleanup.keep2_ul} uL (off-deck)")
+        print(f"  elute round 1 = {cleanup.elution_ul} uL (stays on the magnetic material)")
+        print(f"  rebinding-buffer add = {cleanup.rebinding_ul} uL, then re-bind, wash x2, residual")
+        print(f"  elute round 2 = {cleanup.elution2_ul} uL; keep {cleanup.keep2_ul} uL (off-deck)")
     else:
         print(f"  elution add = {cleanup.elution_ul} uL, p50; keep {cleanup.keep_ul} uL (off-deck transfer)")
 
@@ -262,7 +258,7 @@ async def p50_add_from_trough_low(lh, r, source_well_name, volume_ul, discard_ti
 
 
 async def elution_add(lh, r, source_well_name, volume_ul, discard_tips, tip_col, what):
-    """Add elution buffer onto the beads: p300 for > 40 uL, else p50-low."""
+    """Add operator-specified elution solution using the calibrated tip range."""
     if volume_ul > P50_ELUTION_MAX_UL:
         await p300_add_from_trough(lh, r, source_well_name, volume_ul, discard_tips, tip_col, what)
     else:
@@ -304,36 +300,37 @@ async def p50_remove_residual_to_waste(lh, r, volume_ul, discard_tips, tip_col):
 def build_legs(cleanup: Cleanup):
     """Ordered {name: coro-factory(lh, r, discard_tips, tip_col)} for the selected cleanup."""
     legs = {
-        "beads-add": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_BEADS, cleanup.beads_ul, dt, tc, "beads add"),
+        "binding-add": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_BINDING, cleanup.beads_ul, dt, tc, "binding suspension add"),
         "supernatant-remove": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, cleanup.supernatant_remove_ul, dt, tc, "supernatant remove"),
-        "ethanol-add1": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_ETOH1, VOL_ETHANOL_ADD, dt, tc, "ethanol wash 1 add"),
-        "ethanol-remove1": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, dt, tc, "ethanol wash 1 remove"),
-        "ethanol-add2": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_ETOH2, VOL_ETHANOL_ADD, dt, tc, "ethanol wash 2 add"),
-        "ethanol-remove2": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, dt, tc, "ethanol wash 2 remove"),
-        "residual-remove": lambda lh, r, dt, tc: p50_remove_residual_to_waste(lh, r, VOL_RESIDUAL_ETHANOL_REMOVE, dt, tc),
+        "wash-add1": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_WASH1, VOL_WASH_ADD, dt, tc, "wash 1 add"),
+        "wash-remove1": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_WASH_REMOVE, dt, tc, "wash 1 remove"),
+        "wash-add2": lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_WASH2, VOL_WASH_ADD, dt, tc, "wash 2 add"),
+        "wash-remove2": lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_WASH_REMOVE, dt, tc, "wash 2 remove"),
+        "residual-remove": lambda lh, r, dt, tc: p50_remove_residual_to_waste(lh, r, VOL_RESIDUAL_WASH_REMOVE, dt, tc),
     }
     if cleanup.kind == "double":
-        # Round 1 eluate stays on the beads; then reconstitution buffer re-binds and round 2 runs.
-        legs["elute1-add"] = lambda lh, r, dt, tc: elution_add(lh, r, TROUGH_ELUTION, cleanup.elution_ul, dt, tc, "elute round 1 (0.1X TE, stays on beads)")
-        legs["recon-add"] = lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_RECON, cleanup.recon_ul, dt, tc, "reconstitution buffer (re-bind)")
+        # Round 1 eluate stays on the beads; then the operator-specified buffer
+        # re-binds and round 2 runs.
+        legs["elute1-add"] = lambda lh, r, dt, tc: elution_add(lh, r, TROUGH_ELUTION, cleanup.elution_ul, dt, tc, "elute round 1")
+        legs["rebinding-add"] = lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_REBINDING, cleanup.rebinding_ul, dt, tc, "operator-specified rebinding buffer")
         legs["supernatant-remove2"] = lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, cleanup.supernatant_remove2_ul, dt, tc, "supernatant remove (round 2)")
-        legs["ethanol-add3"] = lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_ETOH1, VOL_ETHANOL_ADD, dt, tc, "ethanol wash 3 add")
-        legs["ethanol-remove3"] = lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, dt, tc, "ethanol wash 3 remove")
-        legs["ethanol-add4"] = lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_ETOH2, VOL_ETHANOL_ADD, dt, tc, "ethanol wash 4 add")
-        legs["ethanol-remove4"] = lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_ETHANOL_REMOVE, dt, tc, "ethanol wash 4 remove")
-        legs["residual-remove2"] = lambda lh, r, dt, tc: p50_remove_residual_to_waste(lh, r, VOL_RESIDUAL_ETHANOL_REMOVE, dt, tc)
-        legs["elute2-add"] = lambda lh, r, dt, tc: elution_add(lh, r, TROUGH_ELUTION2, cleanup.elution2_ul, dt, tc, "elute round 2 (1X TE)")
+        legs["wash-add3"] = lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_WASH1, VOL_WASH_ADD, dt, tc, "wash 3 add")
+        legs["wash-remove3"] = lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_WASH_REMOVE, dt, tc, "wash 3 remove")
+        legs["wash-add4"] = lambda lh, r, dt, tc: p300_add_from_trough(lh, r, TROUGH_WASH2, VOL_WASH_ADD, dt, tc, "wash 4 add")
+        legs["wash-remove4"] = lambda lh, r, dt, tc: p300_remove_to_waste(lh, r, VOL_WASH_REMOVE, dt, tc, "wash 4 remove")
+        legs["residual-remove2"] = lambda lh, r, dt, tc: p50_remove_residual_to_waste(lh, r, VOL_RESIDUAL_WASH_REMOVE, dt, tc)
+        legs["elute2-add"] = lambda lh, r, dt, tc: elution_add(lh, r, TROUGH_ELUTION2, cleanup.elution2_ul, dt, tc, "elute round 2")
     else:
         legs["elution-add"] = lambda lh, r, dt, tc: elution_add(lh, r, TROUGH_ELUTION, cleanup.elution_ul, dt, tc, "elution add")
     return legs
 
 
 def leg_order(cleanup: Cleanup) -> List[str]:
-    base = ["beads-add", "supernatant-remove", "ethanol-add1", "ethanol-remove1",
-            "ethanol-add2", "ethanol-remove2", "residual-remove"]
+    base = ["binding-add", "supernatant-remove", "wash-add1", "wash-remove1",
+            "wash-add2", "wash-remove2", "residual-remove"]
     if cleanup.kind == "double":
-        return base + ["elute1-add", "recon-add", "supernatant-remove2",
-                       "ethanol-add3", "ethanol-remove3", "ethanol-add4", "ethanol-remove4",
+        return base + ["elute1-add", "rebinding-add", "supernatant-remove2",
+                       "wash-add3", "wash-remove3", "wash-add4", "wash-remove4",
                        "residual-remove2", "elute2-add"]
     return base + ["elution-add"]
 
@@ -346,9 +343,9 @@ async def run_leg(lh, r, cleanup: Cleanup, name: str, discard_tips: bool, tip_co
 
 async def run_all(lh: LiquidHandler, r: Dict[str, object], cleanup: Cleanup, discard_tips: bool):
     print(f"\n=== scRNA-seq {cleanup.name} cleanup ({cleanup.ratio_label}, {cleanup.kind}) - all motions ===")
-    print("Incubation, bead pelleting on the magnet, and air-dry timings are operator/timed and")
-    print("not modeled here. For post-cdna the round-1 eluate stays on the beads and the")
-    print("reconstitution buffer re-binds it before round 2.")
+    print("Incubation, magnetic capture, and dry-handoff timings are operator/timed and")
+    print("not modeled here. For cleanup-1 the round-1 eluate stays on the magnetic material")
+    print("and the operator-specified rebinding buffer begins round 2.")
     legs = build_legs(cleanup)
     order = leg_order(cleanup)
     if discard_tips and len(order) > 12:
@@ -359,12 +356,16 @@ async def run_all(lh: LiquidHandler, r: Dict[str, object], cleanup: Cleanup, dis
     discarded = 0
     for name in order:
         if name in ("elution-add", "elute2-add"):
-            print("\nAir-dry the beads (operator/timed; do not over-dry). Then elute:")
+            print("\nComplete the operator-approved dry handoff, then elute:")
         await legs[name](lh, r, discard_tips, tip_col)
         if discard_tips:
             discarded += 1
             tip_col = (discarded % 12) + 1
-    keep = cleanup.keep2_ul if cleanup.kind == "double" else cleanup.keep_ul
+    keep = (
+        cleanup.second_stage_keep_ul
+        if cleanup.stage_mode == "operator_defined_second_stage"
+        else cleanup.keep_ul
+    )
     print(f"\nSUCCESS: {cleanup.name} cleanup motions completed. Transfer the clear {keep} uL off the")
     print("magnet to a fresh column (off-deck).")
 
@@ -379,10 +380,10 @@ def make_backend(dry: bool):
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="scRNA-seq (E6420) SPRI bead cleanup, column 1, mag pos2 + trough pos3."
+        description="scRNA-seq magnetic cleanup, column 1, mag pos2 + trough pos3."
     )
     parser.add_argument("--cleanup", choices=sorted(CLEANUPS.keys()), required=True,
-                        help="post-cdna (0.6X double), post-ligation (0.8X), post-pcr (0.9X).")
+                        help="Which operator-configured cleanup: cleanup-1, cleanup-2, or cleanup-3.")
     # --mode accepts deck, all, or any single leg name of the SELECTED cleanup (validated below).
     parser.add_argument("--mode", default="deck",
                         help="deck = assignment only. all = full sequence. Or one leg name to tune it alone.")

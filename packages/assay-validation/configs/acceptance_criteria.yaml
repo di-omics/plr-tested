@@ -1,0 +1,35 @@
+# acceptance_criteria.yaml - the QC rubric, in one auditable place.
+#
+# These are the cutoffs every gate turns on. The defaults ARE the standard; a run that
+# changes one is making a visible, recorded choice (the dossier shows the value in force).
+# A partner site should run the defaults until it has a measured reason to change one.
+#
+# This file documents the standard. To override per run, put an `acceptance:` block in
+# the run manifest with any of these keys. The package's built-in defaults
+# (assay_validation/config.py AcceptanceCriteria) match this file.
+
+# --- Gate 0: liquid-handling qualification (Rhodamine B) ---------------------
+# Dispense CV must be under this at every qualified volume, or the deck is not allowed
+# to touch a sample. This is the "calibrate the robot first" rule.
+lh_cv_max_percent: 5.0
+lh_recovery_tolerance_percent: 10.0
+# Synthetic qualification points for the public water-only example. For a hardware run,
+# set these to the transfer volumes in the operator-approved local method.
+lh_qualified_volumes_ul: [1.0, 10.0, 100.0]
+
+# --- Standard-curve quality (both fluorescent dsDNA assay reads) --------------------------
+# A standard curve flatter than this is a mispipetted assay; no sample read off it is
+# trusted and the checkpoint fails.
+curve_r2_min: 0.98
+
+# --- Gate 1: post-WGS preparation yield and uniformity ----------------------------------
+# TUNABLE. Set from the whole-genome sequencing yield your samples actually give. A well under the
+# floor did not amplify and does not go into a library.
+wgs_prep_yield_min_ng: 100.0
+wgs_prep_uniformity_cv_max_percent: 30.0
+
+# --- Gate 2: post-PCR-enrichment library concentration -----------------------
+# TUNABLE. The loading window for even pooling and fragment analyzer. Verify against your
+# sequencer's guidance.
+pcr_enrichment_conc_min_ng_per_ul: 2.0
+pcr_enrichment_conc_max_ng_per_ul: 60.0

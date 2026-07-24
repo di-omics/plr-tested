@@ -1,0 +1,66 @@
+# example_run.yaml - an explicit synthetic water-only run plan.
+#
+# Run it:   assay-validate run configs/example_run.yaml
+# or:       python -m assay_validation run configs/example_run.yaml
+
+run_id: SEQ-2026-07-11-01
+operator: di
+mode: simulation            # 'simulation' runs the whole flow with synthetic reads;
+                            # 'hardware' drives the STAR/ODTC/Tecan and refuses to start
+                            # until the reader calibration is pinned down.
+
+analysis:
+  type: variant_calling        # what we are confirming: variant_calling | target_confirmation |
+                            # sequence_validation | targeted_sequence | unknown
+
+locus:
+  name: target_1
+  pcr_product_bp: 250          # expected PCR1 PCR product around the target
+  target_position_bp: 125     # target position in the PCR product (optional)
+
+method:
+  # Synthetic values exercise orchestration with water only; they are not a recipe.
+  profile_kind: synthetic_water
+  parameter_source: public example; synthetic water only
+  wgs_stage_1_ul: 10
+  wgs_stage_2_ul: 10
+  wgs_odtc_profile: synthetic-water-only-wgs.json
+  pcr_stage_1_transfer_ul: 10
+  pcr_stage_2_transfer_ul: 10
+  pcr_reaction_volume_ul: 20
+  post_pcr1_cleanup_ratio: 1
+  post_pcr2_cleanup_ratio: 1
+  supernatant_margin_ul: 0
+  pcr1_anneal_c: 40
+  pcr2_cycles: 2
+  pcr1_odtc_profile: synthetic-water-only-pcr1.json
+  pcr2_odtc_profile: synthetic-water-only-pcr2.json
+  wgs_qc_dilution: 1
+  pcr_qc_dilution: 1
+  wgs_product_volume_ul: 20
+  pcr_library_volume_ul: 20
+  indexing_overhang_bp: 10
+  pool_target_mass_ng: 1
+  fragment_window_below_bp: 5
+  fragment_window_above_bp: 5
+  dimer_flag_below_bp: 5
+
+fluorescent_dsdna:
+  # Synthetic reader values for deterministic water-only simulation.
+  profile_label: synthetic-water-only
+  excitation_nm: 400
+  emission_nm: 500
+  standards_ng_per_ml: [0, 100, 200, 300]
+
+# tip_column: 1             # site-specific: which tip-rack column to start from
+
+samples:
+  - { id: sample_01, well: A1 }
+  - { id: sample_02, well: B1 }
+  - { id: sample_03, well: C1 }
+  - { id: pos_ctrl,  well: F1, type: pos_ctrl }   # known-positive reference
+  - { id: neg_ctrl,  well: G1, type: neg_ctrl }   # wild-type reference
+  - { id: ntc,       well: H1, type: ntc }        # no-template contamination watch
+
+# acceptance:               # optional overrides; omit to use the shipped standard
+#   wgs_prep_yield_min_ng: 150

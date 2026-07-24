@@ -54,8 +54,8 @@ an ephemeral port, and the port is handed to the device in the `Reset` call's
   - An asynchronous command that never gets its callback waits forever. Every SiLA
     call in this module goes through `sila_call()`, which imposes a timeout.
   - `ExecuteMethod` is asynchronous, and its `ResponseEvent` fires when the method
-    *finishes*. So `await run_protocol(...)` blocks for the whole run. A 2.5 hour
-    WGA hold is a 2.5 hour await. Confirm this on the first live run.
+    *finishes*. So `await run_protocol(...)` blocks for the whole operator-defined
+    run. Confirm long-duration behavior on the first qualified live run.
 
 Sources
 -------
@@ -82,7 +82,7 @@ BLOCK_MAX_C = 99.0
 MAX_RAMP_C_PER_S = 4.4
 
 # Highest lid temperature that appears in either the PLR ODTC notebook or in
-# authorized WGS/WGA workflow source. Above this we warn rather than refuse, because the lid
+# WGS workflow specification. Above this we warn rather than refuse, because the lid
 # ceiling is not documented in either source.
 DOCUMENTED_MAX_LID_C = 105.0
 
@@ -552,9 +552,9 @@ async def hold_block_and_lid(obj, block_c: float, lid_c: float,
 
       - Each call runs its own pre-method, and a pre-method takes 7 to 10 minutes.
         Two calls is twice the wait.
-      - `set_block_temperature([30.0])` sets the lid to 105 C unless a lid target was
-        already stashed on the backend. For the whole-genome amplification hold the lid must be
-        70 C. Getting the order wrong silently bakes the plate at 105 C.
+      - `set_block_temperature(...)` sets the lid to the backend default unless a
+        lid target was already stashed. Biological lid targets must instead come
+        from the controlled operator profile.
 
     So set both targets and run one pre-method. This reaches into the backend's
     private state, which is the price of not running two pre-methods.
@@ -589,7 +589,7 @@ async def run_cycling_method(obj, protocol, block_max_volume_ul: float, lid_c: f
     Confirmed on the instrument: ExecuteMethod of a cycling Method is rejected
     synchronously with returnCode 11, "PreMethod or PostHeating is required", unless a
     PreMethod has first brought the block to the method's start conditions. This is the
-    same pre-warm-then-run pattern authorized WGS/WGA workflow source describes for the WGA program ("start the
+    same pre-warm-then-run pattern WGS workflow specification describes for the WGS preparation program ("start the
     program, allow the block to reach 30 C, pause"). PLR's run_protocol() does not do
     the pre-warm, so it cannot drive this device on its own; this wrapper adds it.
 

@@ -1,3 +1,14 @@
+from pathlib import Path as _MethodPath
+import sys as _method_sys
+
+_METHOD_ROOT = next(
+    parent for parent in _MethodPath(__file__).resolve().parents
+    if parent.name == "hamilton-star"
+)
+if str(_METHOD_ROOT) not in _method_sys.path:
+    _method_sys.path.insert(0, str(_METHOD_ROOT))
+from operator_parameters import required_integer, required_nonnegative, required_positive
+
 import argparse
 import asyncio
 from typing import Dict, List
@@ -14,7 +25,7 @@ from pylabrobot.resources import (
 import pylabrobot.resources as plr_resources
 
 # -----------------------------------------------------------------------------
-# whole-genome sequencing PTA - p300 ethanol wash add/remove focused test
+# WGS preparation (WGS preparation) - p300 ethanol wash add/remove focused test
 # Hamilton STAR + PyLabRobot on starpi
 #
 # Purpose:
@@ -23,9 +34,8 @@ import pylabrobot.resources as plr_resources
 # - Tests removal from rail35 pos1 plate -> reservoir waste well at rail35 pos3.
 # - Excludes p10/p50 source-to-work, p1000, iSWAP, and full protocol logic.
 #
-# Protocol context:
-# - whole-genome sequencing cleanup calls for adding 200 uL 80% ethanol to each well on magnet,
-#   incubating 30 seconds, then carefully removing ethanol without disturbing beads.
+# Method context:
+# - The local WGS profile supplies the wash liquid volume and incubation.
 # - This file starts with bead-safe/high removal geometry for observation.
 #
 # Active deck:
@@ -54,16 +64,18 @@ TROUGH_POS = 3
 DEST_COLUMNS = [1]
 
 # Trough source/waste wells in 12-well reservoir.
-# A2/A3 map to ethanol 1/2 in prior whole-genome sequencing scaffold. A12 is waste/sink for test removals.
+# A2/A3 map to ethanol 1/2 in prior WGS preparation scaffold. A12 is waste/sink for test removals.
 TROUGH_ETOH1 = "A2"
 TROUGH_ETOH2 = "A3"
 TROUGH_WATER_TEST = "A5"
 TROUGH_WASTE = "A12"
 
 # Default test volumes.
-DEFAULT_ADD_VOL = 200.0
-# Removal intentionally starts below full 200 uL to reduce risk while geometry is being tuned.
-DEFAULT_REMOVE_VOL = 180.0
+DEFAULT_ADD_VOL = required_positive("wgs.cleanup.wash_add_ul")
+# Removal intentionally starts below the full operator-profile wash addition to reduce risk while geometry is being tuned.
+DEFAULT_REMOVE_VOL = required_positive("wgs.cleanup.wash_remove_ul")
+WASH_INCUBATION_SECONDS = required_nonnegative("wgs.cleanup.wash_incubation_seconds")
+WASH_COUNT = required_integer("wgs.cleanup.wash_count", minimum=1, maximum=2)
 
 # P300 add geometry: reservoir -> plate on mag/placeholder.
 P300_TROUGH_ASP_HEIGHT = [15.0] * 8
@@ -334,6 +346,13 @@ async def main():
     )
     args = parser.parse_args()
 
+    if (
+        WASH_COUNT < 2
+        and args.mode in {"add", "add-remove"}
+        and args.source_well == TROUGH_ETOH2
+    ):
+        raise SystemExit("the operator profile does not authorize a second wash")
+
     print("Initializing STAR with skip_autoload=True...")
     lh = LiquidHandler(backend=STARBackend(), deck=STARDeck())
     await lh.setup(skip_autoload=True)
@@ -376,7 +395,7 @@ async def main():
                 tip_col=args.add_tip_col,
                 discard_tips=args.discard_tips,
             )
-            print("NOTE: Protocol incubation after ethanol add is 30 seconds on magnet before removal.")
+            print("NOTE: Use the operator-approved local wash incubation before removal.")
             await remove_from_mag_plate_to_waste(
                 lh,
                 resources,

@@ -1,13 +1,9 @@
 """
 04_odtc_hold_block.py - hold the block and lid at a constant temperature. THIS HEATS.
 
-Used two ways in the WGS preparation workflow:
-
-  - authorized WGS/WGA workflow source II.17 says to start the DNA Amplification program, let the block reach
-    30 C, and pause, so the plate goes into a block that is already at temperature.
-    A pre-method hold is how you do that under automation.
-  - As the last checkpoint before running a real program: if the block will not hold
-    30 C, it will not run a 2.5 hour amplification either.
+This is an instrument utility, not a biological method. The operator must supply
+the block set point, lid set point, and hold duration explicitly from an approved
+local method. No wet-method values are embedded here.
 
 Why this does not call set_block_temperature()
 ----------------------------------------------
@@ -18,14 +14,13 @@ Two reasons, both of which will burn you.
      and lid before it reports done. Calling both is a 15 to 20 minute wait for a
      thing that should take one pre-method.
 
-  2. set_block_temperature([30.0]) sets the lid to 105 C, unless a lid target happens
-     to already be stashed on the backend instance:
+  2. set_block_temperature() uses a backend fallback lid target unless a lid target
+     is already stashed on the backend instance:
 
          lid = self._lid_target_temp if self._lid_target_temp is not None else 105.0
 
-     The whole-genome amplification hold wants a 70 C lid (authorized WGS/WGA workflow source Table 1). Call the two
-     setters in the wrong order and the lid silently goes to 105 C over a plate of
-     single-cell lysate.
+     That fallback is not an operator-approved method value. Calling the setters
+     separately can therefore apply the wrong lid target over a loaded plate.
 
 odtc_compat.hold_block_and_lid() sets both targets and runs one pre-method.
 
@@ -37,13 +32,9 @@ proceeding. Default True.
 
 Usage
 -----
-    # WGA amplification set point, authorized WGS/WGA workflow source Table 1
-    python 04_odtc_hold_block.py --ip $ODTC_IP --block-c 30 --lid-c 70 \
-        --minutes 5 --confirm i-am-watching
-
-    # DNAPREP set point, authorized WGS/WGA workflow source Table 4
-    python 04_odtc_hold_block.py --ip $ODTC_IP --block-c 37 --lid-c 105 \
-        --minutes 2 --confirm i-am-watching
+    python 04_odtc_hold_block.py --ip $ODTC_IP \
+        --block-c <approved> --lid-c <approved> --minutes <approved> \
+        --confirm i-am-watching
 """
 
 import argparse
@@ -93,9 +84,9 @@ async def main():
     parser.add_argument("--block-c", type=float, required=True,
                         help=f"block set point, {BLOCK_MIN_C} to {BLOCK_MAX_C} C")
     parser.add_argument("--lid-c", type=float, required=True,
-                        help="lid set point. authorized WGS/WGA workflow source: 70 C for WGA, 105 C for the rest")
-    parser.add_argument("--minutes", type=float, default=5.0,
-                        help="how long to hold and poll after the pre-method finishes")
+                        help="operator-approved lid set point")
+    parser.add_argument("--minutes", type=float, required=True,
+                        help="operator-approved hold duration after the pre-method finishes")
     parser.add_argument("--dynamic-time", action="store_true", default=True)
     parser.add_argument("--no-dynamic-time", dest="dynamic_time", action="store_false")
     parser.add_argument("--confirm", default="")

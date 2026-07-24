@@ -43,7 +43,7 @@ pinned shas.
 
 ## Network: use the wall jack
 
-**The onsite wall jacks hand out DHCP on the Preventive Medicine VLAN. Plug the
+**The onsite wall jacks hand out DHCP on the lab VLAN. Plug the
 Pi straight into one and it is on the network in seconds, with internet.** This
 is the shortest path by a wide margin and needs no Mac, no adapter, and no
 credentials. `starpi2.local` resolved over mDNS on the VLAN.
@@ -63,7 +63,7 @@ interface was created, no `natd`/`bootpd` ran, the adapter kept a self-assigned
 over 30 minutes. Not enrolled in MDM, no configuration profiles. If it fails this
 way, do not keep toggling: use the wall jack.
 
-**WPA2 Enterprise blocks every simple headless wifi path.** `SmartLabs-Users` is:
+**WPA2 Enterprise blocks every simple headless wifi path.** `<ENTERPRISE_WIFI_SSID>` is:
 
 ```text
 802-1x.eap:          peap
@@ -143,7 +143,7 @@ git -C ~/star-lab/src/plr-mcp checkout <PLR_MCP_SHA>
 dist-info shows `INSTALLER: pip`, **no `direct_url.json`** (so it came from an
 index, not a VCS or path), and `Project-URL: Homepage,
 https://github.com/pylabrobot/pylabrobot`. The `hamilton` and `tecan` backends are
-in upstream 0.2.1. `packages/gene-edit/SETUP.md` says the STAR/ODTC/Tecan backends
+in upstream 0.2.1. `packages/assay-validation/SETUP.md` says the STAR/ODTC/Tecan backends
 live in the di-omics PyLabRobot fork and are installed with `pip install -e '.[usb]'`
 from a checkout; **that is not what either Pi runs for `star-lab`.** That doc is
 correct for `tecan-lab` only.

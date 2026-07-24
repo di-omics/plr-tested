@@ -2,7 +2,7 @@
 iSWAP forward leg: rail35 pos0 -> ODTC plate nest.
 
 di-omics / plr-tested
-Part of the targeted PCR / PTA-WGA workflow ODTC integration. This is the plate-move
+Part of the PCR enrichment / WGS preparation workflow ODTC integration. This is the plate-move
 leg ONLY. It does not trigger any thermal program (that lives separately in
 instrument-integrations/odtc via the PLR ExperimentalODTCBackend).
 
@@ -10,7 +10,7 @@ PATCH LOG
   2026-07-10  Created from test_iswap_plate_rail35pos0_to_rail27_variable.py, the
               proven HHS forward mover. Run --mode deck first (no motion).
   2026-07-10  Geometry corrected against the KNOWN-WORKING full-plate HHS mover
-              00_pta_wga_96wp_all12_DSPH15_DRY_ISWAP_HHS_pickupZ5.py:
+              00_wgs_prep_96wp_all12_DSPH15_DRY_ISWAP_HHS_pickupZ5.py:
                 - pickup-z default 8.5 -> 5.0. The 8.5 gripped the plate ~3.5 mm
                   too high and failed to pick it up. 5.0 is the validated rail35
                   pos0 grip and is identical regardless of destination.

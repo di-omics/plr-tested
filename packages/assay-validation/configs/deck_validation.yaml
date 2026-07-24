@@ -1,0 +1,20 @@
+# deck_validation.yaml - the Validation STAR deck, for reference.
+#
+# The package ships this one deck (assay_validation/config.py DeckLayout.validation).
+# It is documented here so a partner site can see the layout their run assumes, and so a
+# new deck can be added by copying this shape. Transcribed from hamilton-star/README.md.
+
+name: validation
+
+positions:
+  p10_tips:     { rail: 48, pos: 0, role: "p10 filter tips" }
+  p50_tips:     { rail: 48, pos: 1, role: "p50 filter tips" }
+  p300_tips:    { rail: 48, pos: 2, role: "p300 filter tips" }
+  work_plate:   { rail: 35, pos: 0, role: "destination / work plate" }
+  source_plate: { rail: 35, pos: 1, role: "source / reagent plate" }
+  mag_plate:    { rail: 35, pos: 2, role: "magnet / cleanup plate" }
+  reservoir:    { rail: 35, pos: 3, role: "trough / reservoir" }
+
+# Site-specific, set per run in the manifest (tip_column), not here:
+#   tip_column - which column of the tip rack to start picking from. A consumable
+#                position, so it belongs to the run, not the deck definition. Default 1.

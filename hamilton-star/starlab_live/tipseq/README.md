@@ -72,7 +72,7 @@ methods, "Bulk TIP-seq".
 | ivt-mix | 6.3 uL (2 NTP + 2 T7 buffer + 2 T7 pol + 0.3 RNase inh) | p50 | 16.3 uL |
 | cleanup post-ivt | 2.0X binding buffer, elute 9 uL RNase-free water | p300/p50 | 9 uL |
 | hexamer | 2.5 uL random hexamer | p10 | 11.5 uL |
-| rt-mix | 8.5 uL (4 buffer + 2 dNTP + 2 DTT + 0.5 MMLV) | p50 | 20 uL |
+| rt-mix | 8.5 uL (4 buffer + 2 dNTP + 2 DTT + 0.5 template-switching RT) | p50 | 20 uL |
 | rnaseh | 1 uL RNase H (1:10) | p10 | 21 uL |
 | sss-oligo | 2.5 uL second-strand oligo | p10 | 23.5 uL |
 | ss-taq | 5.9 uL Taq 5X MM | p50 | 29.4 uL |
@@ -121,7 +121,7 @@ Known gaps that MUST be closed on hardware before trusting a real run:
   without a volume.
 - The ODTC child-location coordinate is still a repo placeholder
   (`ODTC_CHILD_LOCATION_IS_MEASURED = False`); the iSWAP-into-ODTC geometry is inherited from the
-  targeted PCR choreography and not re-confirmed for this workflow.
+  PCR enrichment choreography and not re-confirmed for this workflow.
 
 ## Controls and acceptance criteria
 
@@ -135,7 +135,7 @@ RNA safety. TIP-seq carries RNA intermediates (post-IVT RNA, first-strand RT). T
 discarded, never returned, on real runs (the default); keep RNase-free.
 
 Acceptance criteria (from the paper):
-- Post-PCR library checked on a TapeStation HS D1000 for a proper size distribution before pooling.
+- Post-PCR library checked on a fragment analyzer for a proper size distribution before pooling.
 - Left-side size selection at 0.85X SPRI to remove < 200 bp fragments (primers/adapter dimer).
 - Sensitivity: TIP-seq gives ~10-fold higher unique reads per single cell than PCR-based CUT&Tag;
   bulk libraries correlate with ENCODE ChIP-seq (Pearson r ~0.54-0.65 for CTCF).

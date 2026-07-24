@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assay-validation"
+version = "0.1.0"
+description = "QC-gated WGS preparation + PCR enrichment with explicit method profiles"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "di-omics" }]
+license = { text = "MIT" }
+# Core is standard-library only, on purpose: it runs in any lab with any Python.
+dependencies = []
+
+[project.optional-dependencies]
+# YAML manifests (JSON works without this). Hardware backends need the di-omics
+# PyLabRobot fork and are installed on the Pi, not here.
+yaml = ["pyyaml>=5.4"]
+test = ["pytest>=7"]
+
+[project.scripts]
+assay-validate = "assay_validation.cli:main"
+
+[tool.setuptools]
+packages = [
+    "assay_validation",
+    "assay_validation.stages",
+    "assay_validation.instruments",
+    "assay_validation.reagents",
+    "assay_validation.reporting",
+]

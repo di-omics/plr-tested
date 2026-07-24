@@ -23,7 +23,7 @@
 #   - Anything that moves the door or heats the block demands --confirm i-am-watching.
 #   - Never run unattended. A person watches the instrument.
 #   - Only one process may drive a given instrument at a time.
-#   - Long programs (wga is ~2.6 hours) should be launched detached on the Pi, so a
+#   - Long programs (wgs_prep is ~2.6 hours) should be launched detached on the Pi, so a
 #     dropped SSH session cannot kill a run mid-cycle.
 
 set -euo pipefail

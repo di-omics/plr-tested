@@ -17,9 +17,9 @@ def valid_build():
     return {
         "tag": "qualified-local-build",
         "sha": "a" * 40,
-        "script": "starlab_live/run_targeted_pcr_odtc_LIDDED_1col_full_dry.py",
-        "token": "RUN_TARGETED_PCR_ODTC_LIDDED_FULL",
-        "runner_match": "run_targeted_pcr_odtc_LIDDED_1col_full_dry",
+        "script": "starlab_live/run_pcr_enrichment_odtc_LIDDED_1col_full_dry.py",
+        "token": "RUN_PCR_ENRICHMENT_ODTC_LIDDED_FULL",
+        "runner_match": "run_pcr_enrichment_odtc_LIDDED_1col_full_dry",
         "label": "1 column - 8 reactions",
         "legs": 13,
         "record": "qualified local build",
@@ -55,11 +55,11 @@ class BuildConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             path = self.write(root, {
                 "schema_version": 1,
-                "builds": {"targeted-pcr-one-column": valid_build()},
+                "builds": {"pcr-enrichment-one-column": valid_build()},
             })
             builds, status = SERVER.load_builds(path)
-            self.assertEqual(list(builds), ["targeted-pcr-one-column"])
-            self.assertEqual(builds["targeted-pcr-one-column"]["legs"], 13)
+            self.assertEqual(list(builds), ["pcr-enrichment-one-column"])
+            self.assertEqual(builds["pcr-enrichment-one-column"]["legs"], 13)
             self.assertIn("Loaded 1", status)
 
     def test_invalid_builds_fail_the_complete_registry(self):
@@ -76,11 +76,11 @@ class BuildConfigTests(unittest.TestCase):
             "unsafe script directory": ("script", "starlab_live/.hidden/run.py"),
             "wrong script root": ("script", "other/run.py"),
             "unsafe tag": ("tag", "../moving-ref"),
-            "lowercase token": ("token", "run_targeted_pcr"),
+            "lowercase token": ("token", "run_pcr_enrichment"),
             "dot runner": ("runner_match", "."),
             "regex runner": ("runner_match", "run.*"),
             "runner path": ("runner_match", "../runner"),
-            "runner substring": ("runner_match", "run_targeted_pcr_odtc"),
+            "runner substring": ("runner_match", "run_pcr_enrichment_odtc"),
             "runner mismatch": ("runner_match", "different_runner"),
             "empty label": ("label", ""),
         }
@@ -91,7 +91,7 @@ class BuildConfigTests(unittest.TestCase):
                     build[field] = value
                     path = self.write(root, {
                         "schema_version": 1,
-                        "builds": {"targeted-pcr-one-column": build},
+                        "builds": {"pcr-enrichment-one-column": build},
                     })
                     builds, status = SERVER.load_builds(path)
                     self.assertEqual(builds, {})
@@ -108,7 +108,7 @@ class BuildConfigTests(unittest.TestCase):
                         build["unexpected"] = "value"
                     path = self.write(root, {
                         "schema_version": 1,
-                        "builds": {"targeted-pcr-one-column": build},
+                        "builds": {"pcr-enrichment-one-column": build},
                     })
                     builds, status = SERVER.load_builds(path)
                     self.assertEqual(builds, {})
@@ -157,7 +157,7 @@ class BuildConfigTests(unittest.TestCase):
         pattern = SERVER._pkill_pattern(runner)
         self.assertEqual(
             pattern,
-            r"(^|/)[r]un_targeted_pcr_odtc_LIDDED_1col_full_dry"
+            r"(^|/)[r]un_pcr_enrichment_odtc_LIDDED_1col_full_dry"
             r"\.py([[:space:]]|$)",
         )
         self.assertNotIn(runner, pattern)

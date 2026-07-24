@@ -20,7 +20,7 @@ import pylabrobot.resources as plr_resources
 # ------------
 # One reagent addition per --mode, into destination/work rail35 pos0 column 1, from a single
 # source column at rail35 pos1 column 1 - the same swap-source, single-column, one-add-per-run
-# pattern as the verified PTA/WGA and targeted PCR master-mix scripts and the EM-seq/scRNA-seq scripts.
+# pattern as the verified WGS prep and PCR enrichment master-mix scripts and the methylation sequencing/scRNA-seq scripts.
 #
 # TIP-seq combines CUT&Tag pA-Tn5 tagmentation with T7 linear amplification. The CUT&Tag front
 # end (conA beads, primary/secondary antibody, pA-Tn5 binding, tagmentation, and - for single
@@ -43,15 +43,15 @@ import pylabrobot.resources as plr_resources
 #   mode          add uL  tip  reagent (loaded into source pos1 col1)                -> next ODTC
 #   gapfill-mix   2.0    p10  Taq 5X Master Mix (M0285)                               tip-gapfill
 #   ivt-mix       6.3    p50  2 NTP (100 mM) + 2 10X T7 buffer + 2 T7 pol mix +       tip-ivt
-#                             0.3 RNase inhibitor (HiScribe T7, E2040S)
+#                             0.3 RNase inhibitor (in vitro transcription T7, E2040S)
 #   hexamer       2.5    p10  random hexamer (20 uM)                                  tip-rt-anneal
 #   rt-mix        8.5    p50  4 5X first-strand buffer + 2 dNTP (10 mM) + 2 DTT       tip-rt
-#                             (100 mM) + 0.5 SMART MMLV RT (Takara 639524)
+#                             (100 mM) + 0.5 SMART reverse transcriptase RT (validated workflow 639524)
 #   rnaseh        1.0    p10  RNase H, 1:10 dilution of 5 U/uL                        tip-rnaseh
 #   sss-oligo     2.5    p10  second-strand oligo (sss_scnXTv2 / sss_scinXTv2)        tip-ss-anneal
 #   ss-taq        5.9    p50  Taq 5X Master Mix (M0285)                               tip-ss
 #   tn5-mix       4.0    p10  2 TAPS buffer + 2 Tn5 (ME-B only, 0.7 uM)               tip-tag
-#   pcr-mix      24.0    p50  20 NEBNext High-Fidelity 2X PCR MM (M0541L) +           tip-pcr
+#   pcr-mix      24.0    p50  20 library preparation High-Fidelity 2X PCR MM (M0541L) +           tip-pcr
 #                             2 index primers (10 uM) + 2 i7 indexes (10 uM)
 #
 # Deck (current 35/48 deck):
@@ -62,12 +62,12 @@ import pylabrobot.resources as plr_resources
 # Geometry provenance and its limits
 # ----------------------------------
 # The p50 and p10 source->work offsets and heights are reused VERBATIM from the hardware-confirmed
-# targeted PCR/PTA-WGA column-1 adds (via the emseq/scrnaseq scripts). No new coordinate is invented.
+# PCR enrichment/WGS prep column-1 adds (via the methylation_seq/scrnaseq scripts). No new coordinate is invented.
 # Those values were tuned for adding into a SMALL starting volume and for wells WITHOUT beads; the
 # TIP-seq well holds SPRI beads from the start, so the dispense height and mixing need tuning on the
 # deck before a wet run. This script adds and blows out; it does NOT mix on deck (the paper mixes
 # by pipetting/vortex), which stays an operator step until tuned. Every mode is sim-only until tuned.
-# p10 adds stay within the hardware-confirmed whole-genome amplification envelope: up to 6 uL of liquid plus the 7 uL
+# p10 adds stay within the hardware-confirmed whole-genome sequencing preparation envelope: up to 6 uL of liquid plus the 7 uL
 # blowout air (the whole-genome sequencing reaction add, 6 uL p10, is confirmed on hardware; liquid+blowout of
 # ~13 uL sits above the 10 uL tip nominal but is what the confirmed bo7 add uses). The cap is 6 uL
 # and the largest p10 add here is tn5-mix at 4 uL. Controls (IgG negative, positive antibody) are
@@ -85,13 +85,13 @@ SOURCE_96WP_POS = 1
 SOURCE_COL = 1
 DEST_COL = 1
 
-# Confirmed p10 ceiling: the whole-genome sequencing reaction add of 6 uL p10 (blowout 7) is hardware-confirmed.
+# Hardware-confirmed p10 liquid-transfer ceiling paired with the calibrated blowout.
 P10_MAX_TRANSFER_UL = 6.0
 P50_MAX_TRANSFER_UL = 40.0
 # Highest confirmed p10 plunger demand (liquid + blowout air), used as a --dry sanity guard.
 P10_CONFIRMED_ENVELOPE_UL = 13.0
 
-# Reused verbatim from the confirmed targeted PCR/PTA-WGA col-1 adds (via emseq/scrnaseq scripts).
+# Reused verbatim from the confirmed PCR enrichment/WGS prep col-1 adds (via methylation_seq/scrnaseq scripts).
 P50_SOURCE_ASP_HEIGHT = [0.0] * 8
 P50_SOURCE_ASP_OFFSETS = [Coordinate(-0.65, 3.35, 0.0)] * 8
 P50_WORK_DSP_HEIGHT = [0.5] * 8
@@ -132,7 +132,7 @@ STEPS: Dict[str, Step] = {
     "ivt-mix": Step(
         "ivt-mix", "T7 IVT mix", 6.3, "p50", "tip-ivt",
         "Work col 1 holds 10 uL gap-filled reaction (beads retained). Load source col 1 with the "
-        "T7 IVT mix (HiScribe T7, E2040S): 2 uL NTP (100 mM) + 2 uL 10X T7 reaction buffer + 2 uL "
+        "T7 IVT mix (in vitro transcription T7, E2040S): 2 uL NTP (100 mM) + 2 uL 10X T7 reaction buffer + 2 uL "
         "T7 polymerase mix + 0.3 uL RNase inhibitor per reaction.",
         "Seal/spin, then run ODTC tip-ivt (37 C for 16-19 h, default 17 h; 4 C hold; lid 47 C). "
         "This is an overnight hold; launch it detached on the Pi. Then SPRI cleanup: "
@@ -147,8 +147,8 @@ STEPS: Dict[str, Step] = {
     "rt-mix": Step(
         "rt-mix", "First-strand RT mix", 8.5, "p50", "tip-rt",
         "Work col 1 holds 11.5 uL annealed sample. Load source col 1 with the first-strand mix "
-        "(SMART MMLV, Takara 639524): 4 uL 5X first-strand buffer + 2 uL dNTP (10 mM) + 2 uL DTT "
-        "(100 mM) + 0.5 uL SMART MMLV RT per reaction.",
+        "(SMART reverse transcriptase, validated workflow 639524): 4 uL 5X first-strand buffer + 2 uL dNTP (10 mM) + 2 uL DTT "
+        "(100 mM) + 0.5 uL SMART reverse transcriptase RT per reaction.",
         "Seal/spin, then run ODTC tip-rt (22 C 10 min, 42 C 60 min, 70 C 10 min, 4 C hold, lid 105 C).",
     ),
     "rnaseh": Step(
@@ -181,7 +181,7 @@ STEPS: Dict[str, Step] = {
     "pcr-mix": Step(
         "pcr-mix", "Indexing PCR mix", 24.0, "p50", "tip-pcr",
         "Work col 1 holds 16 uL purified DNA (moved off the beads into a fresh column). Load source "
-        "col 1 with the PCR mix: 20 uL NEBNext High-Fidelity 2X PCR MM (M0541L) + 2 uL index primers "
+        "col 1 with the PCR mix: 20 uL library preparation High-Fidelity 2X PCR MM (M0541L) + 2 uL index primers "
         "(10 uM) + 2 uL i7 indexes (10 uM), one index combination per well.",
         "Seal/spin, then run ODTC tip-pcr (72 C 5 min gap fill; 98 C 30 s; N x [98 C 10 s / 63 C "
         "30 s]; 72 C 1 min; 8 C hold; lid 105 C). N is optimized per sample (bulk ~7-9, sciTIP "
@@ -244,7 +244,7 @@ async def assign_deck(lh: LiquidHandler) -> Dict[str, object]:
     print("  rail35 pos0 = destination/work 96WP, column 1 (holds DNA + retained SPRI beads)")
     print("  rail35 pos1 = source 96WP/strip, SOURCE COLUMN 1 ONLY (swap reagent between modes)")
 
-    print("\nGeometry (reused verbatim from confirmed targeted PCR/PTA-WGA col-1 adds; see header):")
+    print("\nGeometry (reused verbatim from confirmed PCR enrichment/WGS prep col-1 adds; see header):")
     print(f"  P50 source asp height {P50_SOURCE_ASP_HEIGHT[0]}, work dsp height {P50_WORK_DSP_HEIGHT[0]}, "
           f"blowout {P50_BLOWOUT_AIR_VOLUME} uL, max {P50_MAX_TRANSFER_UL} uL/transfer")
     print(f"  P10 source asp height {P10_SOURCE_ASP_HEIGHT[0]}, work dsp height {P10_WORK_DSP_HEIGHT[0]}, "
